@@ -588,6 +588,49 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     ok(nr && nr.plan === 'pro' && nr.donation === 25 && nr.coupon === 'PRO20' && nr.total === 1323 && nr.a === 1, 'Plans: Notify me keeps the choice for the admin ' + JSON.stringify(nr));
     ok(!e13.length, 'no page errors (plans) ' + e13.join(' | ')); await c13.close(); }
   await q(`update cbt_private.plans set price = null, mrp = null`); await q(`delete from cbt_private.plan_addons`); await q(`delete from cbt_private.plan_notify`);
+  // v91: plan access — the Library shows the plan and what is left; with the locks on the server refuses and the app shows one Upgrade sheet
+  await q(`delete from cbt_private.plan_grants`); await q(`delete from cbt_private.plan_usage`); await q(`update cbt_private.plan_settings set enforce = false`);
+  await q(`update cbt_private.students set fail_count=0, locked_until=0, devices='{}' where mobile = '9000000002'`);
+  for (const cfg of [{ n: 'v91' }, { n: 'old' }]) {
+    const c14 = await br.newContext({ viewport: { width: 390, height: 844 } }); const p14 = await c14.newPage(); const e14 = [];
+    p14.on('pageerror', e => e14.push(e.message));
+    await p14.route(u => !u.href.startsWith(BASE) && !u.href.startsWith(SUPA), r => r.abort());
+    await p14.route(SUPA + '/rest/v1/rpc/**', r => cfg.n === 'old' && /rpc\/cbt_my_plan(\?|$)/.test(r.request().url()) ? r.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"not found"}' }) : rpcRoute(r));
+    await p14.goto(BASE + 'index.html'); await codeScreen(p14); await p14.fill('#ph', '9000000002'); await p14.fill('#cd', 'BBBB2222'); await p14.click('#lbtn'); await p14.waitForTimeout(3500);
+    const sr = fn => p14.evaluate(f => { const r = document.getElementById('v3host').shadowRoot; return (new Function('r', 'return (' + f + ')(r)'))(r); }, fn.toString());
+    await sr(r => { const b = r.querySelector('[data-ob="skip"]'); if (b) b.click(); }); await p14.waitForTimeout(2600);
+    await sr(r => { const b = r.querySelector('#sheet.open [data-a="close"]'); if (b) b.click(); }); await p14.waitForTimeout(1000);
+    const wide = [];
+    for (const tb of ['home', 'test', 'tools', 'stats', 'lib']) { await p14.evaluate(h => { location.hash = h; }, tb === 'home' ? '#/' : tb === 'lib' ? '#/lib' : tb === 'stats' ? '#/me' : '#/x/' + tb); await p14.waitForTimeout(1500);
+      wide.push(await sr(r => { const m = r.querySelector('#main'); return [getComputedStyle(m).display, Math.round(m.getBoundingClientRect().width), innerWidth, document.documentElement.scrollWidth > innerWidth + 1]; })); }
+    ok(wide.every(w => w[0] !== 'inline-grid' && w[1] >= w[2] - 2 && !w[3]), `Library ${cfg.n}: all five tabs keep the full width ` + JSON.stringify(wide));
+    await p14.waitForTimeout(1200);
+    const L = () => sr(r => ({ plan: (r.querySelector('.lbr-p b') || {}).textContent || '', tags: r.querySelectorAll('.pm .lbr-tag').length, meters: [...r.querySelectorAll('.pm .lbr-m')].map(e => e.textContent.trim()), up: r.querySelectorAll('.pm [data-a="lbrUp"]').length, open: r.querySelectorAll('.pm [data-a="lmod"]').length, trk: !!r.querySelector('[data-h="#/trk"]'), dbt: !!r.querySelector('[data-h="#/doubts"]'), ultra: r.querySelectorAll('.lbr-u').length }));
+    const l1 = await L();
+    if (cfg.n === 'old') { ok(!l1.plan && !l1.tags && l1.open === 3 && l1.trk && l1.ultra === 4 && !e14.length, 'Library without the v91 SQL: no plan card, every tool opens as before ' + JSON.stringify(l1) + e14.join('|')); await c14.close(); continue; }
+    ok(l1.plan === 'Basic' && l1.tags === 3 && l1.open === 3 && !l1.up && l1.meters.every(m => /Open to everyone/.test(m)) && l1.trk && l1.dbt && l1.ultra === 4, 'Library, locks off: Basic plan card, PRO tags, every tool still opens; tracker, doubts and the Ultra corner are there ' + JSON.stringify(l1));
+    await q(`update cbt_private.plan_settings set enforce = true`);
+    await p14.evaluate(() => { location.hash = '#/'; }); await p14.waitForTimeout(800); await p14.evaluate(() => { location.hash = '#/lib'; }); await p14.waitForTimeout(2500);
+    const l2 = await L();
+    ok(l2.up === 3 && !l2.open && l2.meters.every(m => /Comes with Pro/.test(m)), 'Library, locks on: the three Pro tools show Upgrade to Pro ' + JSON.stringify(l2));
+    await p14.evaluate(() => rpc('cbt_qb_next', { p_f: {}, p_skip: [] })); await p14.waitForTimeout(900);
+    const w = await sr(r => ({ sh: (r.querySelector('#sheet.open') || {}).textContent || '', toast: (r.querySelector('#toast.on') || {}).textContent || '' }));
+    ok(/Question bank comes with Pro/.test(w.sh) && /See plans/.test(w.sh) && !w.toast, 'locks on: a refused question bank call opens one "comes with Pro" sheet, no error toast ' + JSON.stringify(w));
+    await sr(r => r.querySelector('#sheet.open [data-a="lbrUp"]').click()); await p14.waitForTimeout(1500);
+    ok(await sr(r => r.querySelector('#scrT').textContent === 'Upgrade' && (r.querySelector('.pl-card.on b') || {}).textContent === 'Pro'), 'See plans opens Upgrade with Pro chosen');
+    await q(`insert into cbt_private.plan_grants (student_id, plan, ends_at) select id, 'pro', now() + interval '30 days' from cbt_private.students where mobile = '9000000002'`);
+    await q(`insert into cbt_private.plan_usage select id, 'gen', to_char(now() at time zone 'Asia/Kolkata', 'YYYY-MM'), 1 from cbt_private.students where mobile = '9000000002'`);
+    await p14.evaluate(() => { location.hash = '#/'; }); await p14.waitForTimeout(800); await p14.evaluate(() => { location.hash = '#/lib'; }); await p14.waitForTimeout(2500);
+    const l3 = await L();
+    ok(l3.plan === 'Pro' && l3.open === 3 && /3 of 4 tests left this month/.test(l3.meters[0]) && /Unlimited/.test(l3.meters[1]), 'Library, Pro given by the admin: 3 of 4 tests left this month, the question bank unlimited ' + JSON.stringify(l3));
+    await p14.evaluate(() => { location.hash = '#/'; }); await p14.reload(); await p14.waitForTimeout(3500);   // fresh app: no Library visit
+    await sr(r => { const b = r.querySelector('#sheet.open [data-a="close"]'); if (b) b.click(); }); await p14.waitForTimeout(800);
+    await sr(r => r.querySelector('.pillbtn.upg').click()); await p14.waitForTimeout(1800);
+    const u9 = await sr(r => ({ t: r.querySelector('#scrT').textContent, cards: [...r.querySelectorAll('.pl-card')].map(c => c.textContent.replace(/\s+/g, ' ').trim()) }));
+    ok(u9.t === 'Upgrade' && /Pro\s*Current plan/.test(u9.cards[1] || '') && !/Current plan/.test(u9.cards[0] || ''), 'a student given Pro opens Upgrade from Home (no Library visit): Pro is the current plan ' + JSON.stringify(u9));
+    ok(!e14.length, 'no page errors (plan access) ' + e14.join(' | ')); await c14.close();
+  }
+  await q(`delete from cbt_private.plan_grants`); await q(`delete from cbt_private.plan_usage`); await q(`update cbt_private.plan_settings set enforce = false`);
   // Theme page with real finger taps (a touch phone): every tap must land on its button and be saved
   await q(`update cbt_private.students set fail_count=0, locked_until=0, devices='{}' where mobile = '9000000002'`);
   { const c3 = await br.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }); const p3 = await c3.newPage(); const e3 = []; p3.on('pageerror', e => e3.push(e.message));

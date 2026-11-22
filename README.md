@@ -222,9 +222,28 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Admin → Plans** (Sales & billing): names, prices (empty = “Price coming soon”), days, the compare list rows,
   add-ons with pictures, donation amounts, plan coupons and the Notify me list. Store = View reads, Store = Full access
   changes. The store website and its coupons are not touched.
-- Nothing is locked yet: locks (Question bank, PYQ, test generator 4 a month …) come in a later step.
+- Locks: see *Plan access* below (v91).
 - **Setup:** run `supabase_v90_plans.sql` once (after v89), then `supabase_v35_admin_team.sql` again. Until then the
   Upgrade pill works as before.
+
+## Plan access: what each plan may use (`supabase_v91_plan_access.sql`)
+- **The server decides.** One list of features with a limit per plan: -1 = unlimited, 0 = not in the plan, N = N uses a
+  day / a month (India time) / in total. Start: Question bank and PYQ = Pro and Ultra, Test generator = 4 a month on Pro
+  and unlimited on Ultra, Doubts = 2 to try on Free. `cbt_qb_next`, `cbt_qb_check`, `cbt_gen_create`,
+  `cbt_pyq_chapter` and `cbt_doubt_ask` check it inside the function, so the old app and direct calls follow the same
+  rule. A retake of a generated test is not counted; tests already made stay open.
+- **A student's plan:** a plan given by the admin (until its end date) → Basic if the student has a paid test series →
+  Free. Payments are not open, so **Give a plan** is the only way to Pro / Ultra for now.
+- **Locks are OFF** until the owner turns them on (Admin → Plans → **Access & limits**). While off, everything works as
+  before; the Library only shows the plan of each tool. Uses are counted either way.
+- **Library:** your plan card (Upgrade / Go Ultra), PRO tags, "3 of 4 tests left this month", "Unlimited", or
+  "Comes with Pro" + **Upgrade to Pro** when locked; Revise and track (mistakes, saved, doubts, notes, study tracker);
+  the Ultra corner (PYQ analyzer, question practice, flash cards, 3D models: coming soon). A refused call opens one
+  "… comes with Pro" sheet with **See plans**.
+- Features that load from static files (Tools, the periodic table) can only be hidden in the app, not locked on the
+  server.
+- **Setup:** run `supabase_v91_plan_access.sql` once (after v90), then `supabase_v35_admin_team.sql` again. Without it
+  the Library looks as before, without the plan card.
 
 ## Doubts (`supabase_v87_doubts.sql`)
 - **Student:** in a test result, every question has a **?** button. The student writes the doubt (text only, 5 to 1200
