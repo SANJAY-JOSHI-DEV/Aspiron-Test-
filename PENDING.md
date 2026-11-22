@@ -131,7 +131,7 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   email (MX, SPF, DKIM, DMARC), Brevo / Resend, aur GitHub Pages ke records.
 - [ ] **7.2 👤 Nameservers badlo:** registrar me Cloudflare wale nameservers lagao. Poori tarah lagne me kuch ghante lagte hain.
 - [ ] **7.3 👥 DNS records:** `@` ke liye 4 A records `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`.
-  `www` ke liye CNAME `aspiron-dev.github.io` (GitHub account ka naam; ye sirf DNS ke andar rehta hai, kisi ko dikhta nahi. Account ka naam mat badalna). Pehle "DNS only" (grey cloud) rakhna. GitHub Pages me domain aur HTTPS check karo,
+  `www` ke liye CNAME `sanjay-joshi-dev.github.io` (jis GitHub account par repo hai uska naam; ye sirf DNS ke andar rehta hai, kisi ko dikhta nahi). Pehle "DNS only" (grey cloud) rakhna. GitHub Pages me domain aur HTTPS check karo,
   phir proxy ON (orange cloud) aur SSL/TLS mode = Full.
 - [ ] **7.4 👥 Security headers:** `SECURITY_MAP.md` §11 wale headers, Rules → Transform Rules → Response headers me.
   CSP `frame-ancestors` pehle ek hafta Report-Only rakhna. *Check:* securityheaders.com par grade A. R12 band.
