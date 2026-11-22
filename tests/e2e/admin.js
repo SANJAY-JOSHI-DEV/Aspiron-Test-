@@ -155,6 +155,20 @@ async function rpcRoute(route) {
     ok(/Answered/.test(await page.textContent('#db-list')), tag + ' Doubts: the Answered filter lists it');
     const ovf3 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); ok(!ovf3, tag + ' no horizontal scroll (doubts)');
     await q(`delete from cbt_private.doubts`);
+    // v90: Plans — the owner sets the Pro price and adds an add-on; text from the server is shown as text
+    await q(`update cbt_private.plans set price = null, mrp = null`); await q(`delete from cbt_private.plan_addons`);
+    await page.goto(BASE + 'cp-dt764twzf54s5m.html#/plans'); await page.waitForSelector('[data-act=plan]');
+    await page.click('[data-act=plan][data-k="pro"]'); await page.waitForSelector('#plf'); await page.fill('#plf [name=price]', '999'); await page.fill('#plf [name=mrp]', '2499'); await page.click('.modal [data-act=ok]'); await page.waitForTimeout(1200);
+    const pp = (await q(`select price, mrp from cbt_private.plans where key = 'pro'`))[0];
+    ok(pp && pp.price === 999 && pp.mrp === 2499, tag + ' Plans: the Pro price is saved ' + JSON.stringify(pp));
+    await page.goto(BASE + 'cp-dt764twzf54s5m.html#/plans/addons'); await page.waitForSelector('[data-act=addon]');
+    await page.click('[data-act=addon]'); await page.waitForSelector('#adf'); await page.fill('#adf [name=title]', 'Notes <img src=x onerror="window.__px=1">'); await page.fill('#adf [name=price]', '499'); await page.click('.modal [data-act=ok]'); await page.waitForTimeout(1200);
+    const ad = await page.evaluate(() => ({ img: document.querySelectorAll('#ax-page .card img[src=x]').length, x: !!window.__px, t: document.querySelector('#ax-page').innerText }));
+    ok(ad.img === 0 && !ad.x && /Notes img src=x/.test(ad.t), tag + ' Plans: the add-on is saved; markup characters are removed and nothing runs');
+    await page.goto(BASE + 'cp-dt764twzf54s5m.html#/plans/compare'); await page.waitForSelector('.tbl');
+    ok((await page.$$('.tbl tbody tr')).length === 13, tag + ' Plans: the compare list shows the 13 starting rows');
+    const ovf4 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); ok(!ovf4, tag + ' no horizontal scroll (plans)');
+    await q(`update cbt_private.plans set price = null, mrp = null`); await q(`delete from cbt_private.plan_addons`);
     ok(!errs.length, tag + ' no page errors ' + errs.join(' | '));
     await ctx.close();
   }

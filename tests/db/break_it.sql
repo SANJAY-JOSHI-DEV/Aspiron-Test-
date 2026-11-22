@@ -1969,6 +1969,58 @@ select pg_temp.chk('46f the lock-rule helper cannot be called by the app roles',
   not has_function_privilege('anon', 'cbt_private.file_locked(text,boolean,boolean,boolean)', 'execute')
   and not has_function_privilege('authenticated', 'cbt_private.file_locked(text,boolean,boolean,boolean)', 'execute'));
 
+-- ===== 46. v90: plans — everyone can read them, a coupon only tells the discount, Notify me grants nothing =====
+select public.cbt_admin_login('','OwnerPass2026x','Owner')->>'token' as ow90 \gset
+select public.cbt_admin_login('viewer1','Tr7k-9mQz-pLx2','V')->>'token' as vt90 \gset
+select public.cbt_admin_team(:'ow90','user_save','{"name":"Store viewer","username":"store90","password":"Tr7k-9mQz-pLx2","perms":{"store":"view"}}')->>'ok' as s90ok \gset
+select public.cbt_admin_login('store90','Tr7k-9mQz-pLx2','S')->>'token' as sv90 \gset
+set role anon;
+select pg_temp.chk('46a anyone can read the plans, the compare list (owner''s 13 rows) and the donation amounts; prices are empty until set',
+  (public.cbt_plans()->>'ok')::boolean and jsonb_array_length(public.cbt_plans()->'plans') = 3
+  and jsonb_array_length(public.cbt_plans()->'rows') = 13 and public.cbt_plans()->'donations' = '[10, 25, 50, 100]'::jsonb
+  and (select bool_and(p->'price' = 'null'::jsonb) from jsonb_array_elements(public.cbt_plans()->'plans') p)
+  and (select x->>'pro' from jsonb_array_elements(public.cbt_plans()->'rows') x where x->>'label' = 'Test generator') = '4 a month');
+select public.cbt_admin_plans(:'ow90','plan_save','{"key":"pro","title":" Pro <b>plan</b> ","tagline":"More practice","price":"999","mrp":"1999","days":"365","active":true}')->>'ok' as p90a \gset
+select public.cbt_admin_plans(:'ow90','addon_save','{"kind":"notes","title":"Handwritten notes","body":"All chapters","price":"499","mrp":"999","img":"data:image/png;base64,iVBORw0KGgo=","sort":"1"}') as p90b \gset
+select public.cbt_admin_plans(:'ow90','coupon_save',jsonb_build_object('code','pro50','kind','pct','value','50','plans',jsonb_build_array('pro'),'active',true))->>'ok' as p90c \gset
+select pg_temp.chk('46b the owner sets a price, an add-on with a picture and a coupon; text is cleaned',
+  :'p90a' = 'true' and :'p90b'::jsonb->>'ok' = 'true' and :'p90c' = 'true'
+  and (select p->>'title' || '|' || (p->>'price') || '|' || (p->>'mrp') from jsonb_array_elements(public.cbt_plans()->'plans') p where p->>'key' = 'pro') = 'Pro bplan/b|999|1999'
+  and (select x->>'title' from jsonb_array_elements(public.cbt_plans()->'addons') x) = 'Handwritten notes');
+select pg_temp.chk('46c bad input is refused: a picture that is not an image, a 101% coupon, a coupon for no plan, odd donation amounts, a bad price',
+  public.cbt_admin_plans(:'ow90','addon_save','{"kind":"notes","title":"X","price":"1","img":"javascript:alert(1)"}')->>'error' = 'img'
+  and public.cbt_admin_plans(:'ow90','coupon_save','{"code":"BAD1","kind":"pct","value":"101","plans":["pro"]}')->>'error' = 'value'
+  and public.cbt_admin_plans(:'ow90','coupon_save','{"code":"BAD2","kind":"pct","value":"10","plans":["gold"]}')->>'error' = 'plans'
+  and public.cbt_admin_plans(:'ow90','donations','{"amounts":[10,"x"]}')->>'error' = 'amounts'
+  and public.cbt_admin_plans(:'ow90','donations','{"amounts":[1,2,3,4,5,6,7,8,9]}')->>'error' = 'amounts'
+  and public.cbt_admin_plans(:'ow90','plan_save','{"key":"pro","title":"Pro","price":"-5"}')->>'error' = 'number'
+  and public.cbt_admin_plans(:'ow90','plan_save','{"key":"gold","title":"Gold"}')->>'error' = 'plan');
+select pg_temp.chk('46d a plan coupon only tells the discount, for the right plan, to a signed-in student',
+  public.cbt_plan_coupon('9000000001','AAAA1111','dev-aaaaaaaa','pro','pro50')->>'value' = '50'
+  and public.cbt_plan_coupon('9000000001','AAAA1111','dev-aaaaaaaa','ultra','PRO50')->>'error' = 'invalid'
+  and public.cbt_plan_coupon('9000000001','AAAA1111','dev-aaaaaaaa','pro','NOPE99')->>'error' = 'invalid'
+  and public.cbt_plan_coupon('9000000001','WRONG999','dev-aaaaaaaa','pro','PRO50')->>'ok' = 'false');
+select public.cbt_plan_notify('9000000001','AAAA1111','dev-aaaaaaaa','pro',(select jsonb_build_array(x->>'id','not-an-addon') from jsonb_array_elements(public.cbt_plans()->'addons') x limit 1),25,'pro50',1000)->>'ok' as n90a \gset
+select public.cbt_plan_notify('9000000001','AAAA1111','dev-aaaaaaaa','pro','[]',0,'',999)->>'ok' as n90b \gset
+select pg_temp.chk('46e Notify me keeps one row per student and plan (the latest choice) and grants nothing; a bad plan is refused',
+  :'n90a' = 'true' and :'n90b' = 'true'
+  and jsonb_array_length(public.cbt_admin_plans(:'ow90','get','{}')->'notify') = 1
+  and public.cbt_admin_plans(:'ow90','get','{}')->'notify'->0->>'total' = '999'
+  and public.cbt_admin_plans(:'ow90','get','{}')->'notify'->0->>'mobile' = '9000000001'
+  and public.cbt_plan_notify('9000000001','AAAA1111','dev-aaaaaaaa','gold','[]',0,'',1)->>'error' = 'plan'
+  and public.cbt_plan_notify('9000000001','WRONG999','dev-aaaaaaaa','pro','[]',0,'',1)->>'ok' = 'false');
+select pg_temp.chk('46f a member without Store is refused; a Store view member reads but cannot change',
+  public.cbt_admin_plans(:'vt90','get','{}')->>'error' = 'forbidden'
+  and public.cbt_admin_plans(:'sv90','get','{}')->>'ok' = 'true'
+  and public.cbt_admin_plans(:'sv90','plan_save','{"key":"pro","title":"Pro","price":"1"}')->>'error' = 'forbidden'
+  and public.cbt_admin_plans('wrong','get','{}')->>'ok' = 'false');
+reset role;
+select pg_temp.chk('46g the tables are private and the changes are written to the activity log',
+  not has_table_privilege('anon', 'cbt_private.plan_notify', 'select') and not has_table_privilege('anon', 'cbt_private.plan_coupons', 'select')
+  and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plans' and act = 'plan_save' and who = 'Owner')
+  and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plans' and act = 'coupon_save' and who = 'Owner')
+  and (select donations from cbt_private.plan_settings) = '{10,25,50,100}');
+
 -- ===== report =====
 \t off
 \a

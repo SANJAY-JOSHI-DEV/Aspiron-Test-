@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=93;
+const V3VER=94;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -378,9 +378,11 @@ function quickGrid(){const s=curSeries();if(!s)return '';
   return `<section class="qk" id="qkBox" aria-label="Shortcuts"><div class="qk-g" style="--n:${QK.length}">${QK.map((x,i)=>`<button class="qk-t" data-a="qk" data-k="${x[0]}" style="--i:${i}"><span class="qk-i">${ic(x[2],21)}</span><span class="qk-l">${x[1]}</span></button>`).join('')}</div></section>`}
 A.qk=el=>{const s=curSeries();if(!s)return;if(el.dataset.k==='doubts'){openDoubts();return}A.openSD({dataset:{id:s.id,t:el.dataset.k==='res'?'r':'t'}})};
 let UPGB=false;   // one tap at a time; the page opens only if the student is still on Home with nothing open; the store after 2.5 s without the plans data
-A.upg=()=>{if(UPGB)return;UPGB=true;const s=curSeries(),wait=Promise.all([loadMeta(),STORE===null?loadStore():null]).catch(()=>{});
+/* v90: the plans page (Basic / Pro / Ultra) when the plans are set up; the series' upgrades or the store as before otherwise */
+A.upg=()=>{if(UPGB)return;UPGB=true;planLoad().then(()=>{if(PL3.d){UPGB=false;openUpgrade();return}UPGB=false;upgOld()})};
+function upgOld(){if(UPGB)return;UPGB=true;const s=curSeries(),wait=Promise.all([loadMeta(),STORE===null?loadStore():null]).catch(()=>{});
   Promise.race([wait,new Promise(r=>setTimeout(r,2500))]).then(()=>{UPGB=false;if(S.tab!=='home'||STK.length||layer)return;
-    if(s&&upgradesOf(s.id).length&&!expired(s))A.openSD({dataset:{id:s.id,t:'d'}});else A.toStore()})};
+    if(s&&upgradesOf(s.id).length&&!expired(s))A.openSD({dataset:{id:s.id,t:'d'}});else A.toStore()})}
 /* ---------- v92: Question of the Day (stories) ----------
    Server: cbt_qotd_today / cbt_qotd_answer (supabase_v88_qotd.sql). The admin picks Question bank questions for a day; Home shows one circle per
    subject (ring = not finished, grey = all answered). Tap = one question at a time; the right answer and the explanation come after answering.
@@ -1703,6 +1705,77 @@ A.dbtSend=async el=>{if(!DBA)return;const tx=($('#dbtTx')||{}).value||'';if(tx.t
   if(r&&r.ok){DBA=null;DB3.L=null;closeLayer();toast3('Doubt sent. The answer will come in My Doubts.');return}
   el.disabled=false;const e=r&&r.error;
   toast3(e==='busy'?'You have asked many doubts today. Please try again later.':e==='waiting'?'This question already has 3 doubts waiting.':e==='hidden'||e==='not_taken'?'Doubts open when your result is out.':e==='short'?'Write a little more about your doubt.':(r&&r.status===404)?'Doubts are not available yet.':'Could not send. Please try again.')};
+
+/* ================= PLANS AND UPGRADE (v90): Basic / Pro / Ultra, the compare list, the order summary =================
+   Server: cbt_plans, cbt_plan_coupon, cbt_plan_notify (supabase_v90_plans.sql). The admin sets names, prices, the compare list,
+   add-ons (with pictures), donation amounts and coupons. Payments are not open yet: Proceed to Buy shows a note and offers
+   Notify me (it saves the choice, nothing is bought or unlocked). Basic = a paid test series; Pro and Ultra are on the account. */
+const PL3={d:null,busy:null,off:false,sel:'',add:new Set(),don:0,cp:null,cpBusy:false};
+const PLR={free:0,basic:1,pro:2,ultra:3};
+function planLoad(){if(PL3.d)return Promise.resolve(PL3.d);if(PL3.busy)return PL3.busy;
+  PL3.busy=rpc('cbt_plans',{},true).then(r=>{if(r&&r.ok&&r.v90&&Array.isArray(r.plans)&&r.plans.length)PL3.d=r;else PL3.off=true}).catch(()=>{PL3.off=true}).finally(()=>{PL3.busy=null});return PL3.busy}
+const myPlan=()=>{try{return mine().some(x=>!x.is_free&&x.unlocked&&!expired(x))?'basic':'free'}catch(e){return 'free'}};
+const plOf=k=>((PL3.d||{}).plans||[]).find(p=>p.key===k);
+const plTitle=k=>k==='free'?'Free':(plOf(k)||{}).title||k;
+const rupee=n=>'₹'+fmtN(+n||0);
+const plOff=p=>p&&p.mrp&&p.price!=null&&p.mrp>p.price?Math.round((p.mrp-p.price)/p.mrp*100):0;
+function openUpgrade(pre){closeLayer();const cur=myPlan(),P=(PL3.d||{}).plans||[];
+  const up=P.filter(p=>PLR[p.key]>PLR[cur]);PL3.sel=pre&&plOf(pre)?pre:(up[0]||P[P.length-1]||{}).key||'';push(upView())}
+/* a cell of the compare list: yes, no, demo or a short text */
+const plCell=v=>{const t=String(v||'').trim(),l=t.toLowerCase();
+  return l==='yes'?`<span class="pc ok" aria-label="Included">${ic('check',17)}</span>`:l==='no'?`<span class="pc no" aria-label="Not included">${ic('x',16)}</span>`
+   :l==='demo'?`<span class="pc dm">Demo</span>`:`<span class="pc tx">${esc3(t)}</span>`};
+function upView(){return {t:'Upgrade',s:'Choose your plan',key:'up',html:()=>{
+  const d=PL3.d;if(!d)return '<div class="card sk" style="height:120px"></div><div class="card sk" style="height:420px"></div>';
+  const cur=myPlan(),P=d.plans,sel=plOf(PL3.sel)||P[0],cols=['free'].concat(P.map(p=>p.key));
+  const cards=`<div class="pl-cards" role="radiogroup" aria-label="Plans">${P.map(p=>{const on=p.key===sel.key,isCur=p.key===cur;
+    return `<button class="pl-card k-${esc3(p.key)}${on?' on':''}" role="radio" aria-checked="${on}" data-a="plSel" data-k="${esc3(p.key)}"><b>${esc3(p.title)}</b><small>${isCur?'Current plan':p.price!=null?rupee(p.price):'Price soon'}</small><span class="pl-dot">${on?ic('check',14):''}</span></button>`}).join('')}</div>`;
+  const secs=[];(d.rows||[]).forEach(x=>{const k=x.section||'';let g=secs.find(s=>s.k===k);if(!g){g={k,L:[]};secs.push(g)}g.L.push(x)});
+  const head=`<div class="pl-row pl-hd"><span class="pl-l">What you get</span>${cols.map(c=>`<span class="pl-c${c===sel.key?' sel':''}">${esc3(plTitle(c))}</span>`).join('')}</div>`;
+  const table=`<div class="card pl-tab" style="--n:${cols.length}">${head}${secs.map(g=>`${g.k?`<div class="pl-sec">${esc3(g.k)}</div>`:''}${g.L.map(x=>`<div class="pl-row"><span class="pl-l">${x.info?`<button class="pl-i" data-a="plInfo" data-t="${esc3(x.label)}" data-x="${esc3(x.info)}">${esc3(x.label)}${ic('info',14)}</button>`:esc3(x.label)}</span>${cols.map(c=>`<span class="pl-c${c===sel.key?' sel':''}">${plCell(x[c])}</span>`).join('')}</div>`).join('')}`).join('')}</div>`;
+  const can=PLR[sel.key]>PLR[cur],off=plOff(sel);
+  const bar=`<div class="buybar pl-bar"><span class="pl-pr"><small>${esc3(sel.title)} plan</small>${sel.price!=null?`<b>${rupee(sel.price)}</b>${sel.mrp&&sel.mrp>sel.price?`<s>${rupee(sel.mrp)}</s>`:''}${off?`<span class="badge off">${off}% OFF</span>`:''}`:'<b>Price coming soon</b>'}</span>
+    ${sel.key==='basic'&&cur==='free'?`<button class="btn gold" data-a="toStore">Choose a test series</button>`:!can?`<button class="btn" disabled>${PLR[sel.key]===PLR[cur]?'Your plan':'Included'}</button>`:sel.price==null?`<button class="btn" disabled>Coming soon</button>`:`<button class="btn gold" data-a="plGo">Upgrade now</button>`}</div>`;
+  return `<div class="stack" style="gap:16px">${cards}${sel.tagline?`<p class="hint" style="margin:0">${esc3(sel.tagline)}</p>`:''}${table}${bar}</div>`}}}
+A.plSel=el=>{PL3.sel=el.dataset.k;const b=$('#scrB'),y=b.scrollTop;redraw();b.scrollTop=y};
+A.plInfo=el=>openSheet(`<h2 id="sheetT">${esc3(el.dataset.t)}</h2><p style="font-size:15px;line-height:1.65;white-space:pre-wrap">${esc3(el.dataset.x)}</p>`);
+A.plGo=()=>{PL3.add=new Set();PL3.don=0;PL3.cp=null;push(ordView())};
+/* the order summary: the plan, add-ons, a donation, a coupon and the bill */
+function plBill(){const p=plOf(PL3.sel)||{},A2=((PL3.d||{}).addons||[]).filter(a=>PL3.add.has(a.id));
+  const base=+p.price||0,mrp=p.mrp&&p.mrp>base?+p.mrp:base,adds=A2.reduce((n,a)=>n+(+a.price||0),0),addM=A2.reduce((n,a)=>n+(a.mrp&&a.mrp>a.price?+a.mrp:+a.price||0),0);
+  const cp=PL3.cp?Math.min(base,PL3.cp.kind==='pct'?Math.round(base*PL3.cp.value/100):PL3.cp.value):0;
+  return {p,A2,mrp:mrp+addM,disc:(mrp-base)+(addM-adds),cp,don:PL3.don,total:Math.max(0,base+adds-cp)+PL3.don}}
+function ordView(){return {t:'Order summary',s:'',key:'ord',html:()=>{
+  const d=PL3.d,p=plOf(PL3.sel);if(!d||!p)return `<div class="card empty"><b>Choose a plan first</b></div>`;
+  const B=plBill(),nx=d.plans.find(x=>PLR[x.key]===PLR[p.key]+1&&x.price!=null),add=d.addons||[],don=d.donations||[];
+  return `<div class="stack" style="gap:16px">
+   <div class="sh" style="margin:0"><h2>Your plan</h2>${nx?`<button class="lnk" data-a="plSw" data-k="${esc3(nx.key)}">${ic('swap',15)} Switch to ${esc3(nx.title)}</button>`:''}</div>
+   <div class="card p ord-it k-${esc3(p.key)}"><span class="ord-b">${esc3(p.title)}</span><div><b>Aspiron ${esc3(p.title)}</b><small>${esc3(p.tagline||'')}</small><small>For ${p.days||365} days on your account</small></div><div class="ord-pr"><b>${rupee(p.price)}</b>${p.mrp&&p.mrp>p.price?`<s>${rupee(p.mrp)}</s>`:''}</div></div>
+   ${add.length?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Add more</h2><span class="aside">Optional</span></div><div class="ord-add">${add.map(a=>{const on=PL3.add.has(a.id);return `<article class="card ord-a${on?' on':''}">${a.img?`<img src="${esc3(bimg(a.img))}" alt="">`:`<span class="ti g">${ic(a.kind==='notes'?'pen':a.kind==='pass'?'tests':'gift',22)}</span>`}<div class="ord-at"><b>${esc3(a.title)}</b>${a.body?`<small>${esc3(a.body)}</small>`:''}<span class="ord-ap"><b>${rupee(a.price)}</b>${a.mrp&&a.mrp>a.price?`<s>${rupee(a.mrp)}</s>`:''}</span></div><button class="btn sm${on?'':' ghost'}" data-a="plAdd" data-id="${esc3(a.id)}" aria-pressed="${on}">${on?ic('check',15)+'Added':'Add'}</button></article>`}).join('')}</div></section>`:''}
+   ${don.length?`<section class="card p stack" style="gap:10px"><div><b>Support Aspiron</b><small class="mut" style="display:block;margin-top:2px">Add a small amount if you like. It helps us keep the app free for more students.</small></div><div class="chips wrap">${don.map(n=>`<button class="${PL3.don===n?'on':''}" aria-pressed="${PL3.don===n}" data-a="plDon" data-v="${n}">${rupee(n)}</button>`).join('')}${PL3.don?'<button data-a="plDon" data-v="0">No thanks</button>':''}</div></section>`:''}
+   <section class="card p stack ord-cp" style="gap:10px"><b>${ic('gift',16)} Apply code or coupon</b>${PL3.cp?`<div class="ord-cpok"><span><b>${esc3(PL3.cp.code)}</b> applied · you save ${rupee(B.cp)}</span><button class="lnk" data-a="plCpX">Remove</button></div>`:`<div class="ord-cpf"><input class="inp" id="plCp" maxlength="24" autocomplete="off" autocapitalize="characters" placeholder="Enter coupon code"><button class="btn sm" data-a="plCp">Apply</button></div>`}</section>
+   <section class="card p stack ord-sum" style="gap:8px"><b style="font-size:16px">Payment summary</b>
+    <div><span>Price (${1+B.A2.length} item${B.A2.length?'s':''})</span><span>${rupee(B.mrp)}</span></div>
+    ${B.disc?`<div class="ok"><span>Discount</span><span>−${rupee(B.disc)}</span></div>`:''}
+    ${B.cp?`<div class="ok"><span>Coupon</span><span>−${rupee(B.cp)}</span></div>`:''}
+    ${B.don?`<div><span>Support Aspiron</span><span>${rupee(B.don)}</span></div>`:''}
+    <div class="tot"><span>Total amount</span><span>${rupee(B.total)}</span></div></section>
+   <div class="buybar pl-bar"><span class="pl-pr"><small>Total</small><b>${rupee(B.total)}</b>${B.mrp>B.total-B.don?`<s>${rupee(B.mrp+B.don)}</s>`:''}</span><button class="btn gold" data-a="plBuy">Proceed to buy</button></div></div>`}}}
+const ordKeep=fn=>{const b=$('#scrB'),y=b.scrollTop;fn();redraw();b.scrollTop=y};
+A.plSw=el=>{PL3.sel=el.dataset.k;PL3.cp=null;ordKeep(()=>{})};
+A.plAdd=el=>ordKeep(()=>{const id=el.dataset.id;PL3.add.has(id)?PL3.add.delete(id):PL3.add.add(id)});
+A.plDon=el=>ordKeep(()=>{const v=+el.dataset.v||0;PL3.don=PL3.don===v?0:v});
+A.plCpX=()=>ordKeep(()=>{PL3.cp=null});
+A.plCp=async el=>{const i=$('#plCp'),code=String(i&&i.value||'').trim().toUpperCase();if(code.length<3){toast3('Enter the coupon code.');return}if(PL3.cpBusy)return;PL3.cpBusy=true;el.disabled=true;
+  let r=null;try{r=await rpc('cbt_plan_coupon',{p_plan:PL3.sel,p_coupon:code})}catch(e){}PL3.cpBusy=false;
+  if(r&&r.ok){PL3.cp={code:r.code,kind:r.kind,value:+r.value};ordKeep(()=>{});toast3('Coupon applied');return}
+  el.disabled=false;toast3(r&&r.error==='busy'?'Too many tries. Please wait a little.':'This coupon is not valid for this plan.')};
+/* payments are not open yet: say so and offer Notify me (saves the choice; nothing is bought) */
+A.plBuy=()=>{const B=plBill();openSheet(`<div class="pl-soon"><span class="ti g">${ic('clock',26)}</span><h2 id="sheetT">Payments are coming soon</h2><p>We are setting up payments in the app. Tap Notify me and we will tell you as soon as you can upgrade to <b>${esc3(plTitle(PL3.sel))}</b>.</p>
+  <p class="mut" style="font-size:13px">Your choice is kept: ${esc3(plTitle(PL3.sel))}${B.A2.length?` + ${B.A2.length} add-on${B.A2.length>1?'s':''}`:''}, total ${rupee(B.total)}. Nothing is charged.</p></div>
+  <div class="sheet-ft"><button class="btn ghost" data-a="close">Close</button><button class="btn gold" data-a="plNotify">${ic('bell',16)}Notify me</button></div>`)};
+A.plNotify=async el=>{el.disabled=true;const B=plBill();let r=null;try{r=await rpc('cbt_plan_notify',{p_plan:PL3.sel,p_addons:[...PL3.add],p_donation:PL3.don,p_coupon:PL3.cp?PL3.cp.code:'',p_total:B.total})}catch(e){}
+  if(r&&r.ok){closeLayer();toast3('Done. We will tell you when payments open.');return}el.disabled=false;toast3(r&&r.error==='busy'?'Please wait a little and try again.':'Could not save. Please try again.')};
 
 /* ================= QUESTION BANK and TEST GENERATOR in the new design =================
    Same server and data as the classic pages (cbt_qb_meta, cbt_qb_next, cbt_qb_check, cbt_gen_list,

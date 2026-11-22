@@ -213,6 +213,19 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Setup:** run `supabase_v89_file_access.sql` once (after v88), then `supabase_v35_admin_team.sql` again. Until then the
   admin form hides the new options; nothing changes for students. Existing files stay "buyers only".
 
+## Plans: Basic / Pro / Ultra and Upgrade (`supabase_v90_plans.sql`)
+- **Student:** the gold **Upgrade** pill on Home opens the plans. Basic (any paid test series), Pro and Ultra cards, then
+  the compare list (✓, ✕, Demo or a short text like “4 a month”), the price with MRP and % off, and **Upgrade now**.
+  The order summary shows the plan, **add-ons** (handwritten notes, test pass …, with a picture), a **donation**
+  (₹10 / 25 / 50 / 100 …), a **coupon** and the bill. **Payments are not open yet:** Proceed to buy says so and offers
+  **Notify me** (the choice is kept; nothing is charged, bought or unlocked).
+- **Admin → Plans** (Sales & billing): names, prices (empty = “Price coming soon”), days, the compare list rows,
+  add-ons with pictures, donation amounts, plan coupons and the Notify me list. Store = View reads, Store = Full access
+  changes. The store website and its coupons are not touched.
+- Nothing is locked yet: locks (Question bank, PYQ, test generator 4 a month …) come in a later step.
+- **Setup:** run `supabase_v90_plans.sql` once (after v89), then `supabase_v35_admin_team.sql` again. Until then the
+  Upgrade pill works as before.
+
 ## Doubts (`supabase_v87_doubts.sql`)
 - **Student:** in a test result, every question has a **?** button. The student writes the doubt (text only, 5 to 1200
   letters) and picks a subject; it can be asked once the result is out. **My Doubts** (the third tile on Home) keeps
