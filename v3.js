@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=94;
+const V3VER=95;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -1723,8 +1723,8 @@ function openUpgrade(pre){closeLayer();const cur=myPlan(),P=(PL3.d||{}).plans||[
   const up=P.filter(p=>PLR[p.key]>PLR[cur]);PL3.sel=pre&&plOf(pre)?pre:(up[0]||P[P.length-1]||{}).key||'';push(upView())}
 /* a cell of the compare list: yes, no, demo or a short text */
 const plCell=v=>{const t=String(v||'').trim(),l=t.toLowerCase();
-  return l==='yes'?`<span class="pc ok" aria-label="Included">${ic('check',17)}</span>`:l==='no'?`<span class="pc no" aria-label="Not included">${ic('x',16)}</span>`
-   :l==='demo'?`<span class="pc dm">Demo</span>`:`<span class="pc tx">${esc3(t)}</span>`};
+  return l==='yes'?`<span class="plk ok" aria-label="Included">${ic('check',17)}</span>`:l==='no'?`<span class="plk no" aria-label="Not included">${ic('x',16)}</span>`
+   :l==='demo'?`<span class="plk dm">Demo</span>`:`<span class="plk tx">${esc3(t)}</span>`};
 function upView(){return {t:'Upgrade',s:'Choose your plan',key:'up',html:()=>{
   const d=PL3.d;if(!d)return '<div class="card sk" style="height:120px"></div><div class="card sk" style="height:420px"></div>';
   const cur=myPlan(),P=d.plans,sel=plOf(PL3.sel)||P[0],cols=['free'].concat(P.map(p=>p.key));

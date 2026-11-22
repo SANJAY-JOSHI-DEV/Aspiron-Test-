@@ -2139,11 +2139,11 @@ button.row:active{background:var(--surface2)}
 .pl-c.sel{background:color-mix(in srgb,var(--acc1) 12%,transparent)}
 .pl-hd .pl-c.sel{color:var(--acc);font-weight:700}
 .pl-sec{padding:14px 14px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);border-top:1px dashed var(--line)}
-.pc{display:inline-grid;place-items:center}
-.pc.ok{color:var(--ok)}
-.pc.no{color:var(--faint)}
-.pc.dm{font-size:11px;font-weight:600;padding:3px 7px;border-radius:99px;background:var(--surface2);color:var(--mut)}
-.pc.tx{font-size:11.5px;font-weight:600;color:var(--tx)}
+.plk{display:inline-grid;place-items:center}
+.plk.ok{color:var(--ok)}
+.plk.no{color:var(--faint)}
+.plk.dm{font-size:11px;font-weight:600;padding:3px 7px;border-radius:99px;background:var(--surface2);color:var(--mut)}
+.plk.tx{font-size:11.5px;font-weight:600;color:var(--tx)}
 .pl-bar{gap:12px}
 .pl-pr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-width:0}
 .pl-pr small{flex-basis:100%;font-size:12px;color:var(--mut)}

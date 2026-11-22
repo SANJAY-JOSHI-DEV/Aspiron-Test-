@@ -334,6 +334,8 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     await p9.evaluate(() => { const r = document.getElementById('v3host').shadowRoot; const x = r.querySelector('[data-ob="skip"]'); if (x) x.click(); }); await p9.waitForTimeout(2600);
     await p9.evaluate(() => { const r = document.getElementById('v3host').shadowRoot; const x = r.querySelector('#sheet.open [data-a="close"]'); if (x) x.click(); }); await p9.waitForTimeout(600);
     await p9.evaluate(() => { location.hash = '#/x/test'; }); await p9.waitForTimeout(4500);
+    const mw = await p9.evaluate(() => { const r = document.getElementById('v3host').shadowRoot, m = r.querySelector('#main'); return [getComputedStyle(m).display, Math.round(m.getBoundingClientRect().width), innerWidth]; });
+    ok(mw[0] !== 'inline-grid' && mw[1] >= mw[2] - 2, 'Tests tab: the page keeps the full width (no class clash) ' + JSON.stringify(mw));
     const im = sel => p9.evaluate(s => { const e = document.getElementById('v3host').shadowRoot.querySelector(s); return e ? [e.src.slice(0, 5), e.naturalWidth] : null; }, sel);
     const [cv, ps, bn] = [await im('#tBody .ic2 .cv img'), await im('#pst img'), await im('#tbRail img')];
     ok(cv && cv[0] === 'blob:' && cv[1] > 0, 'store cover: a blob: link that draws (' + JSON.stringify(cv) + ')');
