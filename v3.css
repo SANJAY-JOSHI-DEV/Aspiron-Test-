@@ -2191,11 +2191,11 @@ button.row:active{background:var(--surface2)}
 .lbr-m b{color:var(--tx);font-weight:700}
 .lbr-m i{position:relative;display:block;height:6px;border-radius:9px;overflow:hidden;background:var(--surface2)}
 .lbr-m i::after{content:'';position:absolute;left:0;top:0;bottom:0;width:calc(var(--p) * 100%);border-radius:9px;background:linear-gradient(90deg,var(--acc1),var(--acc2))}
-.lbr-m.lk{color:var(--acc);font-weight:600}
+.lbr-m.lbr-lk{color:var(--acc);font-weight:600}
 .hero .lbr-m{color:var(--heroMut)}
 .hero .lbr-m b{color:var(--heroTx)}
 .hero .lbr-m i{background:rgba(255,255,255,.12)}
-.hero .lbr-m.lk{color:var(--acc1)}
+.hero .lbr-m.lbr-lk{color:var(--acc1)}
 .lbr-u{min-height:0}
 .lbr-u .n span:last-child{font-size:12px;color:var(--mut)}
-.lbr-m span.t{display:block}
+.lbr-m span.lbr-t{display:block}

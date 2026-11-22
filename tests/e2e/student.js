@@ -623,6 +623,11 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     await p14.evaluate(() => { location.hash = '#/'; }); await p14.waitForTimeout(800); await p14.evaluate(() => { location.hash = '#/lib'; }); await p14.waitForTimeout(2500);
     const l3 = await L();
     ok(l3.plan === 'Pro' && l3.open === 3 && /3 of 4 tests left this month/.test(l3.meters[0]) && /Unlimited/.test(l3.meters[1]), 'Library, Pro given by the admin: 3 of 4 tests left this month, the question bank unlimited ' + JSON.stringify(l3));
+    await p14.evaluate(() => { location.hash = '#/'; }); await p14.reload(); await p14.waitForTimeout(3500);   // fresh app: no Library visit
+    await sr(r => { const b = r.querySelector('#sheet.open [data-a="close"]'); if (b) b.click(); }); await p14.waitForTimeout(800);
+    await sr(r => r.querySelector('.pillbtn.upg').click()); await p14.waitForTimeout(1800);
+    const u9 = await sr(r => ({ t: r.querySelector('#scrT').textContent, cards: [...r.querySelectorAll('.pl-card')].map(c => c.textContent.replace(/\s+/g, ' ').trim()) }));
+    ok(u9.t === 'Upgrade' && /Pro\s*Current plan/.test(u9.cards[1] || '') && !/Current plan/.test(u9.cards[0] || ''), 'a student given Pro opens Upgrade from Home (no Library visit): Pro is the current plan ' + JSON.stringify(u9));
     ok(!e14.length, 'no page errors (plan access) ' + e14.join(' | ')); await c14.close();
   }
   await q(`delete from cbt_private.plan_grants`); await q(`delete from cbt_private.plan_usage`); await q(`update cbt_private.plan_settings set enforce = false`);

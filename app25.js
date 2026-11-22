@@ -36,6 +36,7 @@ function qbErr(r){
   if(r&&r.error==='bad_time')return 'Choose a time within the next 6 months.';
   if(r&&r.error==='not_open')return 'This test opens on '+qbWhen(r.at)+'.';
   if(r&&r.error==='running')return 'This test is running. Finish it first.';
+  if(r&&r.error==='plan')return (r.title||'This')+(+r.lim>0?' limit is used up for now.':' is not in your plan.')+(r.need?' Upgrade to '+r.need.charAt(0).toUpperCase()+r.need.slice(1)+'.':'');   // v91
   return typeof errText==='function'?errText(r):'Something went wrong.';
 }
 const qbMissing=r=>r&&r.ok===false&&r.error==='server'&&(r.status===404||r.status===400);

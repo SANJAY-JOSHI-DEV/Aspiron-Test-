@@ -2106,6 +2106,27 @@ select pg_temp.chk('47h the tables and helpers are private, the note is cleaned,
   and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plan_access' and act = 'enforce' and who = 'Owner')
   and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plan_access' and act = 'grant' and who = 'Owner'));
 update cbt_private.plan_features set free = 0 where key = 'qb';
+-- 47i: the doubt demo (2 in total on Free) and the switch resets the counts; all five functions carry the check
+delete from cbt_private.plan_usage; delete from cbt_private.plan_grants;
+update cbt_private.tests set result_at = null where id = 'aaaaaaaa-0000-0000-0000-000000000004';
+insert into cbt_private.results(student_id,test_id,test_title,score,max_score,correct,wrong,skipped,used_seconds,answers)
+values ('bbbbbbbb-0000-0000-0000-000000000047','aaaaaaaa-0000-0000-0000-000000000004','Open mock',0,4,0,0,1,10,'{}');
+set role anon;
+select public.cbt_doubt_ask('9000000047','GGGG4747','dev-47474747','aaaaaaaa-0000-0000-0000-000000000004',0,'','first doubt here')->>'ok' as db91a \gset
+select public.cbt_admin_plan_access(:'ow91','enforce','{"on":true}')->>'ok' as on91b \gset
+select public.cbt_doubt_ask('9000000047','GGGG4747','dev-47474747','aaaaaaaa-0000-0000-0000-000000000004',0,'','second doubt here')->>'ok' as db91b \gset
+select public.cbt_doubt_ask('9000000047','GGGG4747','dev-47474747','aaaaaaaa-0000-0000-0000-000000000004',0,'','third doubt here')->>'ok' as db91c \gset
+reset role; update cbt_private.doubts set status = 'answered' where student_id = 'bbbbbbbb-0000-0000-0000-000000000047'; set role anon;   -- not the 3-waiting rule
+select public.cbt_doubt_ask('9000000047','GGGG4747','dev-47474747','aaaaaaaa-0000-0000-0000-000000000004',0,'','fourth doubt here') as db91d \gset
+select public.cbt_admin_plan_access(:'ow91','enforce','{"on":false}')->>'ok' as off91b \gset
+reset role;
+select pg_temp.chk('47i Free gets 2 doubts to try (the use while locks were off does not count), then is asked to upgrade; all five functions check the plan',
+  :'db91a' = 'true' and :'on91b' = 'true' and :'db91b' = 'true' and :'db91c' = 'true'
+  and (:'db91d'::jsonb)->>'error' = 'plan' and (:'db91d'::jsonb)->>'need' = 'basic' and :'off91b' = 'true'
+  and (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public'
+         and p.proname in ('cbt_qb_next', 'cbt_qb_check', 'cbt_gen_create', 'cbt_pyq_chapter', 'cbt_doubt_ask')
+         and pg_get_functiondef(p.oid) like '%plan_use%') = 5);
+delete from cbt_private.doubts where student_id = 'bbbbbbbb-0000-0000-0000-000000000047';
 
 -- ===== report =====
 \t off

@@ -380,7 +380,7 @@ function quickGrid(){const s=curSeries();if(!s)return '';
 A.qk=el=>{const s=curSeries();if(!s)return;if(el.dataset.k==='doubts'){openDoubts();return}A.openSD({dataset:{id:s.id,t:el.dataset.k==='res'?'r':'t'}})};
 let UPGB=false;   // one tap at a time; the page opens only if the student is still on Home with nothing open; the store after 2.5 s without the plans data
 /* v90: the plans page (Basic / Pro / Ultra) when the plans are set up; the series' upgrades or the store as before otherwise */
-A.upg=()=>{if(UPGB)return;UPGB=true;planLoad().then(()=>{if(PL3.d){UPGB=false;openUpgrade();return}UPGB=false;upgOld()})};
+A.upg=()=>{if(UPGB)return;UPGB=true;Promise.all([planLoad(),planMine()]).then(()=>{if(PL3.d){UPGB=false;openUpgrade();return}UPGB=false;upgOld()})};
 function upgOld(){if(UPGB)return;UPGB=true;const s=curSeries(),wait=Promise.all([loadMeta(),STORE===null?loadStore():null]).catch(()=>{});
   Promise.race([wait,new Promise(r=>setTimeout(r,2500))]).then(()=>{UPGB=false;if(S.tab!=='home'||STK.length||layer)return;
     if(s&&upgradesOf(s.id).length&&!expired(s))A.openSD({dataset:{id:s.id,t:'d'}});else A.toStore()})}
@@ -520,7 +520,7 @@ function storeCard(x,cls){const off=x.mrp&&x.mrp>x.price?Math.round((1-x.price/x
    <div class="ft"><span class="price">${x.price?`<b>₹${fmtN(x.price)}</b>${off?`<s>₹${fmtN(x.mrp)}</s><span class="badge off">${off}% off</span>`:''}`:'<span class="free">Free</span>'}</span><a class="btn sm ${soon?'':'gold'}" href="${storeUrl(x)}">${soon?ic('bell',15)+'Notify me':x.prebook&&x.buy_on===false?'Pre-book':'Buy now'}</a></div></article>`}
 function trending(){if(!STORE){loadStore();return `<section class="sec"><div class="sh"><h2>Trending test series</h2></div><div class="card sk" style="height:190px"></div></section>`}loadExtras();return trendRail(true)}
 VIEW.home=()=>seriesHero()+qdRow()+quickGrid()+cdCard3()+upcoming()+zone()+trending();
-AFTER.home=()=>{tick(true);every(()=>{tick(false);evTick()},1000);autoRail('#trRail','#trDots')};
+AFTER.home=()=>{tick(true);planMine();every(()=>{tick(false);evTick()},1000);autoRail('#trRail','#trDots')};
 function autoRail(rs,ds){const c=$(rs);if(!c||!c.children.length)return;const dots=[...root.querySelectorAll(ds+' i')];let i=0,touched=false;const st=()=>c.children[0].getBoundingClientRect().width+12;
   c.addEventListener('scroll',()=>{const k=Math.round(c.scrollLeft/st());if(k!==i){i=k;dots.forEach((d,j)=>d.classList.toggle('on',j===k))}},{passive:true});
   ['pointerdown','touchstart','wheel','focusin'].forEach(ev=>c.addEventListener(ev,()=>{touched=true},{passive:true}));
@@ -1100,9 +1100,10 @@ const LULTRA=[['pyq','PYQ analyzer','Chapter weightage, repeats and trends'],['t
 const LSOON=[['book','Books and NCERT reader','Read NCERT and reference books inside the app'],['pen','Handwritten notes and DPPs','Chapter-wise notes and daily practice problems'],['dl','Download manager','Save permitted material for offline reading']];
 /* v91: the student's plan and what is left of each feature. The server decides (supabase_v91_plan_access.sql);
    while the owner keeps the locks off, everything stays open and the Library only shows the plan of each feature. */
-const PLN={d:null,busy:null,off:false};
-function planMine(force){if(PLN.busy)return PLN.busy;if(!force&&(PLN.d||PLN.off))return Promise.resolve(PLN.d);
-  PLN.busy=rpc('cbt_my_plan',{}).then(r=>{if(r&&r.ok&&r.v91)PLN.d=r;else if(r&&r.status===404)PLN.off=true}).catch(()=>{}).finally(()=>{PLN.busy=null});return PLN.busy}
+const PLN={d:null,busy:null,off:false,at:0,who:''};
+function planMine(force){const who=(typeof AUTH!=='undefined'&&AUTH&&AUTH.mobile)||'';if(who!==PLN.who){PLN.d=null;PLN.off=false;PLN.who=who;force=true}
+  if(PLN.busy)return PLN.busy;if(!force&&(PLN.off||(PLN.d&&Date.now()-PLN.at<300000)))return Promise.resolve(PLN.d);if(!who)return Promise.resolve(null);
+  PLN.busy=rpc('cbt_my_plan',{}).then(r=>{if(r&&r.ok&&r.v91){PLN.d=r;PLN.at=Date.now()}else if(r&&r.status===404)PLN.off=true}).catch(()=>{}).finally(()=>{PLN.busy=null});return PLN.busy}
 const plFeat=k=>(PLN.d&&(PLN.d.feats||[]).find(f=>f.key===k))||null;
 const PERW={day:'today',month:'this month',total:''};
 const plName=k=>{const t=plTitle(k);return t===k?k.charAt(0).toUpperCase()+k.slice(1):t};
@@ -1112,10 +1113,10 @@ function plAcc(k){const f=plFeat(k);if(!f)return {s:'open'};const on=!!PLN.d.enf
   const left=Math.max(0,f.lim-f.used);return {s:left?'left':on?'out':'pre',f,left}}
 function lbrMeter(a,hero){const f=a.f;if(!f)return '';const per=PERW[f.period]||'';
   if(a.s==='unl')return `<div class="lbr-m"><span>${ic('check',14)}Unlimited in your plan</span></div>`;
-  if(a.s==='left')return `<div class="lbr-m"><span class="t"><b>${a.left}</b> of ${f.lim} ${esc3(f.unit)} left${per?' '+per:''}</span><i style="--p:${(a.left/f.lim).toFixed(2)}"></i></div>`;
+  if(a.s==='left')return `<div class="lbr-m"><span class="lbr-t"><b>${a.left}</b> of ${f.lim} ${esc3(f.unit)} left${per?' '+per:''}</span><i style="--p:${(a.left/f.lim).toFixed(2)}"></i></div>`;
   if(a.s==='pre')return `<div class="lbr-m"><span>${ic('gift',14)}Open to everyone for now</span></div>`;
-  if(a.s==='lock')return `<div class="lbr-m lk"><span>${ic('lock',14)}Comes with ${esc3(plName(f.need||f.min))}</span></div>`;
-  return `<div class="lbr-m lk"><span>${ic('lock',14)}You used all ${f.lim} ${esc3(f.unit)}${per?' '+per:''}</span><i style="--p:0"></i></div>`}
+  if(a.s==='lock')return `<div class="lbr-m lbr-lk"><span>${ic('lock',14)}Comes with ${esc3(plName(f.need||f.min))}</span></div>`;
+  return `<div class="lbr-m lbr-lk"><span>${ic('lock',14)}You used all ${f.lim} ${esc3(f.unit)}${per?' '+per:''}</span><i style="--p:0"></i></div>`}
 const lbrTag=f=>f&&f.min&&f.min!=='free'&&f.min!=='basic'?`<span class="lbr-tag k-${f.min}">${esc3(plName(f.min))}</span>`:'';
 function lbrPlan(){const d=PLN.d;if(!d)return '';const p=d.plan,till=d.ends_at?new Date(d.ends_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
   const sub=p==='ultra'?'Everything is unlocked':p==='pro'?'Ultra adds unlimited tests and more':p==='basic'?'Your test series. Pro adds the practice tools':'Question bank, PYQ and Test generator come with Pro';

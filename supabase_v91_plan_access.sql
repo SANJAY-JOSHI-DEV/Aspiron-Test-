@@ -7,7 +7,10 @@
 --  • A student's plan: a plan given by the admin (until its end date) → else Basic when the student has a paid
 --    test series → else Free. Payment does not exist yet, so "Give a plan" in the admin is the only way to Pro / Ultra.
 --  • LOCKS ARE OFF until the owner switches them on (Admin → Plans → Access). While off, every student can use
---    everything exactly as before; the app only shows which plan a feature belongs to. Uses are counted either way.
+--    everything exactly as before; the app only shows which plan a feature belongs to. Uses are counted either way,
+--    and every count starts again from zero when the locks are turned on.
+--  • Running v55, v75, v43 or v87 again AFTER this file puts back the old function without the plan check: then run this
+--    file again. supabase_check_installed.sql (row 32) says so.
 --  • The question bank, PYQ chapters, the test generator and doubts check the plan inside their own functions, so the
 --    old app and direct calls follow the same rule. Retakes of a generated test and tests already made stay free.
 --  Changes: cbt_qb_next, cbt_qb_check, cbt_gen_create, cbt_pyq_chapter and cbt_doubt_ask get one plan check each
@@ -323,6 +326,10 @@ begin
                    'ultra', count(*) filter (where p = 'ultra'), 'free', count(*) filter (where p = 'free'))
                    from (select plan_of(id) p from students) z));
   elsif p_action = 'enforce' then
+    -- turning the locks on starts every count from zero (uses while the locks were off do not eat a demo)
+    if coalesce((d->>'on')::boolean, false) and not coalesce((select enforce from plan_settings where id = 1), false) then
+      delete from plan_usage;
+    end if;
     update plan_settings set enforce = coalesce((d->>'on')::boolean, false) where id = 1;
     perform set_config('cbt.detail', case when coalesce((d->>'on')::boolean, false) then 'locks on' else 'locks off' end, true);
     return jsonb_build_object('ok', true);
