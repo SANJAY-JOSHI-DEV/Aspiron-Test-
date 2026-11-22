@@ -45,7 +45,9 @@ create table cbt_private.test_stage (token text, n int, qs jsonb, created_at tim
 create table cbt_private.announcements (
   id uuid primary key default gen_random_uuid(), title text, body text, link_url text, link_label text, image text,
   active boolean not null default true, created_at timestamptz not null default now());
-create table public.cbt_cheat_flags (student_id uuid, test_id text, note text);
+-- same columns as supabase_v24_cheating.sql (the mock used to have only three, so the admin "get" never ran in the tests)
+create table public.cbt_cheat_flags (id uuid primary key default gen_random_uuid(), student_id uuid not null, test_id text not null,
+  result_id text not null default '', note text not null default '', created_at timestamptz not null default now(), unique (student_id, test_id));
 
 -- stand-ins for helpers whose code was not exported
 create function cbt_private.now_ms() returns bigint language sql stable as $$ select (extract(epoch from clock_timestamp())*1000)::bigint $$;

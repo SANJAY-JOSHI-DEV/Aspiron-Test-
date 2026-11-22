@@ -152,6 +152,11 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   A rule that old rows already break is *skipped* (nothing is changed or deleted) and the table shows how many rows;
   send that table to your developer. Busy during a live test? Run it again later.
 
+## Clean answers for bad input (`supabase_v91_error_hardening.sql`)
+- Found by running every student function with broken input (wrong ids, huge numbers, 50,000-letter text): 3 of 143 gave a raw database error. "My mistakes" with a huge page offset overflowed a number (the offset is now capped at 100,000; a page is 15–30 items). The admin reviews and suspects pages read their id / number *before* the admin password was checked, so even a visitor could trigger the error; they now read it after the check and answer `{"ok": false, "error": "id" | "days"}`.
+- Nothing else in those functions changes.
+- **Setup:** first run `supabase_check_installed.sql` and get every row to "ok" (v91 installs the current repo versions of these three functions), then run `supabase_v91_error_hardening.sql` once (after v90). If an older file that makes these functions is run again, run v35 and then v91 again after it.
+
 ## Notifications: only the student or the phone itself (`supabase_v83_push_owner.sql`, review V2)
 - A phone's notification link can be turned off or moved only by the student it belongs to, or by the phone that made
   it (it has the link's secret key; the app always sends it). Someone who only knows a saved link changes nothing.

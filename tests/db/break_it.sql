@@ -1634,11 +1634,12 @@ select pg_temp.chk('43d V3 tests: zero or huge duration, negative marks (e.g. -1
   and pg_temp.refused($q$update cbt_private.tests set correct_marks = -4 where id = 'aaaaaaaa-0000-0000-0000-000000000004'$q$)
   and pg_temp.refused($q$update cbt_private.tests set question_count = -1 where id = 'aaaaaaaa-0000-0000-0000-000000000004'$q$)
   and pg_temp.refused($q$update cbt_private.tests set data = '{"q":1}' where id = 'aaaaaaaa-0000-0000-0000-000000000004'$q$));
+select pg_temp.goes($q$update cbt_private.students set status = 'blocked' where mobile = '9000000002'$q$) as e43_1 \gset
+select pg_temp.goes($q$update cbt_private.students set status = 'approved' where mobile = '9000000002'$q$) as e43_2 \gset
+select pg_temp.goes($q$update cbt_private.tests set wrong_marks = 0, duration = 600 where id = 'aaaaaaaa-0000-0000-0000-000000000004'$q$) as e43_3 \gset
+select pg_temp.goes($q$update cbt_private.tests set wrong_marks = 1, duration = 30 where id = 'aaaaaaaa-0000-0000-0000-000000000004'$q$) as e43_4 \gset
 select pg_temp.chk('43e V3 normal values still go in (approved / pending / blocked, 0 negative marks, 600-minute test, empty answers)',
-  pg_temp.goes($q$update cbt_private.students set status = 'blocked' where mobile = '9000000002'$q$)
-  and pg_temp.goes($q$update cbt_private.students set status = 'approved' where mobile = '9000000002'$q$)
-  and pg_temp.goes($q$update cbt_private.tests set wrong_marks = 0, duration = 600 where id = 'aaaaaaaa-0000-0000-0000-000000000004'$q$)
-  and pg_temp.goes($q$update cbt_private.tests set wrong_marks = 1, duration = 30 where id = 'aaaaaaaa-0000-0000-0000-000000000004'$q$));
+  :'e43_1'::boolean and :'e43_2'::boolean and :'e43_3'::boolean and :'e43_4'::boolean);
 -- old data that already breaks a rule: that rule is skipped and reported, nothing is changed, the rest stays
 alter table cbt_private.tests drop constraint if exists v84_tests_marks;
 insert into cbt_private.tests (id, series_id, title, duration, data, question_count, active, practice, wrong_marks)
@@ -1668,11 +1669,11 @@ select pg_temp.chk('43i V3 the admin saving a test with -1 negative marks gets a
   and :'v84ok'::jsonb->>'ok' = 'true' and exists (select 1 from cbt_private.tests where title = 'Long test' and duration = 600));
 select coalesce(cbt_private.move_mobile('bbbbbbbb-0000-0000-0000-00000000000b', '9811122233', 'student', false), 'ok') as v84mm1 \gset
 select coalesce(cbt_private.move_mobile('bbbbbbbb-0000-0000-0000-00000000000b', '9000000002', 'admin', true), 'ok') as v84mm2 \gset
+select pg_temp.goes($q$update cbt_private.students set max_devices = 10, devices = (select array_agg('dev-' || g) from generate_series(1, 10) g) where mobile = '9000000002'$q$) as j43_1 \gset
+select pg_temp.goes($q$update cbt_private.students set keep = jsonb_build_object('pf', jsonb_build_object('n', repeat('अ', 399000))) where mobile = '9000000002'$q$) as j43_2 \gset
+select pg_temp.goes($q$update cbt_private.students set devices = '{}', keep = '{}', max_devices = 2 where mobile = '9000000002'$q$) as j43_3 \gset
 select pg_temp.chk('43j V3 the largest data the app itself allows still fits: 10 devices, a 400,000-letter Hindi keep, a mobile change',
-  pg_temp.goes($q$update cbt_private.students set max_devices = 10, devices = (select array_agg('dev-' || g) from generate_series(1, 10) g) where mobile = '9000000002'$q$)
-  and pg_temp.goes($q$update cbt_private.students set keep = jsonb_build_object('pf', jsonb_build_object('n', repeat('अ', 399000))) where mobile = '9000000002'$q$)
-  and pg_temp.goes($q$update cbt_private.students set devices = '{}', keep = '{}', max_devices = 2 where mobile = '9000000002'$q$)
-  and :'v84mm1' = 'ok' and :'v84mm2' = 'ok');
+  :'j43_1'::boolean and :'j43_2'::boolean and :'j43_3'::boolean and :'v84mm1' = 'ok' and :'v84mm2' = 'ok');
 
 -- ===== 44. v85: Resources folders — the folder of an answer-key PDF, the order of the folders =====
 select public.cbt_admin_login('','OwnerPass2026x','Owner')->>'token' as ow85 \gset
@@ -2020,6 +2021,37 @@ select pg_temp.chk('46g the tables are private and the changes are written to th
   and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plans' and act = 'plan_save' and who = 'Owner')
   and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plans' and act = 'coupon_save' and who = 'Owner')
   and (select donations from cbt_private.plan_settings) = '{10,25,50,100}');
+
+-- ===== 47. Bad input gives a clean answer, not a raw database error (supabase_v91_error_hardening.sql) =====
+reset role;
+create or replace function pg_temp.try(p_sql text) returns text language plpgsql as $$
+declare r text; begin execute p_sql into r; return r; exception when others then return 'RAISED: ' || sqlerrm; end $$;
+select set_config('request.headers', '{"x-real-ip":"198.51.100.91"}', false);
+update cbt_private.students set fail_count = 0, locked_until = 0 where mobile = '9000000002';
+delete from cbt_private.settings where key = 'admin_gate';
+select public.cbt_admin_login('', 'OwnerPass2026x', 'Owner')->>'token' as ow91 \gset
+select pg_temp.chk('47a mistakes: the largest possible page offset and a normal page both answer ok (no "integer out of range")',
+  pg_temp.try($q$select (public.cbt_mistakes('9000000002','BBBB2222','dev-bbbbbbbb',2147483647,30,'all',''))->>'ok'$q$) = 'true'
+  and pg_temp.try($q$select (public.cbt_mistakes('9000000002','BBBB2222','dev-bbbbbbbb',0,15,'all',''))->>'ok'$q$) = 'true');
+select pg_temp.chk('47b admin reviews: a bad id with NO sign-in answers cleanly (no database error, nothing revealed)',
+  pg_temp.try($q$select (public.cbt_admin_reviews('not-the-password','get','{"id":"1"}'))->>'ok'$q$) = 'false');
+select pg_temp.chk('47c admin reviews: signed in, a bad id gives error "id"; no id still works',
+  pg_temp.try(format($q$select (public.cbt_admin_reviews(%L,'get','{"id":"1"}'))->>'error'$q$, :'ow91')) = 'id'
+  and pg_temp.try(format($q$select (public.cbt_admin_reviews(%L,'get','{}'))->>'ok'$q$, :'ow91')) = 'true');
+select pg_temp.chk('47d admin suspects: a bad number with NO sign-in answers cleanly',
+  pg_temp.try($q$select (public.cbt_admin_suspects('not-the-password','get','{"days":"abc"}'))->>'ok'$q$) = 'false');
+select pg_temp.chk('47e admin suspects: signed in, a bad number gives error "days"; a normal number and no number still work',
+  pg_temp.try(format($q$select (public.cbt_admin_suspects(%L,'get','{"days":"abc"}'))->>'error'$q$, :'ow91')) = 'days'
+  and pg_temp.try(format($q$select (public.cbt_admin_suspects(%L,'get','{"days":"30"}'))->>'ok'$q$, :'ow91')) = 'true'
+  and pg_temp.try(format($q$select (public.cbt_admin_suspects(%L,'get','{}'))->>'ok'$q$, :'ow91')) = 'true');
+select pg_temp.try(format($q$select (public.cbt_admin_cheat(%L,'flag','{"mobile":"9000000002","test_id":"aaaaaaaa-0000-0000-0000-000000000004","note":"first"}'))->>'ok'$q$, :'ow91')) as cf1 \gset
+select pg_temp.try(format($q$select (public.cbt_admin_cheat(%L,'flag','{"mobile":"9000000002","test_id":"aaaaaaaa-0000-0000-0000-000000000004","note":"second"}'))->>'ok'$q$, :'ow91')) as cf2 \gset
+select pg_temp.try(format($q$select (public.cbt_admin_cheat(%L,'get','{}'))::text$q$, :'ow91')) as cf3 \gset
+select pg_temp.try(format($q$select (public.cbt_admin_cheat(%L,'unflag','{"mobile":"9000000002","test_id":"aaaaaaaa-0000-0000-0000-000000000004"}'))->>'ok'$q$, :'ow91')) as cf4 \gset
+select pg_temp.chk('47f admin cheat: flag (twice = one row, the note is updated), get lists it with name and mobile, unflag removes it',
+  :'cf1' = 'true' and :'cf2' = 'true' and :'cf3' not like 'RAISED%' and (:'cf3'::jsonb->'flags'->0->>'note') = 'second'
+  and (:'cf3'::jsonb->'flags'->0->>'mobile') = '9000000002' and :'cf4' = 'true'
+  and not exists (select 1 from public.cbt_cheat_flags where test_id = 'aaaaaaaa-0000-0000-0000-000000000004'));
 
 -- ===== report =====
 \t off

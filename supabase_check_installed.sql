@@ -75,5 +75,13 @@ select 31, 'supabase_v90_plans.sql', case when to_regprocedure('public.cbt_plans
   and to_regprocedure('cbt_private.cbt_admin_plans__core(text,text,jsonb)') is not null then 'ok'
   when to_regprocedure('public.cbt_plans()') is not null then 'run supabase_v35_admin_team.sql again'
   else 'MISSING — run this file' end
+union all
+-- v91 changes existing functions: 'ok' when a page offset in "My mistakes" is capped and the admin reviews / suspects read their input after the admin check
+select 32, 'supabase_v91_error_hardening.sql', case when to_regprocedure('public.cbt_mistakes(text,text,text,integer,integer,text,text)') is not null
+  and to_regprocedure('cbt_private.cbt_admin_reviews__core(text,text,jsonb)') is not null
+  and to_regprocedure('cbt_private.cbt_admin_suspects__core(text,text,jsonb)') is not null
+  and pg_get_functiondef(to_regprocedure('public.cbt_mistakes(text,text,text,integer,integer,text,text)')) like '%100000%'
+  and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_reviews__core(text,text,jsonb)')) like '%v91: the id is read only after%'
+  and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_suspects__core(text,text,jsonb)')) like '%v91: read only after the admin check%' then 'ok' else 'MISSING — run this file' end
 ) x
 order by n;
