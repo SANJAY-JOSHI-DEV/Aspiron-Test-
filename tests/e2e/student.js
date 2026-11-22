@@ -461,7 +461,7 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     }
     const c6 = await br.newContext({ viewport: { width: cfg.w, height: cfg.h } }); await c6.addInitScript(x => { try { localStorage.setItem('cbt_v3_theme', JSON.stringify(x.pal ? { mode: x.mode, pal: { [x.mode]: x.pal } } : { mode: x.mode })); } catch (e) {} }, cfg);
     const p6 = await c6.newPage(); const e6 = []; p6.on('pageerror', e => e6.push(e.message));
-    await p6.route(u => !u.href.startsWith(BASE) && !u.href.startsWith(SUPA), r => r.abort()); await p6.route(SUPA + '/rest/v1/rpc/**', rpcRoute);
+    await p6.route(u => !u.href.startsWith(BASE) && !u.href.startsWith(SUPA), r => r.abort()); await p6.route(SUPA + '/rest/v1/rpc/**', r => /rpc\/cbt_plans(\?|$)/.test(r.request().url()) && (cfg.n === 'light' || cfg.plans) ? r.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"not found"}' }) : rpcRoute(r));   // v90 not run → the pill works as before
     await p6.goto(BASE + 'index.html'); await codeScreen(p6); await p6.fill('#ph', '9000000002'); await p6.fill('#cd', 'BBBB2222'); await p6.click('#lbtn'); await p6.waitForTimeout(3500);
     const sr = fn => p6.evaluate(f => { const r = document.getElementById('v3host').shadowRoot; return (new Function('r', 'return (' + f + ')(r)'))(r); }, fn.toString());
     await sr(r => { const b = r.querySelector('[data-ob="skip"]'); if (b) b.click(); }); await p6.waitForTimeout(2600);
@@ -479,12 +479,12 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     }
     if (cfg.n === 'light') {
       await sr(r => r.querySelector('.pillbtn.upg').click()); await p6.waitForTimeout(1500);
-      const hh = await p6.evaluate(() => location.hash); ok(hh === '#/x/test', `Upgrade plan with no plans set goes to the store (${hh})`);
+      const hh = await p6.evaluate(() => location.hash); ok(hh === '#/x/test', `Upgrade plan without the plans SQL and with no series plans goes to the store (${hh})`);
     }
     if (cfg.plans) {
       await sr(r => r.querySelector('.pillbtn.upg').click()); await p6.waitForTimeout(1800);
       const on = await sr(r => { const b = r.querySelector('.utabs .on'); return b ? b.textContent.trim() : null; });
-      ok(on === 'Description', `Upgrade plan with an upgrade set opens the series Description (${on})`);
+      ok(on === 'Description', `Upgrade plan without the plans SQL and with a series upgrade opens the series Description (${on})`);
     }
     ok(!e6.length, `no page errors (home ${cfg.n}) ` + e6.join(' | ')); await c6.close();
   }
@@ -557,6 +557,35 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     ok(!t.er.length, `no page errors (stories ${cfg.n}) ` + t.er.join(' | ')); await t.c.close();
   }
   await qdClean();
+  // v90: plans — the Upgrade pill opens Basic / Pro / Ultra, the order summary adds an add-on, a donation and a coupon; Proceed only offers Notify me
+  await q(`update cbt_private.plans set price = 999, mrp = 2499 where key = 'pro'`); await q(`update cbt_private.plans set price = 1999, mrp = 4999 where key = 'ultra'`);
+  await q(`delete from cbt_private.plan_addons`); await q(`delete from cbt_private.plan_notify`);
+  await q(`insert into cbt_private.plan_addons (kind, title, body, price, mrp, sort) values ('notes', 'Notes <b>x</b>', 'All chapters', 499, 999, 1)`);
+  await q(`insert into cbt_private.plan_coupons (code, kind, value, plans) values ('PRO20', 'pct', 20, '{pro,ultra}') on conflict (code) do nothing`);
+  await q(`update cbt_private.students set fail_count=0, locked_until=0, devices='{}' where mobile = '9000000002'`);
+  { const c13 = await br.newContext({ viewport: { width: 360, height: 800 } }); const p13 = await c13.newPage(); const e13 = [];
+    p13.on('pageerror', e => e13.push(e.message));
+    await p13.route(u => !u.href.startsWith(BASE) && !u.href.startsWith(SUPA), r => r.abort()); await p13.route(SUPA + '/rest/v1/rpc/**', rpcRoute);
+    await p13.goto(BASE + 'index.html'); await codeScreen(p13); await p13.fill('#ph', '9000000002'); await p13.fill('#cd', 'BBBB2222'); await p13.click('#lbtn'); await p13.waitForTimeout(3500);
+    const sr = fn => p13.evaluate(f => { const r = document.getElementById('v3host').shadowRoot; return (new Function('r', 'return (' + f + ')(r)'))(r); }, fn.toString());
+    await sr(r => { const b = r.querySelector('[data-ob="skip"]'); if (b) b.click(); }); await p13.waitForTimeout(2600);
+    await sr(r => { const b = r.querySelector('#sheet.open [data-a="close"]'); if (b) b.click(); }); await p13.waitForTimeout(1200);
+    await sr(r => r.querySelector('.pillbtn.upg').click()); await p13.waitForTimeout(1800);
+    const u1 = await sr(r => ({ t: r.querySelector('#scrT').textContent, cards: [...r.querySelectorAll('.pl-card')].map(c => c.textContent.replace(/\s+/g, ' ').trim()), rows: r.querySelectorAll('.pl-tab .pl-row:not(.pl-hd)').length, sel: (r.querySelector('.pl-card.on b') || {}).textContent, over: document.documentElement.scrollWidth > innerWidth }));
+    ok(u1.t === 'Upgrade' && u1.rows === 13 && u1.sel === 'Pro' && /Basic\s*Current plan/.test(u1.cards[0]) && /₹999/.test(u1.cards[1]) && !u1.over, 'Plans: the pill opens Upgrade with Basic as the current plan, Pro chosen, the 13-row compare list ' + JSON.stringify(u1));
+    await sr(r => r.querySelector('[data-a="plGo"]').click()); await p13.waitForTimeout(1200);
+    await sr(r => r.querySelector('[data-a="plAdd"]').click()); await p13.waitForTimeout(400);
+    await sr(r => r.querySelector('[data-a="plDon"][data-v="25"]').click()); await p13.waitForTimeout(400);
+    await sr(r => { r.querySelector('#plCp').value = 'pro20'; r.querySelector('[data-a="plCp"]').click(); }); await p13.waitForTimeout(1500);
+    const o1 = await sr(r => ({ t: r.querySelector('#scrT').textContent, tot: r.querySelector('.ord-sum .tot').textContent.replace(/\s+/g, ' '), add: (r.querySelector('.ord-a b') || {}).textContent, html: r.querySelectorAll('.ord-a b b').length, cp: (r.querySelector('.ord-cpok') || {}).textContent }));
+    ok(o1.t === 'Order summary' && /₹1,323/.test(o1.tot) && o1.add === 'Notes <b>x</b>' && o1.html === 0 && /PRO20/.test(o1.cp || ''), 'Plans: order summary — 999 + 499 − 20% coupon on the plan + ₹25 = ₹1,323; the add-on name is text ' + JSON.stringify(o1));
+    await sr(r => r.querySelector('[data-a="plBuy"]').click()); await p13.waitForTimeout(900);
+    ok(await sr(r => /Payments are coming soon/.test(r.querySelector('#sheet.open').textContent)), 'Plans: Proceed to buy says payments are coming soon (nothing is charged)');
+    await sr(r => r.querySelector('[data-a="plNotify"]').click()); await p13.waitForTimeout(1500);
+    const nr = (await q(`select n.plan, n.donation, n.coupon, n.total, jsonb_array_length(n.addons) a from cbt_private.plan_notify n join cbt_private.students s on s.id = n.student_id where s.mobile = '9000000002'`))[0];
+    ok(nr && nr.plan === 'pro' && nr.donation === 25 && nr.coupon === 'PRO20' && nr.total === 1323 && nr.a === 1, 'Plans: Notify me keeps the choice for the admin ' + JSON.stringify(nr));
+    ok(!e13.length, 'no page errors (plans) ' + e13.join(' | ')); await c13.close(); }
+  await q(`update cbt_private.plans set price = null, mrp = null`); await q(`delete from cbt_private.plan_addons`); await q(`delete from cbt_private.plan_notify`);
   // Theme page with real finger taps (a touch phone): every tap must land on its button and be saved
   await q(`update cbt_private.students set fail_count=0, locked_until=0, devices='{}' where mobile = '9000000002'`);
   { const c3 = await br.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }); const p3 = await c3.newPage(); const e3 = []; p3.on('pageerror', e => e3.push(e.message));
