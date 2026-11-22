@@ -2022,7 +2022,114 @@ select pg_temp.chk('46g the tables are private and the changes are written to th
   and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plans' and act = 'coupon_save' and who = 'Owner')
   and (select donations from cbt_private.plan_settings) = '{10,25,50,100}');
 
--- ===== 47. Bad input gives a clean answer, not a raw database error (supabase_v91_error_hardening.sql) =====
+-- ===== 47. v91: plan access — the server decides; locks are off until the owner turns them on =====
+insert into cbt_private.students(id,name,mobile,status,salt,code_hash) values
+  ('bbbbbbbb-0000-0000-0000-000000000047','Plan Student','9000000047','approved','s47',cbt_private.hash_code('s47','GGGG4747')) on conflict do nothing;
+delete from cbt_private.plan_usage; delete from cbt_private.plan_grants; update cbt_private.plan_settings set enforce = false;
+select public.cbt_admin_login('','OwnerPass2026x','Owner')->>'token' as ow91 \gset
+select public.cbt_admin_login('store90','Tr7k-9mQz-pLx2','S')->>'token' as sv91 \gset
+select id as q91 from cbt_private.qbank where active and cbt_private.qb_src_open(src) limit 1 \gset
+set role anon;
+select public.cbt_qb_check('9000000047','GGGG4747','dev-47474747',:'q91'::uuid,0)->>'ok' as c91a \gset
+select pg_temp.chk('47a locks off: a Free student uses the question bank as before, and the use is counted',
+  public.cbt_my_plan('9000000047','GGGG4747','dev-47474747')->>'plan' = 'free'
+  and public.cbt_my_plan('9000000047','GGGG4747','dev-47474747')->>'enforce' = 'false'
+  and public.cbt_my_plan('9000000002','BBBB2222','dev-bbbbbbbb')->>'plan' = 'basic'
+  and public.cbt_qb_next('9000000047','GGGG4747','dev-47474747','{}','[]')->>'ok' = 'true'
+  and :'c91a' = 'true'
+  and (select (x->>'used')::int from jsonb_array_elements(public.cbt_my_plan('9000000047','GGGG4747','dev-47474747')->'feats') x where x->>'key' = 'qb') = 1
+  and public.cbt_my_plan('9000000047','WRONG999','dev-47474747')->>'ok' = 'false');
+select public.cbt_admin_plan_access(:'ow91','enforce','{"on":true}')->>'ok' as on91 \gset
+select pg_temp.chk('47b locks on: Free and Basic are refused the question bank, PYQ and the generator, and told which plan has it',
+  :'on91' = 'true'
+  and public.cbt_qb_next('9000000047','GGGG4747','dev-47474747','{}','[]')->>'error' = 'plan'
+  and public.cbt_qb_next('9000000047','GGGG4747','dev-47474747','{}','[]')->>'need' = 'pro'
+  and public.cbt_qb_check('9000000047','GGGG4747','dev-47474747',:'q91'::uuid,0)->>'error' = 'plan'
+  and public.cbt_pyq_chapter('9000000047','GGGG4747','dev-47474747','NEET','cell')->>'error' = 'plan'
+  and public.cbt_gen_create('9000000047','GGGG4747','dev-47474747','{"n":5,"dur":10}')->>'error' = 'plan'
+  and public.cbt_qb_next('9000000002','BBBB2222','dev-bbbbbbbb','{}','[]')->>'need' = 'pro'
+  and not (public.cbt_qb_check('9000000047','GGGG4747','dev-47474747',:'q91'::uuid,0) ? 'explanation'));
+select public.cbt_admin_plan_access(:'ow91','grant','{"mobile":"9000000047","plan":"pro","days":30,"note":"<b>trial</b>"}')->>'ok' as g91 \gset
+select public.cbt_gen_create('9000000047','GGGG4747','dev-47474747','{"n":5,"dur":10}')->>'id' as gen91 \gset
+select public.cbt_gen_create('9000000047','GGGG4747','dev-47474747','{"n":5,"dur":10}')->>'ok' as gen91b \gset
+select public.cbt_gen_create('9000000047','GGGG4747','dev-47474747','{"n":5,"dur":10}')->>'ok' as gen91c \gset
+select public.cbt_gen_create('9000000047','GGGG4747','dev-47474747','{"n":5,"dur":10}')->>'ok' as gen91d \gset
+select public.cbt_gen_create('9000000047','GGGG4747','dev-47474747','{"n":5,"dur":10}') as gen91e \gset
+select public.cbt_gen_create('9000000047','GGGG4747','dev-47474747',jsonb_build_object('copy',:'gen91'))->>'ok' as gen91r \gset
+select pg_temp.chk('47c a plan given by the admin: Pro opens the question bank and PYQ; the generator stops after 4 tests a month, a retake is free',
+  :'g91' = 'true'
+  and public.cbt_my_plan('9000000047','GGGG4747','dev-47474747')->>'plan' = 'pro'
+  and public.cbt_qb_next('9000000047','GGGG4747','dev-47474747','{}','[]')->>'ok' = 'true'
+  and public.cbt_pyq_chapter('9000000047','GGGG4747','dev-47474747','NEET','cell')->>'ok' = 'true'
+  and :'gen91b' = 'true' and :'gen91c' = 'true' and :'gen91d' = 'true'
+  and (:'gen91e'::jsonb)->>'error' = 'plan' and (:'gen91e'::jsonb)->>'need' = 'ultra' and (:'gen91e'::jsonb)->>'used' = '4' and (:'gen91e'::jsonb)->>'lim' = '4'
+  and :'gen91r' = 'true');
+select public.cbt_admin_plan_access(:'ow91','grant','{"mobile":"9000000047","plan":"ultra","days":30}')->>'ok' as u91 \gset
+select pg_temp.chk('47d Ultra has no limit on the generator',
+  :'u91' = 'true' and public.cbt_gen_create('9000000047','GGGG4747','dev-47474747','{"n":5,"dur":10}')->>'ok' = 'true');
+select public.cbt_admin_plan_access(:'ow91','feature_save','{"key":"qb","free":"2","basic":"0","pro":"-1","ultra":"-1"}')->>'ok' as fs91 \gset
+select public.cbt_admin_plan_access(:'ow91','revoke','{"mobile":"9000000047"}')->>'ok' as rv91 \gset
+reset role; delete from cbt_private.plan_usage where student_id = 'bbbbbbbb-0000-0000-0000-000000000047' and feature = 'qb'; set role anon;
+select public.cbt_qb_check('9000000047','GGGG4747','dev-47474747',:'q91'::uuid,1)->>'ok' as d91a \gset
+select public.cbt_qb_check('9000000047','GGGG4747','dev-47474747',:'q91'::uuid,2)->>'ok' as d91b \gset
+select public.cbt_qb_check('9000000047','GGGG4747','dev-47474747',:'q91'::uuid,3) as d91c \gset
+select pg_temp.chk('47e a demo: Free gets exactly the number the admin set (2), then is asked to upgrade; bad limits are refused',
+  :'fs91' = 'true' and :'rv91' = 'true' and :'d91a' = 'true' and :'d91b' = 'true'
+  and (:'d91c'::jsonb)->>'error' = 'plan' and (:'d91c'::jsonb)->>'used' = '2'
+  and public.cbt_my_plan('9000000047','GGGG4747','dev-47474747')->>'plan' = 'free'
+  and public.cbt_admin_plan_access(:'ow91','feature_save','{"key":"qb","free":"-2","basic":"0","pro":"-1","ultra":"-1"}')->>'error' = 'bad_input'
+  and public.cbt_admin_plan_access(:'ow91','feature_save','{"key":"qb","free":"x","basic":"0","pro":"-1","ultra":"-1"}')->>'error' = 'bad_input'
+  and public.cbt_admin_plan_access(:'ow91','feature_save','{"key":"nope","free":"1","basic":"1","pro":"1","ultra":"1"}')->>'error' = 'not_found'
+  and public.cbt_admin_plan_access(:'ow91','grant','{"mobile":"9000000047","plan":"gold","days":30}')->>'error' = 'bad_input'
+  and public.cbt_admin_plan_access(:'ow91','grant','{"mobile":"9000000047","plan":"pro","days":0}')->>'error' = 'bad_input'
+  and public.cbt_admin_plan_access(:'ow91','grant','{"mobile":"9999999999","plan":"pro","days":5}')->>'error' = 'no_student');
+select pg_temp.chk('47f a Store view member reads but cannot change; a wrong password gets nothing',
+  public.cbt_admin_plan_access(:'sv91','get','{}')->>'ok' = 'true'
+  and public.cbt_admin_plan_access(:'sv91','enforce','{"on":false}')->>'error' = 'forbidden'
+  and public.cbt_admin_plan_access(:'sv91','grant','{"mobile":"9000000047","plan":"ultra","days":30}')->>'error' = 'forbidden'
+  and public.cbt_admin_plan_access('wrong','get','{}')->>'ok' = 'false');
+select public.cbt_admin_plan_access(:'ow91','grant','{"mobile":"9000000047","plan":"ultra","days":30}')->>'ok' as x91 \gset
+reset role;
+update cbt_private.plan_grants set ends_at = now() - interval '1 minute' where student_id = 'bbbbbbbb-0000-0000-0000-000000000047';
+set role anon;
+select pg_temp.chk('47g an ended plan falls back to Free; turning the locks off opens everything again',
+  public.cbt_my_plan('9000000047','GGGG4747','dev-47474747')->>'plan' = 'free'
+  and public.cbt_pyq_chapter('9000000047','GGGG4747','dev-47474747','NEET','cell')->>'error' = 'plan'
+  and public.cbt_admin_plan_access(:'ow91','enforce','{"on":false}')->>'ok' = 'true'
+  and public.cbt_pyq_chapter('9000000047','GGGG4747','dev-47474747','NEET','cell')->>'ok' = 'true'
+  and public.cbt_qb_next('9000000047','GGGG4747','dev-47474747','{}','[]')->>'ok' = 'true');
+reset role;
+select pg_temp.chk('47h the tables and helpers are private, the note is cleaned, and the changes are in the activity log',
+  not has_table_privilege('anon', 'cbt_private.plan_grants', 'select') and not has_table_privilege('anon', 'cbt_private.plan_usage', 'update')
+  and not has_function_privilege('anon', 'cbt_private.plan_use(uuid,text,boolean)', 'execute')
+  and not has_function_privilege('authenticated', 'cbt_private.plan_of(uuid)', 'execute')
+  and (select note from cbt_private.plan_grants where student_id = 'bbbbbbbb-0000-0000-0000-000000000047') = ''
+  and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plan_access' and act = 'enforce' and who = 'Owner')
+  and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_plan_access' and act = 'grant' and who = 'Owner'));
+update cbt_private.plan_features set free = 0 where key = 'qb';
+-- 47i: the doubt demo (2 in total on Free) and the switch resets the counts; all five functions carry the check
+delete from cbt_private.plan_usage; delete from cbt_private.plan_grants;
+update cbt_private.tests set result_at = null where id = 'aaaaaaaa-0000-0000-0000-000000000004';
+insert into cbt_private.results(student_id,test_id,test_title,score,max_score,correct,wrong,skipped,used_seconds,answers)
+values ('bbbbbbbb-0000-0000-0000-000000000047','aaaaaaaa-0000-0000-0000-000000000004','Open mock',0,4,0,0,1,10,'{}');
+set role anon;
+select public.cbt_doubt_ask('9000000047','GGGG4747','dev-47474747','aaaaaaaa-0000-0000-0000-000000000004',0,'','first doubt here')->>'ok' as db91a \gset
+select public.cbt_admin_plan_access(:'ow91','enforce','{"on":true}')->>'ok' as on91b \gset
+select public.cbt_doubt_ask('9000000047','GGGG4747','dev-47474747','aaaaaaaa-0000-0000-0000-000000000004',0,'','second doubt here')->>'ok' as db91b \gset
+select public.cbt_doubt_ask('9000000047','GGGG4747','dev-47474747','aaaaaaaa-0000-0000-0000-000000000004',0,'','third doubt here')->>'ok' as db91c \gset
+reset role; update cbt_private.doubts set status = 'answered' where student_id = 'bbbbbbbb-0000-0000-0000-000000000047'; set role anon;   -- not the 3-waiting rule
+select public.cbt_doubt_ask('9000000047','GGGG4747','dev-47474747','aaaaaaaa-0000-0000-0000-000000000004',0,'','fourth doubt here') as db91d \gset
+select public.cbt_admin_plan_access(:'ow91','enforce','{"on":false}')->>'ok' as off91b \gset
+reset role;
+select pg_temp.chk('47i Free gets 2 doubts to try (the use while locks were off does not count), then is asked to upgrade; all five functions check the plan',
+  :'db91a' = 'true' and :'on91b' = 'true' and :'db91b' = 'true' and :'db91c' = 'true'
+  and (:'db91d'::jsonb)->>'error' = 'plan' and (:'db91d'::jsonb)->>'need' = 'basic' and :'off91b' = 'true'
+  and (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public'
+         and p.proname in ('cbt_qb_next', 'cbt_qb_check', 'cbt_gen_create', 'cbt_pyq_chapter', 'cbt_doubt_ask')
+         and pg_get_functiondef(p.oid) like '%plan_use%') = 5);
+delete from cbt_private.doubts where student_id = 'bbbbbbbb-0000-0000-0000-000000000047';
+
+-- ===== 48. Bad input gives a clean answer, not a raw database error (supabase_v92_error_hardening.sql) =====
 reset role;
 create or replace function pg_temp.try(p_sql text) returns text language plpgsql as $$
 declare r text; begin execute p_sql into r; return r; exception when others then return 'RAISED: ' || sqlerrm; end $$;
@@ -2030,17 +2137,17 @@ select set_config('request.headers', '{"x-real-ip":"198.51.100.91"}', false);
 update cbt_private.students set fail_count = 0, locked_until = 0 where mobile = '9000000002';
 delete from cbt_private.settings where key = 'admin_gate';
 select public.cbt_admin_login('', 'OwnerPass2026x', 'Owner')->>'token' as ow91 \gset
-select pg_temp.chk('47a mistakes: the largest possible page offset and a normal page both answer ok (no "integer out of range")',
+select pg_temp.chk('48a mistakes: the largest possible page offset and a normal page both answer ok (no "integer out of range")',
   pg_temp.try($q$select (public.cbt_mistakes('9000000002','BBBB2222','dev-bbbbbbbb',2147483647,30,'all',''))->>'ok'$q$) = 'true'
   and pg_temp.try($q$select (public.cbt_mistakes('9000000002','BBBB2222','dev-bbbbbbbb',0,15,'all',''))->>'ok'$q$) = 'true');
-select pg_temp.chk('47b admin reviews: a bad id with NO sign-in answers cleanly (no database error, nothing revealed)',
+select pg_temp.chk('48b admin reviews: a bad id with NO sign-in answers cleanly (no database error, nothing revealed)',
   pg_temp.try($q$select (public.cbt_admin_reviews('not-the-password','get','{"id":"1"}'))->>'ok'$q$) = 'false');
-select pg_temp.chk('47c admin reviews: signed in, a bad id gives error "id"; no id still works',
+select pg_temp.chk('48c admin reviews: signed in, a bad id gives error "id"; no id still works',
   pg_temp.try(format($q$select (public.cbt_admin_reviews(%L,'get','{"id":"1"}'))->>'error'$q$, :'ow91')) = 'id'
   and pg_temp.try(format($q$select (public.cbt_admin_reviews(%L,'get','{}'))->>'ok'$q$, :'ow91')) = 'true');
-select pg_temp.chk('47d admin suspects: a bad number with NO sign-in answers cleanly',
+select pg_temp.chk('48d admin suspects: a bad number with NO sign-in answers cleanly',
   pg_temp.try($q$select (public.cbt_admin_suspects('not-the-password','get','{"days":"abc"}'))->>'ok'$q$) = 'false');
-select pg_temp.chk('47e admin suspects: signed in, a bad number gives error "days"; a normal number and no number still work',
+select pg_temp.chk('48e admin suspects: signed in, a bad number gives error "days"; a normal number and no number still work',
   pg_temp.try(format($q$select (public.cbt_admin_suspects(%L,'get','{"days":"abc"}'))->>'error'$q$, :'ow91')) = 'days'
   and pg_temp.try(format($q$select (public.cbt_admin_suspects(%L,'get','{"days":"30"}'))->>'ok'$q$, :'ow91')) = 'true'
   and pg_temp.try(format($q$select (public.cbt_admin_suspects(%L,'get','{}'))->>'ok'$q$, :'ow91')) = 'true');
@@ -2048,7 +2155,7 @@ select pg_temp.try(format($q$select (public.cbt_admin_cheat(%L,'flag','{"mobile"
 select pg_temp.try(format($q$select (public.cbt_admin_cheat(%L,'flag','{"mobile":"9000000002","test_id":"aaaaaaaa-0000-0000-0000-000000000004","note":"second"}'))->>'ok'$q$, :'ow91')) as cf2 \gset
 select pg_temp.try(format($q$select (public.cbt_admin_cheat(%L,'get','{}'))::text$q$, :'ow91')) as cf3 \gset
 select pg_temp.try(format($q$select (public.cbt_admin_cheat(%L,'unflag','{"mobile":"9000000002","test_id":"aaaaaaaa-0000-0000-0000-000000000004"}'))->>'ok'$q$, :'ow91')) as cf4 \gset
-select pg_temp.chk('47f admin cheat: flag (twice = one row, the note is updated), get lists it with name and mobile, unflag removes it',
+select pg_temp.chk('48f admin cheat: flag (twice = one row, the note is updated), get lists it with name and mobile, unflag removes it',
   :'cf1' = 'true' and :'cf2' = 'true' and :'cf3' not like 'RAISED%' and (:'cf3'::jsonb->'flags'->0->>'note') = 'second'
   and (:'cf3'::jsonb->'flags'->0->>'mobile') = '9000000002' and :'cf4' = 'true'
   and not exists (select 1 from public.cbt_cheat_flags where test_id = 'aaaaaaaa-0000-0000-0000-000000000004'));

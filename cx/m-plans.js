@@ -2,13 +2,15 @@
    Plans: Basic / Pro / Ultra — names and prices, the compare list students see on Upgrade, add-ons (with a picture),
    donation amounts, plan coupons and the students who tapped Notify me. Payments are not open yet in the app.
    Server: cbt_admin_plans (supabase_v90_plans.sql). Store = View reads, Store = Full access changes.
+   Access & limits: cbt_admin_plan_access (supabase_v91_plan_access.sql) — the lock switch, the limit of each feature per
+   plan, and giving a plan to a student (until payments open, the only way to Pro / Ultra).
    ===================================================================== */
 (function () {
 'use strict';
 const { h, raw, icon, join, ui: UI, fmt } = AX;
 const can = () => AX.can('store', 'manage');
 const TABS = [{ id: 'plans', title: 'Plans', icon: 'layers' }, { id: 'compare', title: 'Compare list', icon: 'list' }, { id: 'addons', title: 'Add-ons', icon: 'gift' },
-  { id: 'extras', title: 'Donation & coupons', icon: 'tag' }, { id: 'notify', title: 'Notify me', icon: 'bell' }];
+  { id: 'extras', title: 'Donation & coupons', icon: 'tag' }, { id: 'notify', title: 'Notify me', icon: 'bell' }, { id: 'access', title: 'Access & limits', icon: 'lock' }];
 const ERR = { title: 'Enter a name.', number: 'Prices and days must be whole numbers.', label: 'Enter the feature name.', value: 'Fill every plan (yes, no, demo or a short text).',
   img: 'The picture must be a JPG, PNG or WebP under 300 KB.', kind: 'Choose a type.', amounts: 'Up to 8 amounts, each 1 to 100000.', code: 'Code: 3–24 letters, numbers, - or _.',
   plans: 'Choose at least one plan.', limit: 'You have reached the limit.', missing: 'Run supabase_v90_plans.sql in Supabase first, then supabase_v35_admin_team.sql again.' };
@@ -18,13 +20,60 @@ const rs = n => n == null || n === '' ? '—' : '₹' + fmt.num(+n);
 const VAL = v => { const l = String(v || '').toLowerCase(); return l === 'yes' ? raw('<span style="color:var(--ok);font-weight:700">✓</span>') : l === 'no' ? raw('<span class="mut">✕</span>') : l === 'demo' ? UI.pill('Demo', '') : h`<b class="sm">${v}</b>`; };
 const PLN = { basic: 'Basic', pro: 'Pro', ultra: 'Ultra' };
 
+// ---------- Access & limits (v91) ----------
+const LIM = n => +n === -1 ? h`<b style="color:var(--ok)">Unlimited</b>` : +n === 0 ? raw('<span class="mut">✕</span>') : h`<b>${n}</b>`;
+const PER = { day: 'a day', month: 'a month (India time)', total: 'in total' };
+const AERR = { bad_input: 'Limits: -1 = unlimited, 0 = not in the plan, or a number up to 100000. Days: 1 to 3650.', no_student: 'No student with this mobile number.', not_found: 'Not found.' };
+async function access(ctx, m) {
+  const r = await AX.api.call('cbt_admin_plan_access', 'get', {});
+  if (!ctx.alive()) return;
+  if (!r || !r.ok) {
+    const miss = r && (r.error === 'missing' || r.error === 'server');
+    AX.set(ctx.el, h`<div class="card">${UI.empty({ tone: 'lock', icon: 'db', title: miss ? 'One-time setup needed' : 'Could not load', text: miss ? 'Run supabase_v91_plan_access.sql in Supabase first, then supabase_v35_admin_team.sql again.' : AX.errText(r), action: h`<button class="btn" data-act="retry">Check again</button>` })}</div>`);
+    AX.act(ctx.el, { retry: () => ctx.reload() }); return;
+  }
+  const save = async (act, data, msg) => { const x = await AX.api.call('cbt_admin_plan_access', act, data); if (!x || !x.ok) { UI.toast(AERR[x && x.error] || AX.errText(x), { tone: 'bad' }); return false; } UI.toast(msg || 'Saved'); ctx.reload(); return true; };
+  const c = r.counts || {};
+  AX.set(ctx.el, h`<div class="card"><div class="row wrap gap12"><div class="grow"><div class="row gap8"><b style="font-size:17px">Plan locks</b>${r.enforce ? UI.pill('On', 'ok') : UI.pill('Off', 'bad')}</div>
+      <div class="sm mut mt4">${r.enforce ? 'On: students get only what their plan allows below. The server checks it, in the app and the old app.' : 'Off: every student can use everything, as before. The app only shows which plan a feature belongs to. Uses are still counted.'}</div></div>
+      ${m ? h`<button class="btn ${r.enforce ? 'danger' : 'pri'}" data-act="sw">${icon('lock', 15)} ${r.enforce ? 'Turn locks off' : 'Turn locks on'}</button>` : ''}</div>
+      <div class="row wrap gap8 mt12">${join([['free', 'Free'], ['basic', 'Basic'], ['pro', 'Pro'], ['ultra', 'Ultra']], ([k, l]) => h`<span class="chip">${l}: <b>${fmt.num(c[k] || 0)}</b></span>`)}</div></div>
+    <div class="callout info mt16 mb12">${icon('info')}<div class="sm">For each plan: <b>-1</b> = unlimited, <b>0</b> = not in the plan, a number = that many ${'uses'} per period (a demo on Free, “4 a month” on Pro …).</div></div>
+    <div class="card pad0" style="overflow:auto"><table class="tbl"><thead><tr><th>Feature</th><th>Counted</th><th>Free</th><th>Basic</th><th>Pro</th><th>Ultra</th><th></th></tr></thead><tbody>
+      ${join(r.feats, f => h`<tr><td><b>${f.title}</b></td><td class="xs mut">${f.unit}, ${PER[f.period] || f.period}</td><td>${LIM(f.free)}</td><td>${LIM(f.basic)}</td><td>${LIM(f.pro)}</td><td>${LIM(f.ultra)}</td>
+        <td>${m ? h`<button class="ibtn sm" data-act="feat" data-k="${f.key}" aria-label="Edit">${icon('edit', 15)}</button>` : ''}</td></tr>`)}</tbody></table></div>
+    <div class="card mt16"><div class="row"><b class="grow">Plans given by the admin</b>${m ? h`<button class="btn sm" data-act="grant">${icon('plus', 14)} Give a plan</button>` : ''}</div>
+      <div class="sm mut mt4">Until payments open, this is how a student gets Pro or Ultra (a trial, a topper, a teacher …). When it ends, the student goes back to Basic or Free.</div>
+      ${r.grants.length ? h`<div class="col gap8 mt12">${join(r.grants, g => h`<div class="row wrap gap8" style="padding:8px 0;border-top:1px solid var(--line)"><b>${g.student || 'Student'}</b><span class="xs mut">${fmt.mobile(g.mobile)}</span>${UI.pill(PLN[g.plan] || g.plan, g.live ? 'gold' : '')}
+          <span class="sm mut grow">${g.live ? 'till ' : 'ended '}${new Date(g.ends_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}${g.note ? ' · ' + g.note : ''}</span>
+          ${m ? h`<button class="btn xs danger" data-act="revoke" data-m="${g.mobile}">${icon('trash', 13)} Remove</button>` : ''}</div>`)}</div>` : h`<div class="sm mut mt12">No plans given yet.</div>`}</div>`);
+  AX.act(ctx.el, {
+    retry: () => ctx.reload(),
+    async sw() { const on = !r.enforce;
+      if (await UI.confirm({ title: on ? 'Turn the plan locks on?' : 'Turn the plan locks off?', text: on ? 'Students on Free and Basic will lose what their plan does not have (Question bank, PYQ, the test generator …) right away. Students given a plan keep it.' : 'Every student can use everything again.', yes: on ? 'Turn on' : 'Turn off', tone: on ? 'danger' : '' })) save('enforce', { on }, on ? 'Locks are on' : 'Locks are off'); },
+    feat(el) { const f = r.feats.find(x => x.key === el.dataset.k); if (!f) return;
+      UI.modal({ title: f.title, size: 'narrow', body: h`<form id="pff" class="col gap16"><div class="sm mut">-1 = unlimited · 0 = not in the plan · a number = ${f.unit} ${PER[f.period] || ''}</div>
+          <div class="grid g2">${join([['free', 'Free'], ['basic', 'Basic'], ['pro', 'Pro'], ['ultra', 'Ultra']], ([k, l]) => AX.f.input({ name: k, label: l, value: f[k], type: 'number' }))}</div></form>`,
+        foot: h`<span class="sp"></span><button class="btn ghost" data-close>Cancel</button><button class="btn pri" data-act="ok">${icon('check', 16)} Save</button>`,
+        onOpen(mo, close) { AX.act(mo, { async ok(b) { const d = AX.f.read(mo.querySelector('#pff')); await UI.busy(b, async () => { if (await save('feature_save', { key: f.key, free: String(d.free), basic: String(d.basic), pro: String(d.pro), ultra: String(d.ultra) })) close(true); }); } }); } }); },
+    grant() {
+      UI.modal({ title: 'Give a plan', size: 'narrow', body: h`<form id="pgf" class="col gap16">${AX.f.input({ name: 'mobile', label: 'Student mobile number', max: 15 })}
+          <div class="row gap12">${AX.f.select({ name: 'plan', label: 'Plan', value: 'pro', options: [{ value: 'pro', label: 'Pro' }, { value: 'ultra', label: 'Ultra' }, { value: 'basic', label: 'Basic' }] })}${AX.f.input({ name: 'days', label: 'Days', value: 30, type: 'number' })}</div>
+          ${AX.f.input({ name: 'note', label: 'Note (optional, e.g. trial)', max: 120 })}</form>`,
+        foot: h`<span class="sp"></span><button class="btn ghost" data-close>Cancel</button><button class="btn pri" data-act="ok">${icon('check', 16)} Give</button>`,
+        onOpen(mo, close) { AX.act(mo, { async ok(b) { const d = AX.f.read(mo.querySelector('#pgf')); await UI.busy(b, async () => { if (await save('grant', { mobile: String(d.mobile || '').trim(), plan: d.plan, days: String(d.days || ''), note: d.note || '' }, 'Plan given')) close(true); }); } }); } }); },
+    async revoke(el) { if (await UI.confirm({ title: 'Remove this plan?', text: 'The student goes back to Basic or Free.', yes: 'Remove', tone: 'danger' })) save('revoke', { mobile: el.dataset.m }, 'Removed'); }
+  });
+}
+
 AX.mod({
   id: 'plans', title: 'Plans', short: 'Plans', icon: 'layers', group: 'Sales & billing', order: 22, perm: 'store',
-  sub: 'Basic / Pro / Ultra: prices, the compare list, add-ons, donation, coupons.',
+  sub: 'Basic / Pro / Ultra: prices, the compare list, add-ons, donation, coupons, access and limits.',
   async render(ctx) {
     const tab = TABS.some(t => t.id === ctx.parts[0]) ? ctx.parts[0] : 'plans', m = can();
     ctx.head({ title: 'Plans', sub: 'What students see when they tap Upgrade: Basic, Pro and Ultra, the compare list, add-ons, donation and coupons. Payments are not open yet: students can tap Notify me.', tabs: TABS, tab });
     AX.set(ctx.el, UI.skeleton(4));
+    if (tab === 'access') return access(ctx, m);
     const r = await AX.api.call('cbt_admin_plans', 'get', {});
     if (!ctx.alive()) return;
     if (!r || !r.ok) {

@@ -1,11 +1,11 @@
 -- =====================================================================
---  v91: clean answers for bad input (found by running every student function with broken input)
+--  v92: clean answers for bad input (found by running every student function with broken input)
 --   * cbt_mistakes: a huge page offset overflowed a number ("integer out of range"); the offset is now capped at 100,000
 --     (a page is 15-30 items, so real use never gets near it).
 --   * admin reviews and admin suspects: the id / number in the request was read BEFORE the admin password was checked,
 --     so anyone, even without signing in, could make them answer with a raw database error. It is now read after the check,
 --     and a bad value gives {"ok": false, "error": "id" | "days"}.
---  Nothing else in these functions changes (only the lines marked v91 or the offset cap differ from the repo versions).
+--  Nothing else in these functions changes (only the lines marked v92 or the offset cap differ from the repo versions).
 --  Where the bodies come from: cbt_mistakes = the exported base functions (no later file changes it);
 --  admin reviews = supabase_v23_reviews.sql (its inner function is made by supabase_v35_admin_team.sql);
 --  admin suspects = supabase_v68_reattempt_cheat_pdf.sql (inner function made by v35 too).
@@ -59,7 +59,7 @@ declare a jsonb; v_id uuid;
 begin
   a := (public.cbt_admin(p_pw, 'ping', '{}'))::text::jsonb;
   if coalesce((a->>'ok')::boolean, false) is not true then return a; end if;
-  -- v91: the id is read only after the admin check, and a bad one gives a clean answer (not a database error)
+  -- v92: the id is read only after the admin check, and a bad one gives a clean answer (not a database error)
   begin v_id := nullif(p_data->>'id', '')::uuid; exception when others then return jsonb_build_object('ok', false, 'error', 'id'); end;
 
   if p_action = 'get' then
@@ -108,7 +108,7 @@ declare e text; d jsonb := coalesce(p_data, '{}'::jsonb); v_days int;
 begin
   e := admin_ok(p_pw);
   if e is not null then return jsonb_build_object('ok', false, 'error', e); end if;
-  -- v91: read only after the admin check; a bad number gives a clean answer (not a database error)
+  -- v92: read only after the admin check; a bad number gives a clean answer (not a database error)
   begin v_days := coalesce(nullif(d->>'days', '')::int, 30); exception when others then return jsonb_build_object('ok', false, 'error', 'days'); end;
 
   if p_action = 'count' then
@@ -133,6 +133,6 @@ begin
 end $function$;
 
 -- check (should be true, true, true)
-select pg_get_functiondef('public.cbt_mistakes(text,text,text,integer,integer,text,text)'::regprocedure) like '%100000%' as mistakes_v91,
-       pg_get_functiondef('cbt_private.cbt_admin_reviews__core(text,text,jsonb)'::regprocedure) like '%v91: the id is read only after%' as reviews_v91,
-       pg_get_functiondef('cbt_private.cbt_admin_suspects__core(text,text,jsonb)'::regprocedure) like '%v91: read only after the admin check%' as suspects_v91;
+select pg_get_functiondef('public.cbt_mistakes(text,text,text,integer,integer,text,text)'::regprocedure) like '%100000%' as mistakes_v92,
+       pg_get_functiondef('cbt_private.cbt_admin_reviews__core(text,text,jsonb)'::regprocedure) like '%v92: the id is read only after%' as reviews_v92,
+       pg_get_functiondef('cbt_private.cbt_admin_suspects__core(text,text,jsonb)'::regprocedure) like '%v92: read only after the admin check%' as suspects_v92;

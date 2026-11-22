@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=95;
+const V3VER=96;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -176,7 +176,8 @@ const themeLabel=()=>{const m=resolveMode(TH.mode);return `${TH.mode==='system'?
 
 /* ---------- toast, sheets, drawer ---------- */
 let tT=null,tMsg='';
-function toast3(m){const t=$('#toast');if(m===tMsg&&t.classList.contains('on')){clearTimeout(tT)}else{t.textContent=m;tMsg=m;t.classList.remove('on');void t.offsetWidth;t.classList.add('on')}tT=setTimeout(()=>{t.classList.remove('on');tMsg=''},2300)}
+var PLMUTE=0;
+function toast3(m){if(Date.now()<PLMUTE)return;const t=$('#toast');if(m===tMsg&&t.classList.contains('on')){clearTimeout(tT)}else{t.textContent=m;tMsg=m;t.classList.remove('on');void t.offsetWidth;t.classList.add('on')}tT=setTimeout(()=>{t.classList.remove('on');tMsg=''},2300)}
 let layer=null,lastF=null,sheet,drawer,scrim;
 /* the phone's Back button closes an open sheet or the menu first (not the page behind it): opening one adds a history
    entry; closing it by a tap or a swipe goes back over that entry, and the popstate it causes is ignored. Moves that
@@ -379,7 +380,7 @@ function quickGrid(){const s=curSeries();if(!s)return '';
 A.qk=el=>{const s=curSeries();if(!s)return;if(el.dataset.k==='doubts'){openDoubts();return}A.openSD({dataset:{id:s.id,t:el.dataset.k==='res'?'r':'t'}})};
 let UPGB=false;   // one tap at a time; the page opens only if the student is still on Home with nothing open; the store after 2.5 s without the plans data
 /* v90: the plans page (Basic / Pro / Ultra) when the plans are set up; the series' upgrades or the store as before otherwise */
-A.upg=()=>{if(UPGB)return;UPGB=true;planLoad().then(()=>{if(PL3.d){UPGB=false;openUpgrade();return}UPGB=false;upgOld()})};
+A.upg=()=>{if(UPGB)return;UPGB=true;Promise.all([planLoad(),planMine()]).then(()=>{if(PL3.d){UPGB=false;openUpgrade();return}UPGB=false;upgOld()})};
 function upgOld(){if(UPGB)return;UPGB=true;const s=curSeries(),wait=Promise.all([loadMeta(),STORE===null?loadStore():null]).catch(()=>{});
   Promise.race([wait,new Promise(r=>setTimeout(r,2500))]).then(()=>{UPGB=false;if(S.tab!=='home'||STK.length||layer)return;
     if(s&&upgradesOf(s.id).length&&!expired(s))A.openSD({dataset:{id:s.id,t:'d'}});else A.toStore()})}
@@ -519,7 +520,7 @@ function storeCard(x,cls){const off=x.mrp&&x.mrp>x.price?Math.round((1-x.price/x
    <div class="ft"><span class="price">${x.price?`<b>₹${fmtN(x.price)}</b>${off?`<s>₹${fmtN(x.mrp)}</s><span class="badge off">${off}% off</span>`:''}`:'<span class="free">Free</span>'}</span><a class="btn sm ${soon?'':'gold'}" href="${storeUrl(x)}">${soon?ic('bell',15)+'Notify me':x.prebook&&x.buy_on===false?'Pre-book':'Buy now'}</a></div></article>`}
 function trending(){if(!STORE){loadStore();return `<section class="sec"><div class="sh"><h2>Trending test series</h2></div><div class="card sk" style="height:190px"></div></section>`}loadExtras();return trendRail(true)}
 VIEW.home=()=>seriesHero()+qdRow()+quickGrid()+cdCard3()+upcoming()+zone()+trending();
-AFTER.home=()=>{tick(true);every(()=>{tick(false);evTick()},1000);autoRail('#trRail','#trDots')};
+AFTER.home=()=>{tick(true);planMine();every(()=>{tick(false);evTick()},1000);autoRail('#trRail','#trDots')};
 function autoRail(rs,ds){const c=$(rs);if(!c||!c.children.length)return;const dots=[...root.querySelectorAll(ds+' i')];let i=0,touched=false;const st=()=>c.children[0].getBoundingClientRect().width+12;
   c.addEventListener('scroll',()=>{const k=Math.round(c.scrollLeft/st());if(k!==i){i=k;dots.forEach((d,j)=>d.classList.toggle('on',j===k))}},{passive:true});
   ['pointerdown','touchstart','wheel','focusin'].forEach(ev=>c.addEventListener(ev,()=>{touched=true},{passive:true}));
@@ -1087,29 +1088,59 @@ const LQ={q:''};
 const bmCount=()=>{try{return BM?BM.size:0}catch(e){return 0}};
 const pdfCount=()=>{try{return PDFS?Object.keys(PDFS).length:null}catch(e){return null}};
 const LMOD=[
- {k:'gen',h:'#/gen',ic:'spark',t:'Test generator',d:'Build your own test from the chapters and topics you choose, then take it like a real test.',tags:['NEET or JEE','Chapters and topics','Your own timing'],cta:'Create a test',grp:'practice'},
- {k:'qb',h:'#/qb',ic:'qb',t:'Question bank',d:'Unlimited practice. Questions you have already done are skipped.',tags:['Subject, chapter, topic','Instant check','Solutions'],cta:'Start practising',grp:'practice'},
- {k:'pyq',h:'#/pyq',ic:'pyq',t:'Previous year papers',d:'NEET and JEE previous year questions, chapter-wise.',tags:['Chapter-wise','Year-wise','Answer key'],cta:'Open PYQ',grp:'practice'},
+ {k:'gen',f:'gen',h:'#/gen',ic:'spark',t:'Test generator',d:'Build your own test from the chapters and topics you choose, then take it like a real test.',tags:['NEET or JEE','Chapters and topics','Your own timing'],cta:'Create a test',grp:'practice'},
+ {k:'qb',f:'qb',h:'#/qb',ic:'qb',t:'Question bank',d:'Practice by subject, chapter and topic. Questions you have already done are skipped.',tags:['Subject, chapter, topic','Instant check','Solutions'],cta:'Start practising',grp:'practice'},
+ {k:'pyq',f:'pyq',h:'#/pyq',ic:'pyq',t:'Previous year papers',d:'NEET and JEE previous year questions, chapter-wise.',tags:['Chapter-wise','Year-wise','Answer key'],cta:'Open PYQ',grp:'practice'},
  {k:'m',h:'#/m',ic:'pen',t:'Mistake notebook',d:'Every question you got wrong, ready to practise again.',grp:'revise'},
  {k:'b',h:'#/b',ic:'bookmark',t:'Saved questions',d:'Questions you bookmarked during tests.',grp:'revise',n:bmCount},
- {k:'notes',h:'#/notes',ic:'file',t:'Notes & PDFs',d:'Notes and PDFs added to your test series.',grp:'material',n:pdfCount}];
-const LSOON=[['book','Books and NCERT reader','Read NCERT and reference books inside the app'],['pen','Handwritten notes and DPPs','Chapter-wise notes and daily practice problems'],['cards','Mindmaps and flashcards','Quick revision with flip cards'],['dl','Download manager','Save permitted material for offline reading']];
+ {k:'dbt',h:'#/doubts',ic:'doubt',t:'My doubts',d:'Your doubts on test questions and the answers.',grp:'revise'},
+ {k:'notes',h:'#/notes',ic:'file',t:'Notes & PDFs',d:'Notes and PDFs added to your test series.',grp:'material',n:pdfCount},
+ {k:'trk',h:'#/trk',ic:'cal',t:'Study tracker',d:'Your weekly plan, tasks and study hours.',grp:'material'}];
+const LULTRA=[['pyq','PYQ analyzer','Chapter weightage, repeats and trends'],['target','Question practice','Topic-wise sets by level'],['cards','Flash cards','Quick revision with flip cards'],['atom','3D models','Molecules, cells and the periodic table in 3D']];
+const LSOON=[['book','Books and NCERT reader','Read NCERT and reference books inside the app'],['pen','Handwritten notes and DPPs','Chapter-wise notes and daily practice problems'],['dl','Download manager','Save permitted material for offline reading']];
+/* v91: the student's plan and what is left of each feature. The server decides (supabase_v91_plan_access.sql);
+   while the owner keeps the locks off, everything stays open and the Library only shows the plan of each feature. */
+const PLN={d:null,busy:null,off:false,at:0,who:''};
+function planMine(force){const who=(typeof AUTH!=='undefined'&&AUTH&&AUTH.mobile)||'';if(who!==PLN.who){PLN.d=null;PLN.off=false;PLN.who=who;force=true}
+  if(PLN.busy)return PLN.busy;if(!force&&(PLN.off||(PLN.d&&Date.now()-PLN.at<300000)))return Promise.resolve(PLN.d);if(!who)return Promise.resolve(null);
+  PLN.busy=rpc('cbt_my_plan',{}).then(r=>{if(r&&r.ok&&r.v91){PLN.d=r;PLN.at=Date.now()}else if(r&&r.status===404)PLN.off=true}).catch(()=>{}).finally(()=>{PLN.busy=null});return PLN.busy}
+const plFeat=k=>(PLN.d&&(PLN.d.feats||[]).find(f=>f.key===k))||null;
+const PERW={day:'today',month:'this month',total:''};
+const plName=k=>{const t=plTitle(k);return t===k?k.charAt(0).toUpperCase()+k.slice(1):t};
+/* open (no v91) | pre (not in the plan, locks off) | unl | left | lock | out */
+function plAcc(k){const f=plFeat(k);if(!f)return {s:'open'};const on=!!PLN.d.enforce;
+  if(f.lim===-1)return {s:'unl',f};if(f.lim===0)return {s:on?'lock':'pre',f};
+  const left=Math.max(0,f.lim-f.used);return {s:left?'left':on?'out':'pre',f,left}}
+function lbrMeter(a,hero){const f=a.f;if(!f)return '';const per=PERW[f.period]||'';
+  if(a.s==='unl')return `<div class="lbr-m"><span>${ic('check',14)}Unlimited in your plan</span></div>`;
+  if(a.s==='left')return `<div class="lbr-m"><span class="lbr-t"><b>${a.left}</b> of ${f.lim} ${esc3(f.unit)} left${per?' '+per:''}</span><i style="--p:${(a.left/f.lim).toFixed(2)}"></i></div>`;
+  if(a.s==='pre')return `<div class="lbr-m"><span>${ic('gift',14)}Open to everyone for now</span></div>`;
+  if(a.s==='lock')return `<div class="lbr-m lbr-lk"><span>${ic('lock',14)}Comes with ${esc3(plName(f.need||f.min))}</span></div>`;
+  return `<div class="lbr-m lbr-lk"><span>${ic('lock',14)}You used all ${f.lim} ${esc3(f.unit)}${per?' '+per:''}</span><i style="--p:0"></i></div>`}
+const lbrTag=f=>f&&f.min&&f.min!=='free'&&f.min!=='basic'?`<span class="lbr-tag k-${f.min}">${esc3(plName(f.min))}</span>`:'';
+function lbrPlan(){const d=PLN.d;if(!d)return '';const p=d.plan,till=d.ends_at?new Date(d.ends_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
+  const sub=p==='ultra'?'Everything is unlocked':p==='pro'?'Ultra adds unlimited tests and more':p==='basic'?'Your test series. Pro adds the practice tools':'Question bank, PYQ and Test generator come with Pro';
+  return `<section class="hero lbr-p"><div><small>YOUR PLAN</small><b>${esc3(plName(p))}</b><span>${sub}${till?` · till ${till}`:''}</span></div>${p!=='ultra'?`<button class="btn onhero sm" data-a="lbrUp" data-k="${p==='pro'?'ultra':'pro'}">${ic('crown',15)}${p==='pro'?'Go Ultra':'Upgrade'}</button>`:''}</section>`}
 function libHome(){const P=LMOD.filter(m=>m.grp==='practice'),R=LMOD.filter(m=>m.grp!=='practice');
-  return `<section class="sec"><div class="sh"><h2>Practice</h2><span class="aside">Uses the Aspiron question bank</span></div><div class="list">${P.map((m,i)=>`<article class="${i?'card':'hero'} pm"><div class="pm-h"><span class="ti${i?' g':''}" ${i?'':'style="background:rgba(255,255,255,.1);color:var(--heroTx)"'}>${ic(m.ic,22)}</span><div><b>${m.t}</b><small>${m.d}</small></div></div><div class="inc">${m.tags.map(t=>`<span>${t}</span>`).join('')}</div><button class="btn ${i?'ghost':'onhero'} blk" data-a="lmod" data-h="${m.h}">${m.cta}</button></article>`).join('')}</div></section>
-  <section class="sec"><div class="sh"><h2>Revise and read</h2></div><div class="card rows">${R.map(m=>{const n=m.n?m.n():null;return `<button class="row" data-a="lmod" data-h="${m.h}"><span class="ti g">${ic(m.ic,20)}</span><span><b>${m.t}</b><small>${m.d}</small></span>${n?`<span class="badge n">${n}</span>`:ic('right',18)}</button>`}).join('')}</div></section>
-  <section class="sec"><div class="sh"><h2>Coming soon</h2><span class="aside">Being built</span></div><div class="lgrid">${LSOON.map(s=>`<div class="card lt" style="min-height:0;opacity:.85"><span class="ti">${ic(s[0],20)}</span><div><b style="font-size:15px">${s[1]}</b><small>${s[2]}</small></div><span class="n"><span class="badge pro">Soon</span></span></div>`).join('')}</div></section>`}
-function libResults(){const w=LQ.q.toLowerCase().trim();const M=LMOD.filter(m=>(m.t+' '+m.d).toLowerCase().includes(w)),S2=LSOON.filter(s=>(s[1]+' '+s[2]).toLowerCase().includes(w));
+  return `${lbrPlan()}<section class="sec"><div class="sh"><h2>Practice</h2><span class="aside">Uses the Aspiron question bank</span></div><div class="list">${P.map((m,i)=>{const a=plAcc(m.f),lk=a.s==='lock'||a.s==='out',f=a.f;
+    return `<article class="${i?'card':'hero'} pm"><div class="pm-h"><span class="ti${i?' g':''}" ${i?'':'style="background:rgba(255,255,255,.1);color:var(--heroTx)"'}>${ic(m.ic,22)}</span><div><b>${m.t}${lbrTag(f)}</b><small>${m.d}</small></div></div>${f?lbrMeter(a):`<div class="inc">${m.tags.map(t=>`<span>${t}</span>`).join('')}</div>`}
+    ${lk?`<button class="btn gold blk" data-a="lbrUp" data-k="${esc3(f.need||f.min||'pro')}">${ic('crown',16)}Upgrade to ${esc3(plName(f.need||f.min||'pro'))}</button>`:`<button class="btn ${i?'ghost':'onhero'} blk" data-a="lmod" data-h="${m.h}">${m.cta}</button>`}</article>`}).join('')}</div></section>
+  <section class="sec"><div class="sh"><h2>Revise and track</h2></div><div class="card rows">${R.map(m=>{const n=m.n?m.n():null;return `<button class="row" data-a="lmod" data-h="${m.h}"><span class="ti g">${ic(m.ic,20)}</span><span><b>${m.t}</b><small>${m.d}</small></span>${n?`<span class="badge n">${n}</span>`:ic('right',18)}</button>`}).join('')}</div></section>
+  <section class="sec"><div class="sh"><h2>With Ultra</h2><span class="aside">Coming soon</span></div><div class="lgrid">${LULTRA.map(s=>`<div class="card lt lbr-u"><span class="ti">${ic(s[0],20)}</span><div><b style="font-size:15px">${s[1]}</b><small>${s[2]}</small></div><span class="n"><span class="lbr-tag k-ultra">Ultra</span><span>Soon</span></span></div>`).join('')}</div></section>
+  <section class="sec"><div class="sh"><h2>Coming soon</h2><span class="aside">Being built</span></div><div class="card rows">${LSOON.map(s=>`<div class="row"><span class="ti">${ic(s[0],20)}</span><span><b>${s[1]}</b><small>${s[2]}</small></span><span class="badge pro">Soon</span></div>`).join('')}</div></section>`}
+function libResults(){const w=LQ.q.toLowerCase().trim(),SO=LULTRA.concat(LSOON);const M=LMOD.filter(m=>(m.t+' '+m.d).toLowerCase().includes(w)),S2=SO.filter(s=>(s[1]+' '+s[2]).toLowerCase().includes(w));
   return `<section class="sec"><div class="sh"><h2>${M.length+S2.length} ${M.length+S2.length===1?'result':'results'}</h2><button class="lnk" data-a="lqClear">Clear</button></div>
-  ${M.length?`<div class="card rows">${M.map(m=>`<button class="row" data-a="lmod" data-h="${m.h}"><span class="ti g">${ic(m.ic,20)}</span><span><b>${m.t}</b><small>${m.d}</small></span>${ic('right',18)}</button>`).join('')}</div>`:''}
+  ${M.length?`<div class="card rows">${M.map(m=>`<button class="row" data-a="lmod" data-h="${m.h}"><span class="ti g">${ic(m.ic,20)}</span><span><b>${m.t}${lbrTag(plFeat(m.f))}</b><small>${m.d}</small></span>${ic('right',18)}</button>`).join('')}</div>`:''}
   ${S2.length?`<div class="card rows">${S2.map(s=>`<div class="row"><span class="ti">${ic(s[0],20)}</span><span><b>${s[1]}</b><small>Coming soon</small></span><span></span></div>`).join('')}</div>`:''}
   ${M.length+S2.length?'':`<div class="card empty"><span class="ti">${ic('search',22)}</span><b>Nothing found</b><p>Try “questions”, “PYQ”, “notes” or “mistakes”.</p></div>`}</section>`}
 VIEW.lib=()=>`<div class="pt"><div><h1>Library</h1><p>Practice, revision and study material</p></div></div>
   <div class="search"><label class="sbox">${ic('search',19)}<input id="lq" type="search" autocomplete="off" placeholder="Search practice, notes or questions" value="${esc3(LQ.q)}" aria-label="Search the library"><button class="clr" data-a="lqClear" aria-label="Clear search"${LQ.q?'':' hidden'}>${ic('x',17)}</button></label></div>
   <div id="lBody" class="stack" style="gap:var(--gap)">${LQ.q.trim()?libResults():libHome()}</div>`;
 function drawL(){const b=$('#lBody');if(!b)return;b.innerHTML=LQ.q.trim()?libResults():libHome();$('[data-a="lqClear"]').hidden=!LQ.q}
-AFTER.lib=()=>{const q=$('#lq');q.addEventListener('input',()=>{LQ.q=q.value;drawL()});try{if(typeof loadPdfs==='function'&&pdfCount()===null)loadPdfs().then(()=>{if(S.tab==='lib'&&!LQ.q)drawL()})}catch(e){}};
+AFTER.lib=()=>{const q=$('#lq');q.addEventListener('input',()=>{LQ.q=q.value;drawL()});planLoad().then(()=>planMine(true)).then(()=>{if(S.tab==='lib'&&!LQ.q)drawL()}).catch(()=>{});try{if(typeof loadPdfs==='function'&&pdfCount()===null)loadPdfs().then(()=>{if(S.tab==='lib'&&!LQ.q)drawL()})}catch(e){}};
+A.lbrUp=el=>{const k=el.dataset.k;planLoad().then(()=>{if(PL3.d)openUpgrade(k);else upgOld()})};
 A.lqClear=()=>{LQ.q='';const q=$('#lq');if(q)q.value='';drawL()};
-A.lmod=el=>{const h=el.dataset.h,f={'#/b':openSaved,'#/m':openMistakes,'#/notes':openNotes,'#/qb':openQB,'#/gen':openGen,'#/pyq':()=>openPyq()}[h];if(f)f();else oldHash(h)};
+A.lmod=el=>{const h=el.dataset.h,f={'#/b':openSaved,'#/m':openMistakes,'#/notes':openNotes,'#/qb':openQB,'#/gen':openGen,'#/pyq':()=>openPyq(),'#/doubts':openDoubts,'#/trk':openTracker}[h];if(f)f();else oldHash(h)};
 
 /* ================= ANALYTICS: from the student's own results (cbt_catalog.results) ================= */
 const AN={per:'all',chart:'marks',table:false};
@@ -1712,9 +1743,15 @@ A.dbtSend=async el=>{if(!DBA)return;const tx=($('#dbtTx')||{}).value||'';if(tx.t
    Notify me (it saves the choice, nothing is bought or unlocked). Basic = a paid test series; Pro and Ultra are on the account. */
 const PL3={d:null,busy:null,off:false,sel:'',add:new Set(),don:0,cp:null,cpBusy:false};
 const PLR={free:0,basic:1,pro:2,ultra:3};
+/* v91: a feature that is not in the student's plan (or used up): one clear sheet with the way to upgrade, not an error */
+function planWall(r){const need=r.need||'',out=+r.lim>0,per=PERW[r.period]||'',f=plFeat(r.feature)||{};
+  openSheet(`<div class="lk3"><span class="lk3i">${ic('crown',26)}</span><h2 id="sheetT">${out?`You used all ${+r.lim} ${esc3(f.unit||'uses')}${per?' '+per:''}`:`${esc3(r.title||'This')} comes with ${esc3(plName(need||'pro'))}`}</h2>
+   <p class="sub">${need?`Upgrade to <b>${esc3(plName(need))}</b> to ${out?'keep going':`use ${esc3(r.title||'it')}`}.`:'This is not part of your plan.'}</p></div>
+   <div class="sheet-ft"><button class="btn ghost" data-a="close">Not now</button>${need?`<button class="btn gold" data-a="lbrUp" data-k="${esc3(need)}">See plans</button>`:''}</div>`)}
+{const r0=rpc;rpc=async function(fn,a,n){const r=await r0(fn,a,n);if(r&&r.ok===false&&r.error==='plan'&&r.feature){PLMUTE=Date.now()+1500;setTimeout(()=>planWall(r),90);planMine(true)}return r}}
 function planLoad(){if(PL3.d)return Promise.resolve(PL3.d);if(PL3.busy)return PL3.busy;
   PL3.busy=rpc('cbt_plans',{},true).then(r=>{if(r&&r.ok&&r.v90&&Array.isArray(r.plans)&&r.plans.length)PL3.d=r;else PL3.off=true}).catch(()=>{PL3.off=true}).finally(()=>{PL3.busy=null});return PL3.busy}
-const myPlan=()=>{try{return mine().some(x=>!x.is_free&&x.unlocked&&!expired(x))?'basic':'free'}catch(e){return 'free'}};
+const myPlan=()=>{if(PLN.d&&PLN.d.plan)return PLN.d.plan;try{return mine().some(x=>!x.is_free&&x.unlocked&&!expired(x))?'basic':'free'}catch(e){return 'free'}};
 const plOf=k=>((PL3.d||{}).plans||[]).find(p=>p.key===k);
 const plTitle=k=>k==='free'?'Free':(plOf(k)||{}).title||k;
 const rupee=n=>'₹'+fmtN(+n||0);
@@ -1843,6 +1880,7 @@ async function qrFetch(){const R=QR;if(!R||R.end||R.busy)return R&&R.busy;
 function qrView(){return {t:'Practice',get s(){return QR?`${QR.ok} of ${QR.n} right`:''},key:'qr',html:()=>{const R=QR;if(!R)return '';
   if(R.stop)return qrSum(false);
   if(R.i>=R.q.length){if(R.busy||(!R.end&&!R.err))return '<div class="card sk" style="height:300px"></div>';
+   if(R.err&&R.err.error==='plan')return `<div class="card empty"><span class="lk3i" style="width:52px;height:52px;border-radius:16px">${ic('crown',22)}</span><b>${esc3(R.err.title||'Question bank')} comes with ${esc3(plName(R.err.need||'pro'))}</b><p>${+R.err.lim>0?`You used all ${+R.err.lim} for now.`:'Upgrade to keep practising.'}</p><button class="btn sm gold" data-a="lbrUp" data-k="${esc3(R.err.need||'pro')}">See plans</button></div>`;
    if(R.err&&!R.end)return `<div class="card empty"><span class="ti">${ic('info',22)}</span><b>Could not load questions</b><p>${esc3(qbErr(R.err))}</p><button class="btn sm" data-a="qrMore">Try again</button></div>`;
    return qrSum(true)}
   const q=R.q[R.i],a=R.ans[q.id],res=R.res[q.id],tags=[qbSub(q.s),q.c?qbChap(q.s,q.c):'',qbLbl(QB_LV,q.l),qbLbl(QB_TY,q.y),qbLbl(QB_SR,q.o)].filter(Boolean);

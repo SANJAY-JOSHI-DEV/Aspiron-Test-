@@ -168,6 +168,19 @@ async function rpcRoute(route) {
     await page.goto(BASE + 'cp-dt764twzf54s5m.html#/plans/compare'); await page.waitForSelector('.tbl');
     ok((await page.$$('.tbl tbody tr')).length === 13, tag + ' Plans: the compare list shows the 13 starting rows');
     const ovf4 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); ok(!ovf4, tag + ' no horizontal scroll (plans)');
+    // v91: Access & limits — the owner turns the locks on, sets a demo and gives a student Pro
+    await q(`delete from cbt_private.plan_grants`); await q(`update cbt_private.plan_settings set enforce = false`);
+    await page.goto(BASE + 'cp-dt764twzf54s5m.html#/plans/access'); await page.waitForSelector('[data-act=sw]');
+    await page.click('[data-act=sw]'); await page.waitForSelector('.modal'); await page.click('#cf-yes'); await page.waitForTimeout(1200);
+    ok((await q(`select enforce from cbt_private.plan_settings`))[0].enforce === true, tag + ' Access: the locks are turned on');
+    await page.waitForSelector('[data-act=feat]'); await page.click('[data-act=feat][data-k="qb"]'); await page.waitForSelector('#pff'); await page.fill('#pff [name=free]', '10'); await page.click('.modal [data-act=ok]'); await page.waitForTimeout(1200);
+    ok((await q(`select free from cbt_private.plan_features where key = 'qb'`))[0].free === 10, tag + ' Access: a demo of 10 questions a day on Free is saved');
+    await page.click('[data-act=grant]'); await page.waitForSelector('#pgf'); await page.fill('#pgf [name=mobile]', '9000000001'); await page.fill('#pgf [name=days]', '15'); await page.fill('#pgf [name=note]', '<i>trial</i>'); await page.click('.modal [data-act=ok]'); await page.waitForTimeout(1200);
+    const gr = (await q(`select g.plan, g.note, round(extract(epoch from g.ends_at - now()) / 86400) d from cbt_private.plan_grants g join cbt_private.students s on s.id = g.student_id where s.mobile = '9000000001'`))[0];
+    ok(gr && gr.plan === 'pro' && +gr.d === 15 && !/[<>]/.test(gr.note), tag + ' Access: Pro given for 15 days, the note cleaned ' + JSON.stringify(gr));
+    ok(await page.evaluate(() => /Plans given by the admin[\s\S]*Pro/.test(document.querySelector('#ax-page').innerText)), tag + ' Access: the given plan is listed');
+    const ovf5 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); ok(!ovf5, tag + ' no horizontal scroll (access)');
+    await q(`delete from cbt_private.plan_grants`); await q(`update cbt_private.plan_settings set enforce = false`); await q(`update cbt_private.plan_features set free = 0 where key = 'qb'`);
     await q(`update cbt_private.plans set price = null, mrp = null`); await q(`delete from cbt_private.plan_addons`);
     ok(!errs.length, tag + ' no page errors ' + errs.join(' | '));
     await ctx.close();

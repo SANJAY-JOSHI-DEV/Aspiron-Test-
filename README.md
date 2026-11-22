@@ -152,10 +152,10 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   A rule that old rows already break is *skipped* (nothing is changed or deleted) and the table shows how many rows;
   send that table to your developer. Busy during a live test? Run it again later.
 
-## Clean answers for bad input (`supabase_v91_error_hardening.sql`)
+## Clean answers for bad input (`supabase_v92_error_hardening.sql`)
 - Found by running every student function with broken input (wrong ids, huge numbers, 50,000-letter text): 3 of 143 gave a raw database error. "My mistakes" with a huge page offset overflowed a number (the offset is now capped at 100,000; a page is 15–30 items). The admin reviews and suspects pages read their id / number *before* the admin password was checked, so even a visitor could trigger the error; they now read it after the check and answer `{"ok": false, "error": "id" | "days"}`.
 - Nothing else in those functions changes.
-- **Setup:** first run `supabase_check_installed.sql` and get every row to "ok" (v91 installs the current repo versions of these three functions), then run `supabase_v91_error_hardening.sql` once (after v90). If an older file that makes these functions is run again, run v35 and then v91 again after it.
+- **Setup:** first run `supabase_check_installed.sql` and get every row to "ok" (v92 installs the current repo versions of these three functions), then run `supabase_v92_error_hardening.sql` once (after v90). If an older file that makes these functions is run again, run v35 and then v92 again after it.
 
 ## Notifications: only the student or the phone itself (`supabase_v83_push_owner.sql`, review V2)
 - A phone's notification link can be turned off or moved only by the student it belongs to, or by the phone that made
@@ -227,9 +227,28 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Admin → Plans** (Sales & billing): names, prices (empty = “Price coming soon”), days, the compare list rows,
   add-ons with pictures, donation amounts, plan coupons and the Notify me list. Store = View reads, Store = Full access
   changes. The store website and its coupons are not touched.
-- Nothing is locked yet: locks (Question bank, PYQ, test generator 4 a month …) come in a later step.
+- Locks: see *Plan access* below (v92).
 - **Setup:** run `supabase_v90_plans.sql` once (after v89), then `supabase_v35_admin_team.sql` again. Until then the
   Upgrade pill works as before.
+
+## Plan access: what each plan may use (`supabase_v91_plan_access.sql`)
+- **The server decides.** One list of features with a limit per plan: -1 = unlimited, 0 = not in the plan, N = N uses a
+  day / a month (India time) / in total. Start: Question bank and PYQ = Pro and Ultra, Test generator = 4 a month on Pro
+  and unlimited on Ultra, Doubts = 2 to try on Free. `cbt_qb_next`, `cbt_qb_check`, `cbt_gen_create`,
+  `cbt_pyq_chapter` and `cbt_doubt_ask` check it inside the function, so the old app and direct calls follow the same
+  rule. A retake of a generated test is not counted; tests already made stay open.
+- **A student's plan:** a plan given by the admin (until its end date) → Basic if the student has a paid test series →
+  Free. Payments are not open, so **Give a plan** is the only way to Pro / Ultra for now.
+- **Locks are OFF** until the owner turns them on (Admin → Plans → **Access & limits**). While off, everything works as
+  before; the Library only shows the plan of each tool. Uses are counted either way.
+- **Library:** your plan card (Upgrade / Go Ultra), PRO tags, "3 of 4 tests left this month", "Unlimited", or
+  "Comes with Pro" + **Upgrade to Pro** when locked; Revise and track (mistakes, saved, doubts, notes, study tracker);
+  the Ultra corner (PYQ analyzer, question practice, flash cards, 3D models: coming soon). A refused call opens one
+  "… comes with Pro" sheet with **See plans**.
+- Features that load from static files (Tools, the periodic table) can only be hidden in the app, not locked on the
+  server.
+- **Setup:** run `supabase_v91_plan_access.sql` once (after v90), then `supabase_v35_admin_team.sql` again. Without it
+  the Library looks as before, without the plan card.
 
 ## Doubts (`supabase_v87_doubts.sql`)
 - **Student:** in a test result, every question has a **?** button. The student writes the doubt (text only, 5 to 1200

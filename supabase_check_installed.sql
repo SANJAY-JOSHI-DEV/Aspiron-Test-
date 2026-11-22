@@ -76,12 +76,21 @@ select 31, 'supabase_v90_plans.sql', case when to_regprocedure('public.cbt_plans
   when to_regprocedure('public.cbt_plans()') is not null then 'run supabase_v35_admin_team.sql again'
   else 'MISSING — run this file' end
 union all
--- v91 changes existing functions: 'ok' when a page offset in "My mistakes" is capped and the admin reviews / suspects read their input after the admin check
-select 32, 'supabase_v91_error_hardening.sql', case when to_regprocedure('public.cbt_mistakes(text,text,text,integer,integer,text,text)') is not null
+select 32, 'supabase_v91_plan_access.sql', case when to_regprocedure('public.cbt_my_plan(text,text,text)') is not null
+  and (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public'
+         and p.proname in ('cbt_qb_next', 'cbt_qb_check', 'cbt_gen_create', 'cbt_pyq_chapter', 'cbt_doubt_ask')
+         and pg_get_functiondef(p.oid) like '%plan_use%') < 5 then 'run this file again (an older file took the plan checks out)'
+  when to_regprocedure('public.cbt_my_plan(text,text,text)') is not null
+  and to_regprocedure('cbt_private.cbt_admin_plan_access__core(text,text,jsonb)') is not null then 'ok'
+  when to_regprocedure('public.cbt_my_plan(text,text,text)') is not null then 'run supabase_v35_admin_team.sql again'
+  else 'MISSING — run this file' end
+union all
+-- v92 changes existing functions: 'ok' when a page offset in "My mistakes" is capped and the admin reviews / suspects read their input after the admin check
+select 33, 'supabase_v92_error_hardening.sql', case when to_regprocedure('public.cbt_mistakes(text,text,text,integer,integer,text,text)') is not null
   and to_regprocedure('cbt_private.cbt_admin_reviews__core(text,text,jsonb)') is not null
   and to_regprocedure('cbt_private.cbt_admin_suspects__core(text,text,jsonb)') is not null
   and pg_get_functiondef(to_regprocedure('public.cbt_mistakes(text,text,text,integer,integer,text,text)')) like '%100000%'
-  and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_reviews__core(text,text,jsonb)')) like '%v91: the id is read only after%'
-  and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_suspects__core(text,text,jsonb)')) like '%v91: read only after the admin check%' then 'ok' else 'MISSING — run this file' end
+  and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_reviews__core(text,text,jsonb)')) like '%v92: the id is read only after%'
+  and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_suspects__core(text,text,jsonb)')) like '%v92: read only after the admin check%' then 'ok' else 'MISSING — run this file' end
 ) x
 order by n;
