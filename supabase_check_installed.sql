@@ -75,5 +75,10 @@ select 31, 'supabase_v90_plans.sql', case when to_regprocedure('public.cbt_plans
   and to_regprocedure('cbt_private.cbt_admin_plans__core(text,text,jsonb)') is not null then 'ok'
   when to_regprocedure('public.cbt_plans()') is not null then 'run supabase_v35_admin_team.sql again'
   else 'MISSING — run this file' end
+union all
+select 32, 'supabase_v91_plan_access.sql', case when to_regprocedure('public.cbt_my_plan(text,text,text)') is not null
+  and to_regprocedure('cbt_private.cbt_admin_plan_access__core(text,text,jsonb)') is not null then 'ok'
+  when to_regprocedure('public.cbt_my_plan(text,text,text)') is not null then 'run supabase_v35_admin_team.sql again'
+  else 'MISSING — run this file' end
 ) x
 order by n;
