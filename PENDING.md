@@ -60,6 +60,14 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   **Saare DNS records yahan note kar lo, Cloudflare (Phase 7) me copy karne honge.**
   - [ ] Naya email `VAPID_SUBJECT` (1.2) me daalo.
 
+## Promotions board: influencer list, commission per series, code, leads (v95)
+- [ ] **PB.1 👤 SQL chalao:** Supabase → SQL Editor: `supabase_v95_promo_board.sql` (v35 dobara chalane ki zarurat nahi).
+  Kuch delete nahi hota. *Check:* `supabase_check_installed.sql` row 35 = "ok"; Admin → Promotions par **Board** table dikhe.
+- [ ] **PB.2 👤 Har influencer ka code (optional):** Promotions → influencer par tap → Edit → *Influencer code* (jaise RAHUL10) → *Code is on*.
+  Store ke coupon box me ye code likhne wala bachcha usi influencer ke naam count hoga.
+- [ ] **PB.3 👤 Series-wise commission:** influencer par tap → *Commission* tab → jis series ka alag ₹ chahiye wahan likho → Save.
+- [ ] **PB.4 👤 Check:** apne phone se `store?ref=<code>` kholo, naam + number daalo → Admin → Promotions → us influencer → *Leads* me dikhe.
+
 ## Plan locks "DELETE requires a WHERE clause" fix (v94)
 - [ ] **W.1 👤 SQL chalao:** Supabase → SQL Editor: `supabase_v94_where_fix.sql` → `supabase_v35_admin_team.sql`.
   Kuch delete ya add nahi hota. *Check:* `supabase_check_installed.sql` row 34 = "ok"; Admin → Plans → Access & limits →

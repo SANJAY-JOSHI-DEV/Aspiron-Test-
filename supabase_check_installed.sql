@@ -102,5 +102,12 @@ select 34, 'supabase_v94_where_fix.sql', case when to_regprocedure('cbt_private.
   and pg_get_functiondef(to_regprocedure('public.cbt_admin_plan_access(text,text,jsonb)')) like '%delete from plan_usage where true%'
   then 'run supabase_v35_admin_team.sql again'
   else 'MISSING — run this file, then supabase_v35_admin_team.sql' end
+union all
+-- v95: 'ok' when the promotions board is in: influencer codes, leads, commission per series in the admin function
+select 35, 'supabase_v95_promo_board.sql', case when to_regprocedure('public.cbt_promo_lead(text,text,text,text)') is not null
+  and to_regprocedure('public.cbt_promo_use(text,text,text)') is not null
+  and to_regprocedure('cbt_private.cbt_admin_promos__core(text,text,jsonb)') is not null
+  and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_promos__core(text,text,jsonb)')) like '%cbt_promo_rates%' then 'ok'
+  else 'MISSING — run this file' end
 ) x
 order by n;

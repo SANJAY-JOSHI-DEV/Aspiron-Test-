@@ -2310,6 +2310,54 @@ select pg_temp.chk('53b turning the plan locks on and off works and clears the u
   :'lk94on' = 'true' and :'lk94a' = 't' and :'lk94n' = '0' and :'lk94off' = 'true'
   and not (select enforce from cbt_private.plan_settings where id = 1));
 
+-- ===== 54. v95 promotions board: influencer code, leads, commission per series =====
+select set_config('request.headers', '{"x-real-ip":"203.0.113.95"}', false);
+delete from public.cbt_store_tries;
+select public.cbt_admin_login('','OwnerPass2026x','Owner')->>'token' as ow95 \gset
+select public.cbt_admin_promos(:'ow95','create','{"name":"Rahul YT","code":"rahul-yt","commission":"30","ucode":"rahul10","ucode_on":true}')->>'id' as pl95 \gset
+select pg_temp.chk('54a influencer code: bad format, empty-but-on and a used code are refused',
+  public.cbt_admin_promos(:'ow95','create','{"name":"X1","code":"x-one","commission":"5","ucode":"<b>"}')->>'error' = 'ucode'
+  and public.cbt_admin_promos(:'ow95','create','{"name":"X1","code":"x-one","commission":"5","ucode":"","ucode_on":true}')->>'error' = 'ucode_empty'
+  and public.cbt_admin_promos(:'ow95','create','{"name":"X1","code":"x-one","commission":"5","ucode":"RAHUL10"}')->>'error' = 'ucode_exists'
+  and (select ucode = 'RAHUL10' and ucode_on from public.cbt_promo_links where code = 'rahul-yt'));
+-- an older panel (no ucode in the data) keeps the saved code
+select public.cbt_admin_promos(:'ow95','update', jsonb_build_object('id', :'pl95', 'name', 'Rahul YT', 'commission', '30', 'active', true))->>'ok' as up95 \gset
+select pg_temp.chk('54b update without the code keeps it', :'up95' = 'true' and (select ucode = 'RAHUL10' and ucode_on from public.cbt_promo_links where code = 'rahul-yt'));
+select public.cbt_admin_promos(:'ow95','rates', jsonb_build_object('id', :'pl95', 'rates', '[{"item":"cccccccc-0000-0000-0000-000000000001","commission":"77"},{"item":"cccccccc-0000-0000-0000-0000000000ff","commission":"9"}]'::jsonb))->>'ok' as rt95 \gset
+select pg_temp.chk('54c commission per series: saved, unknown series dropped, bad data refused',
+  :'rt95' = 'true' and (select count(*) = 1 and min(commission) = 77 from public.cbt_promo_rates where link_id = :'pl95')
+  and public.cbt_admin_promos(:'ow95','rates', jsonb_build_object('id', :'pl95', 'rates', '[{"item":"cccccccc-0000-0000-0000-000000000001","commission":"-1"}]'::jsonb))->>'error' = 'rates'
+  and public.cbt_admin_promos('wrong-password','rates', jsonb_build_object('id', :'pl95', 'rates', '[]'::jsonb))->>'ok' = 'false');
+select public.cbt_store_order('cccccccc-0000-0000-0000-000000000001','Code Buyer','9855555555')->>'code' as po95 \gset
+set role anon;
+select public.cbt_promo_use(:'po95', '9811111111', 'RAHUL10')->>'applied' as pu95a \gset
+select public.cbt_promo_use(:'po95', '9855555555', 'NOPE99')->>'applied' as pu95b \gset
+select public.cbt_promo_use(:'po95', '9855555555', 'rahul10')->>'applied' as pu95c \gset
+select public.cbt_promo_codes_on()->>'on' as pc95 \gset
+select public.cbt_promo_lead('rahul-yt', '<script>Lead</script> One', '9866666666', 'neet') as ld95 \gset
+select public.cbt_promo_lead('no-such-link', 'Ghost', '9866666667', 'neet') as ld95b \gset
+select count(*) from (select public.cbt_promo_lead('rahul-yt', 'Spam', (9870000000 + g)::text, 'jee') from generate_series(1, 15) g) z \gset
+reset role;
+select pg_temp.chk('54d anon cannot read leads, rates or the admin function body',
+  not has_table_privilege('anon', 'public.cbt_promo_leads', 'select') and not has_table_privilege('anon', 'public.cbt_promo_rates', 'select')
+  and not has_function_privilege('anon', 'cbt_private.cbt_admin_promos__core(text,text,jsonb)', 'execute'));
+select pg_temp.chk('54e influencer code: another number and a wrong code do nothing; the right code (any case) ties the order',
+  :'pu95a' = 'false' and :'pu95b' = 'false' and :'pu95c' = 'true' and :'pc95' = 'true'
+  and (select promo_code = 'rahul-yt' and promo_via = 'code' from public.cbt_store_orders where code = :'po95'));
+select pg_temp.chk('54f leads: saved without markup, unknown link ignored, at most 10 new leads per connection per hour',
+  (select name from public.cbt_promo_leads where mobile = '9866666666') = 'scriptLead/script One'
+  and not exists (select 1 from public.cbt_promo_leads where mobile = '9866666667')
+  and (select count(*) from public.cbt_promo_leads where code = 'rahul-yt') = 10);
+update public.cbt_store_orders set status = 'paid' where code = :'po95';
+select pg_temp.chk('54g paid order gets the series rate (77), not the normal one (30)', (select promo_rate from public.cbt_store_orders where code = :'po95') = 77);
+select pg_temp.chk('54h admin: get shows code, leads count and series; orders shows leads and how the order came',
+  (select (x->>'people')::int = 11 and x->>'ucode' = 'RAHUL10' and (x->>'earned')::int = 77 and (x->>'via_code')::int = 1
+     from jsonb_array_elements(public.cbt_admin_promos(:'ow95','get')->'links') x where x->>'code' = 'rahul-yt')
+  and jsonb_array_length(public.cbt_admin_promos(:'ow95','get')->'items') >= 1
+  and jsonb_array_length(public.cbt_admin_promos(:'ow95','orders','{"code":"rahul-yt"}')->'leads') = 10
+  and public.cbt_admin_promos(:'ow95','orders','{"code":"rahul-yt"}')->'orders'->0->>'via' = 'code');
+select set_config('request.headers', '{"x-real-ip":"203.0.113.10"}', false);
+
 -- ===== report =====
 \t off
 \a
