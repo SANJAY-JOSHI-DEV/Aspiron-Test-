@@ -2554,7 +2554,8 @@ sup,sub{font-size:.72em;line-height:0}
 .qk-t .qk-i{width:40px;height:40px;border-radius:13px}
 .qk-t .qk-i svg{width:19px;height:19px}
 .qk-l{font-size:12px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:340px){.qk-l{font-size:11px}.qk-t .qk-i{width:36px;height:36px}}
+@media (max-width:380px){.qk-g{gap:6px}.qk-t{padding:11px 1px 10px}.qk-l{font-size:11px;letter-spacing:-.01em}}
+@media (max-width:340px){.qk-l{font-size:10.5px}.qk-t .qk-i{width:36px;height:36px}}
 
 /* v100: Results page: segments side by side (chips + swipe left/right) */
 .rh-tabs{margin-bottom:12px}
