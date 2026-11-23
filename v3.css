@@ -2562,3 +2562,24 @@ sup,sub{font-size:.72em;line-height:0}
 :host([data-art]) :is(.hero,.band,.pbn.hero,.mkh,.pfh,.rsh,.bk3.k0){background:linear-gradient(180deg,transparent 38%,color-mix(in srgb,var(--hero2) 62%,transparent) 100%),linear-gradient(90deg,color-mix(in srgb,var(--hero2) 55%,transparent) 0%,transparent 62%),var(--art) right center/cover no-repeat,linear-gradient(155deg,var(--hero1),var(--hero2))!important}
 :host([data-art]) :is(.mkh-st>div,.trq button,.c3 div,.myts .cnt span,.trday span,.pqx3 button:not(.on),.pre,.minibtn,.qbic,.hb-tg){background:color-mix(in srgb,var(--hero2) 78%,transparent);border-color:rgba(255,255,255,.1);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 :host([data-art]) .pqx3 button.soon{opacity:.7}
+
+/* v102: theme page: picture blur, rows that slide left-right, "See all" pages */
+.th-more{display:inline-flex;align-items:center;gap:2px;height:30px;padding:0 6px 0 12px;border-radius:99px;font-size:13px;font-weight:600;color:var(--acc);background:var(--accSoft);flex:none}
+.th-more:active{transform:scale(.95)}
+.th-sec>.sh{align-items:center}
+.palr{display:flex!important;gap:12px;overflow-x:auto;margin:0 -16px;padding:2px 16px 8px;scroll-snap-type:x proximity;scrollbar-width:none;overscroll-behavior-x:contain}
+.palr::-webkit-scrollbar{display:none}
+.palr>.pal{flex:0 0 164px;scroll-snap-align:start}
+.artg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.artg>.artc{flex:none;min-width:0}
+.artg .artv{height:92px}
+.thblur{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);transition:opacity .2s}
+.thblur>span{display:flex;align-items:center;gap:8px;min-width:0;color:var(--tx)}.thblur>span b{font-size:14px;font-weight:600;white-space:nowrap}
+.thblur>span svg{color:var(--acc);flex:none}
+.thblur .seg{flex:none;width:186px;padding:3px}.thblur .seg button{height:30px;font-size:12.5px}
+.thblur.off{opacity:.5}
+.scr-in>.thblur{margin-bottom:12px}
+@media (max-width:360px){.thblur{flex-wrap:wrap}.thblur .seg{width:100%}}
+.palr{flex-direction:row!important}
+/* v102 dark / black: the poster colour is deep, so on a dark card its icons disappeared. Lift it towards the text colour. */
+:host(:not([data-mode="light"])) .pc .tt2 .ti{color:color-mix(in srgb,var(--pcDeep) 35%,var(--tx));background:color-mix(in srgb,var(--pcDeep) 30%,var(--surface2))}

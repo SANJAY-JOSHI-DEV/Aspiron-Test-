@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=101;
+const V3VER=102;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -47,7 +47,7 @@ const dur=m=>m>=60?`${Math.floor(m/60)} h${m%60?` ${m%60} min`:''}`:`${m} min`;
 const fmtN=n=>Number(n||0).toLocaleString('en-IN');
 const day0=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
 const dayWord=t=>{const k=Math.round((day0(t)-day0(nowMs()))/DAY);return k===0?'Today':k===1?'Tomorrow':k===-1?'Yesterday':fD(t,{weekday:'short',day:'numeric',month:'short'})};
-const P={eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',folder:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/>',star:'<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.4 5.9.9a.6.6 0 0 1 .3 1l-4.3 4.2 1 5.9a.6.6 0 0 1-.8.6L12 17.6l-5.3 2.8a.6.6 0 0 1-.8-.6l1-5.9-4.3-4.2a.6.6 0 0 1 .3-1l5.9-.9z"/>',
+const P={tear:'<path d="M12 3C12 3 18 9.5 18 14.2A6 6 0 0 1 6 14.2C6 9.5 12 3 12 3Z"/><path d="M9.2 15a2.9 2.9 0 0 0 2.6 2.6"/>',eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',folder:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/>',star:'<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.4 5.9.9a.6.6 0 0 1 .3 1l-4.3 4.2 1 5.9a.6.6 0 0 1-.8.6L12 17.6l-5.3 2.8a.6.6 0 0 1-.8-.6l1-5.9-4.3-4.2a.6.6 0 0 1 .3-1l5.9-.9z"/>',
  home:'<path class="f" d="M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2h-4v-6a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v6H5a2 2 0 0 1-2-2z"/>',
  tests:'<path class="f" d="M7 3h6.5L19 8.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M13 3v4a1.5 1.5 0 0 0 1.5 1.5H19"/><path d="m8.6 14.6 2.2 2.2 4.6-4.6"/>',
  tools:'<rect class="f" x="3.5" y="3.5" width="7" height="7" rx="2"/><rect class="f" x="13.5" y="3.5" width="7" height="7" rx="2"/><rect class="f" x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4"/><path d="M13.8 17h6.4"/>',
@@ -114,8 +114,8 @@ const ic=(n,w)=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true"${w?` styl
 const TK={bg:'--bg',bg2:'--bg2',s:'--surface',s2:'--surface2',ln:'--line',tx:'--tx',mt:'--mut',ft:'--faint',ink:'--ink',on:'--onInk',acc:'--acc',a1:'--acc1',a2:'--acc2',onA:'--onAcc',as:'--accSoft',h1:'--hero1',h2:'--hero2',glow:'--glow',ok:'--ok',warn:'--warn',err:'--err',nav:'--nav',hdr:'--hdr',pill:'--pill',scrim:'--scrim',logo:'--logo',logoE:'--logoE',sh:'--sh'};
 const TBASE={
  light:{bg:'#f5f5f3',bg2:'#ebebe8',s:'#ffffff',s2:'#f0f0ee',ln:'#e4e4e0',tx:'#17181b',mt:'#5e6066',ft:'#96989d',ink:'#1d1e22',on:'#ffffff',acc:'#85672c',a1:'#e6cf9a',a2:'#b08945',onA:'#1d1608',as:'#f4ecdc',h1:'#2b2d32',h2:'#111215',glow:'rgba(222,186,112,.32)',ok:'#2d7a58',warn:'#93661f',err:'#b3433d',nav:'rgba(255,255,255,.86)',hdr:'rgba(245,245,243,.84)',pill:'rgba(29,30,34,.07)',scrim:'rgba(12,12,14,.4)',logo:'#1d1e22',logoE:'#6b6d73',sh:'0 1px 2px rgba(20,20,24,.04),0 10px 30px -14px rgba(20,20,24,.14)'},
- dark:{bg:'#161719',bg2:'#0f1011',s:'#1e1f22',s2:'#27282c',ln:'#303135',tx:'#ededee',mt:'#a3a5aa',ft:'#707277',ink:'#ededee',on:'#161719',acc:'#d6b878',a1:'#ecd6a4',a2:'#b8924c',onA:'#1a1408',as:'#2c271d',h1:'#2c2d32',h2:'#18191c',glow:'rgba(214,180,110,.22)',ok:'#6cc39b',warn:'#d9a55a',err:'#e07a74',nav:'rgba(30,31,34,.86)',hdr:'rgba(22,23,25,.82)',pill:'rgba(237,237,238,.09)',scrim:'rgba(0,0,0,.6)',logo:'#f2f2f3',logoE:'#a3a5aa',sh:'none'},
- black:{bg:'#000000',bg2:'#000000',s:'#0c0c0d',s2:'#161617',ln:'#222224',tx:'#ffffff',mt:'#a0a0a5',ft:'#6c6c71',ink:'#ffffff',on:'#000000',acc:'#d6d6da',a1:'#f2f2f4',a2:'#a8a8ad',onA:'#000000',as:'#161618',h1:'#18181a',h2:'#050505',glow:'rgba(255,255,255,.08)',ok:'#5fbf93',warn:'#d6a352',err:'#e0716a',nav:'rgba(14,14,15,.9)',hdr:'rgba(0,0,0,.84)',pill:'rgba(255,255,255,.1)',scrim:'rgba(0,0,0,.72)',logo:'#ffffff',logoE:'#a0a0a5',sh:'none'}
+ dark:{bg:'#161719',bg2:'#0f1011',s:'#1e1f22',s2:'#27282c',ln:'#303135',tx:'#ededee',mt:'#a3a5aa',ft:'#8b8d92',ink:'#ededee',on:'#161719',acc:'#d6b878',a1:'#ecd6a4',a2:'#b8924c',onA:'#1a1408',as:'#2c271d',h1:'#2c2d32',h2:'#18191c',glow:'rgba(214,180,110,.22)',ok:'#6cc39b',warn:'#d9a55a',err:'#e07a74',nav:'rgba(30,31,34,.86)',hdr:'rgba(22,23,25,.82)',pill:'rgba(237,237,238,.09)',scrim:'rgba(0,0,0,.6)',logo:'#f2f2f3',logoE:'#a3a5aa',sh:'none'},
+ black:{bg:'#000000',bg2:'#000000',s:'#0c0c0d',s2:'#161617',ln:'#222224',tx:'#ffffff',mt:'#a0a0a5',ft:'#8a8a8f',ink:'#ffffff',on:'#000000',acc:'#d6d6da',a1:'#f2f2f4',a2:'#a8a8ad',onA:'#000000',as:'#161618',h1:'#18181a',h2:'#050505',glow:'rgba(255,255,255,.08)',ok:'#5fbf93',warn:'#d6a352',err:'#e0716a',nav:'rgba(14,14,15,.9)',hdr:'rgba(0,0,0,.84)',pill:'rgba(255,255,255,.1)',scrim:'rgba(0,0,0,.72)',logo:'#ffffff',logoE:'#a0a0a5',sh:'none'}
 };
 const THEMES={
  light:{name:'Light',pals:{
@@ -155,10 +155,10 @@ const MQ=matchMedia('(prefers-color-scheme: dark)');
 const clone=o=>JSON.parse(JSON.stringify(o));
 const oldMode=lsGet('cbt_theme',null);
 const CPK=['bg','s','tx','ink','acc','hero'];
-const DEF_TH={mode:oldMode==='light'?'light':oldMode==='oled'?'black':oldMode==='dark'?'dark':'system',pal:{light:'A',dark:'A',black:'A'},art:'none',hue:null,font:'geist',cus:{}};
+const DEF_TH={mode:oldMode==='light'?'light':oldMode==='oled'?'black':oldMode==='dark'?'dark':'system',pal:{light:'A',dark:'A',black:'A'},art:'none',blur:0,hue:null,font:'geist',cus:{}};
 let TH=clone(DEF_TH),THP=null;
-{const v=lsGet('cbt_v3_theme',null);if(v&&(v.mode==='system'||THEMES[v.mode]))TH={mode:v.mode,pal:Object.assign({},DEF_TH.pal,v.pal),art:'none',hue:null,font:'geist',cus:{}};
-  if(v){if(typeof v.art==='string')TH.art=v.art;if(v.hue&&isFinite(v.hue.h)&&isFinite(v.hue.s))TH.hue={h:((Math.round(v.hue.h)%360)+360)%360,s:Math.max(20,Math.min(100,Math.round(v.hue.s)))};if(typeof v.font==='string')TH.font=v.font;
+{const v=lsGet('cbt_v3_theme',null);if(v&&(v.mode==='system'||THEMES[v.mode]))TH={mode:v.mode,pal:Object.assign({},DEF_TH.pal,v.pal),art:'none',blur:0,hue:null,font:'geist',cus:{}};
+  if(v){if(typeof v.art==='string')TH.art=v.art;if(v.blur===1||v.blur===2)TH.blur=v.blur;if(v.hue&&isFinite(v.hue.h)&&isFinite(v.hue.s))TH.hue={h:((Math.round(v.hue.h)%360)+360)%360,s:Math.max(20,Math.min(100,Math.round(v.hue.s)))};if(typeof v.font==='string')TH.font=v.font;
   if(v.cus&&typeof v.cus==='object')['light','dark','black'].forEach(m=>{const c=v.cus[m];if(!c||typeof c!=='object')return;const o={};CPK.forEach(k=>{if(/^#[0-9a-f]{6}$/i.test(c[k]||''))o[k]=c[k].toLowerCase()});if(Object.keys(o).length)TH.cus[m]=o})}}
 const resolveMode=m=>m==='system'?(MQ.matches?'dark':'light'):m;
 const tokens=(mode,pal)=>Object.assign({},TBASE[mode],(THEMES[mode].pals[pal]||THEMES[mode].pals.A)[1]);
@@ -203,9 +203,17 @@ function cusTokens(tk,c){
   return tk}
 const ART={none:['Plain','No picture'],wave:['Abstract Wave','Clean, flowing lines'],aurora:['Aurora Flow','Soft northern lights'],
   mount:['Mountain Night','Calm, distraction free'],orbit:['Space Orbit','A planet rising'],neon:['Neon Edge','Bold and energetic'],
-  hexa:['Geometric Hexa','Sharp and modern'],dots:['Dot Wave','Fine dots in a wave'],glass:['Liquid Glass','Frosted glass shapes']};
+  hexa:['Geometric Hexa','Sharp and modern'],dots:['Dot Wave','Fine dots in a wave'],glass:['Liquid Glass','Frosted glass shapes'],
+  sunset:['Sunset Dunes','Warm sun over soft hills'],bokeh:['Soft Bokeh','Blurred city lights'],grid:['Horizon Grid','A glowing grid to the horizon'],
+  rings:['Ripple Rings','Calm circles like water'],stars:['Constellation','Stars joined by fine lines'],silk:['Silk Ribbon','Smooth flowing silk']};
+/* v101: blur for the picture (Off / Soft / Strong), drawn inside the picture itself */
+const ART_BLUR=[0,5,11];
 /* the picture for one palette: c = tokens (a1 light accent, a2 deep accent, acc). Double quotes only (it goes in url('...')) */
-function artSvg(k,c){const A1=c.a1,A2=c.a2,AC=c.acc;let b='';
+function artSvg(k,c,bl){
+  /* v101: the picture sits on a dark card, so dark accent colours (Pure Black & White: a1 #3a3a3a, a2 black) made it
+     nearly invisible. Lift every colour to a minimum brightness, so each picture stays clear in every palette. */
+  const lift=(h,t)=>{let x=/^#[0-9a-f]{6}$/i.test(h||'')?h:'#bbbbbb',i=0;while(clum(x)<t&&i<12){x=cmix(x,'#ffffff',.22);i++}return x};
+  const A1=lift(c.a1,.42),A2=lift(c.a2,.16),AC=lift(c.acc,.3);let b='';
   const d=`<defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${A1}" stop-opacity="0"/><stop offset=".55" stop-color="${A1}" stop-opacity=".9"/><stop offset="1" stop-color="${A2}" stop-opacity=".5"/></linearGradient>
 <radialGradient id="rg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${A1}" stop-opacity=".55"/><stop offset="1" stop-color="${A1}" stop-opacity="0"/></radialGradient>
 <filter id="bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter><filter id="bs" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter></defs>`;
@@ -226,9 +234,29 @@ function artSvg(k,c){const A1=c.a1,A2=c.a2,AC=c.acc;let b='';
   else if(k==='dots'){for(let x=0;x<26;x++)for(let y=0;y<9;y++){const cx=150+x*10,cy=70+y*12+Math.sin(x/3.2)*26+y*y*.4,o=(.15+.85*(x/26)*(1-y/11)).toFixed(2);b+=`<circle cx="${cx}" cy="${cy.toFixed(1)}" r="${(1+x/26).toFixed(2)}" fill="${y<3?A1:A2}" opacity="${o}"/>`}}
   else if(k==='glass'){b=`<circle cx="330" cy="60" r="90" fill="${A2}" opacity=".35" filter="url(#bl)"/><circle cx="350" cy="190" r="70" fill="${A1}" opacity=".25" filter="url(#bl)"/>
 <path d="M230 240 C240 150 300 120 400 110 L400 240Z" fill="#fff" fill-opacity=".07" stroke="#fff" stroke-opacity=".25"/><path d="M290 -10 C300 60 350 90 410 80 L410 -10Z" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".22"/><circle cx="285" cy="95" r="38" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".3"/>`}
+  else if(k==='sunset'){b=`<circle cx="315" cy="118" r="62" fill="${A1}" opacity=".18" filter="url(#bl)"/><circle cx="315" cy="122" r="40" fill="url(#g1)" opacity=".95"/><circle cx="315" cy="122" r="40" fill="${A1}" opacity=".55"/>`;
+    [[150,.22,A2],[176,.38,A2],[204,.6,'#000']].forEach(([y,o,f],i)=>{b+=`<path d="M70 240 C140 ${y+6} 200 ${y-30-i*6} 270 ${y-6} C320 ${y+8} 360 ${y-26} 400 ${y-20} L400 240Z" fill="${f}" opacity="${o}"/>`});
+    for(let i=0;i<4;i++)b+=`<path d="M${255+i*8} ${150+i*9} H${375-i*8}" stroke="${A1}" stroke-width="1.4" opacity="${(.5-i*.1).toFixed(2)}"/>`}
+  else if(k==='bokeh'){[[330,60,46,A1,.3],[262,150,30,A2,.45],[370,170,38,AC,.3],[215,60,18,A1,.35],[300,205,20,A1,.28],[385,90,22,A2,.5],[180,190,12,A1,.4],[250,25,14,AC,.35],[350,120,10,'#fff',.35],[290,110,8,'#fff',.4]].forEach(([x,y,r,f,o])=>{
+      b+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${f}" opacity="${o}" filter="url(#bs)"/><circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#fff" stroke-opacity="${(o*.45).toFixed(2)}"/>`})}
+  else if(k==='grid'){b=`<ellipse cx="300" cy="120" rx="140" ry="22" fill="${A1}" opacity=".35" filter="url(#bl)"/><path d="M150 120 H400" stroke="${A1}" stroke-width="1.6" opacity=".9"/>`;
+    for(let i=1;i<9;i++){const y=120+i*i*2.1;b+=`<path d="M150 ${y.toFixed(1)} H400" stroke="${A1}" opacity="${(.5-i*.04).toFixed(2)}"/>`}
+    for(let i=-8;i<=8;i++)b+=`<path d="M${300+i*6} 120 L${300+i*42} 260" stroke="${A2}" opacity=".55"/>`;
+    for(let i=0;i<10;i++)b+=`<circle cx="${170+((i*61)%225)}" cy="${12+((i*37)%88)}" r="${i%3?0.8:1.3}" fill="#fff" opacity=".6"/>`}
+  else if(k==='rings'){b=`<circle cx="360" cy="120" r="30" fill="${A1}" opacity=".35" filter="url(#bs)"/>`;
+    for(let i=0;i<9;i++)b+=`<circle cx="360" cy="120" r="${30+i*22}" fill="none" stroke="${i%2?A2:A1}" stroke-width="${i===2?2:1}" opacity="${(.75-i*.07).toFixed(2)}"/>`}
+  else if(k==='stars'){const P=[[190,60],[235,35],[280,70],[320,40],[365,75],[345,130],[290,150],[240,120],[385,180],[300,200]];
+    b=`<circle cx="300" cy="100" r="90" fill="${A2}" opacity=".18" filter="url(#bl)"/>`;
+    [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,2],[5,8],[6,9]].forEach(([a,z])=>{b+=`<path d="M${P[a][0]} ${P[a][1]} L${P[z][0]} ${P[z][1]}" stroke="${A1}" stroke-width=".9" opacity=".55"/>`});
+    P.forEach(([x,y],i)=>{b+=`<circle cx="${x}" cy="${y}" r="${i%3?2:3}" fill="#fff" opacity=".95"/><circle cx="${x}" cy="${y}" r="${i%3?5:8}" fill="${A1}" opacity=".3" filter="url(#bs)"/>`});
+    for(let i=0;i<16;i++)b+=`<circle cx="${160+((i*53)%240)}" cy="${8+((i*71)%220)}" r=".8" fill="#fff" opacity=".55"/>`}
+  else if(k==='silk'){b=`<path d="M140 240 C200 150 260 210 320 120 C350 75 380 60 400 55 L400 120 C370 130 345 150 320 185 C275 245 220 210 170 240Z" fill="url(#g1)" opacity=".55"/>
+<path d="M200 240 C250 190 300 230 350 160 C370 132 388 118 400 112 L400 150 C380 160 365 180 350 200 C310 250 260 225 230 240Z" fill="${A2}" opacity=".45"/>
+<path d="M140 240 C200 150 260 210 320 120 C350 75 380 60 400 55" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.2"/><path d="M90 0 C180 60 260 10 400 30 L400 0Z" fill="${A1}" opacity=".12"/>`}
   else return '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" preserveAspectRatio="xMaxYMid slice">${d}${b}</svg>`}
-const artUrl=(k,c)=>{const s=artSvg(k,c);return s?`url('data:image/svg+xml,${encodeURIComponent(s)}')`:'none'};
+  const bv=ART_BLUR[bl]||0;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" preserveAspectRatio="xMaxYMid slice">${d.replace('</defs>',bv?`<filter id="bb" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="${bv}"/></filter></defs>`:'</defs>')}${bv?`<g filter="url(#bb)">${b}</g>`:b}</svg>`}
+const artUrl=(k,c,bl)=>{const s=artSvg(k,c,bl);return s?`url('data:image/svg+xml,${encodeURIComponent(s)}')`:'none'};
 /* fonts: free Google Fonts (the page's CSP allows them). Only the one in use is downloaded in full; the theme page loads
    a few letters of each (&text=) for the previews. Poppins and Mukta also draw Hindi in their own style. */
 const FONTS={geist:['Geist','Geist','Clean and modern (default)'],inter:['Inter','Inter','Very clear on small screens'],
@@ -241,7 +269,7 @@ function fontLoad(k){if(!FONTS[k]||k==='geist')return;const id='v3fn-'+k;if(docu
 function fontPreviews(){if(document.getElementById('v3fn-pv'))return;const l=document.createElement('link');l.id='v3fn-pv';l.rel='stylesheet';
   l.href='https://fonts.googleapis.com/css2?'+Object.keys(FONTS).filter(k=>k!=='geist').map(k=>'family='+FONTS[k][1]+':wght@600').join('&')+'&text='+encodeURIComponent('Aa NEET 2027 '+Object.values(FONTS).map(f=>f[0]).join(''))+'&display=swap';document.head.appendChild(l)}
 function thExtras(t,tk){const k=ART[t.art]&&t.art!=='none'?t.art:'';
-  if(k){host.style.setProperty('--art',artUrl(k,tk));host.dataset.art=k}else{host.style.removeProperty('--art');delete host.dataset.art}
+  if(k){host.style.setProperty('--art',artUrl(k,tk,t.blur));host.dataset.art=k}else{host.style.removeProperty('--art');delete host.dataset.art}
   const f=FONTS[t.font]?t.font:'geist';fontLoad(f);host.style.setProperty('--f',fontStack(f))}
 function applyTheme(t,quick){if(!host)return;const mode=resolveMode(t.mode),pal=THEMES[mode].pals[t.pal[mode]]?t.pal[mode]:'A',tk=tkOf(t);
   for(const k in TK)host.style.setProperty(TK[k],tk[k]);thExtras(t,tk);
@@ -2738,12 +2766,12 @@ function themeHtml(){const mode=resolveMode(THP.mode),P=THEMES[mode].pals,cur=P[
   return `<div class="th-top"><span><b>Appearance</b><small class="th-sv">Saved automatically</small></span><button class="btn sm ghost" data-a="thReset">${ic('hist',15)}Reset</button></div>
   <div class="seg th-seg" role="group" aria-label="Mode">${[['system','System'],['light','Light'],['dark','Dark'],['black','Black']].map(m=>`<button class="${THP.mode===m[0]?'on':''}" data-a="thm" data-v="${m[0]}" aria-pressed="${THP.mode===m[0]}">${m[1]}</button>`).join('')}</div>
   ${THP.mode==='system'?`<p class="hint" style="margin-top:-6px">Follows your phone. It is ${mode} right now.</p>`:''}
-  <section class="th-sec" style="--i:0"><div class="sh"><h2>Picture theme</h2><span class="aside">${Object.keys(ART).length-1} pictures</span></div>
-  <div class="artr" data-noswipe>${Object.entries(ART).map(([k,v])=>`<button class="artc${art===k?' on':''}" data-a="tha" data-v="${k}" aria-pressed="${art===k}"><span class="artv${k==='none'?' plain':''}" data-k="${k}" style="--av:${artUrl(k,tk)}"><i></i><i></i></span><b>${v[0]}</b><small>${v[1]}</small><span class="ck">${ic('check',13)}</span></button>`).join('')}</div>
+  <section class="th-sec" style="--i:0"><div class="sh"><h2>Picture theme</h2><button class="th-more" data-a="thArtAll">See all ${Object.keys(ART).length-1}${ic('right',14)}</button></div>
+  <div class="artr" data-noswipe>${artCards(tk,art)}</div>
+  ${thBlurRow(art)}
   <p class="hint">Shows on the dark cards: the top of Home, results, profile and tools.</p></section>
-  <section class="th-sec" style="--i:1"><div class="sh"><h2>${THEMES[mode].name} themes</h2><span class="aside">${Object.keys(P).length} to choose</span></div>
-  <div class="pals">${Object.entries(P).map(([k,v])=>{const t=tokens(mode,k);
-   const pon=cur===k&&!THP.hue&&!(THP.cus&&THP.cus[mode]);return `<button class="pal${pon?' on':''}" data-a="thp" data-v="${k}" aria-pressed="${pon}"><span class="pv" style="background:${t.bg}"><i class="pv-h" style="background:linear-gradient(155deg,${t.h1},${t.h2})"></i><i class="pv-c" style="background:${t.s};border-color:${t.ln}"><b style="background:${t.tx}"></b><b style="background:${t.mt}"></b></i><i class="pv-a" style="background:linear-gradient(135deg,${t.a1},${t.a2})"></i></span><span class="pn"><b>${v[0]}</b><small>${v[2]}</small></span><span class="ck">${ic('check',14)}</span></button>`}).join('')}</div></section>
+  <section class="th-sec" style="--i:1"><div class="sh"><h2>${THEMES[mode].name} themes</h2><button class="th-more" data-a="thPalAll">See all ${Object.keys(P).length}${ic('right',14)}</button></div>
+  <div class="pals palr" data-noswipe>${palCards(mode,cur)}</div></section>
   <section class="th-sec" style="--i:2"><div class="sh"><h2>Your own colour</h2><span class="aside">${THP.hue?'On':'Off'}</span></div>
   <div class="card cwc${THP.hue?' on':''}"><div class="cw" role="slider" tabindex="0" aria-label="Your colour" aria-valuemin="0" aria-valuemax="359" aria-valuenow="${THP.hue?THP.hue.h:0}" aria-valuetext="${THP.hue?'Hue '+THP.hue.h:'Off'}"><i class="cw-k"></i></div>
    <div class="cw-s"><span class="cw-sw"></span><b>${THP.hue?'Your colour':'Drag on the circle'}</b><small>Buttons, highlights and the dark cards take this colour. Light, Dark and Black all keep it.</small>
@@ -2753,6 +2781,19 @@ function themeHtml(){const mode=resolveMode(THP.mode),P=THEMES[mode].pals,cur=P[
   <section class="th-sec" style="--i:4"><div class="sh"><h2>Font</h2><span class="aside">${FONTS[fnt][0]}</span></div>
   <div class="fnts">${Object.entries(FONTS).map(([k,v])=>`<button class="fnt${fnt===k?' on':''}" data-a="thf" data-v="${k}" aria-pressed="${fnt===k}" style="--ff:${fontStack(k).replace(/"/g,"'")}"><span class="fa">Aa</span><span class="fnm"><b>${v[0]}</b><small>${v[2]}</small></span><span class="ck">${ic('check',13)}</span></button>`).join('')}</div>
   <p class="hint">Tap a theme to use it. It is used everywhere in the app, the exam screen too.</p></section>`}
+/* v101: the picture and palette cards are shared by the theme page (one left-right row each) and their "See all" pages (a grid) */
+const artCards=(tk,art)=>Object.entries(ART).map(([k,v])=>`<button class="artc${art===k?' on':''}" data-a="tha" data-v="${k}" aria-pressed="${art===k}"><span class="artv${k==='none'?' plain':''}" data-k="${k}" style="--av:${artUrl(k,tk,THP.blur)}"><i></i><i></i></span><b>${v[0]}</b><small>${v[1]}</small><span class="ck">${ic('check',13)}</span></button>`).join('');
+function palCards(mode,cur){const P=THEMES[mode].pals;return Object.entries(P).map(([k,v])=>{const t=tokens(mode,k);
+   const pon=cur===k&&!THP.hue&&!(THP.cus&&THP.cus[mode]);return `<button class="pal${pon?' on':''}" data-a="thp" data-v="${k}" aria-pressed="${pon}"><span class="pv" style="background:${t.bg}"><i class="pv-h" style="background:linear-gradient(155deg,${t.h1},${t.h2})"></i><i class="pv-c" style="background:${t.s};border-color:${t.ln}"><b style="background:${t.tx}"></b><b style="background:${t.mt}"></b></i><i class="pv-a" style="background:linear-gradient(135deg,${t.a1},${t.a2})"></i></span><span class="pn"><b>${v[0]}</b><small>${v[2]}</small></span><span class="ck">${ic('check',14)}</span></button>`}).join('')}
+const thBlurRow=art=>`<div class="thblur${art==='none'?' off':''}"><span>${ic('tear',16)}<b>Blur the picture</b></span><div class="seg" role="group" aria-label="Blur the picture">${['Off','Soft','Strong'].map((x,i)=>`<button class="${(THP.blur||0)===i?'on':''}" data-a="thb" data-v="${i}" aria-pressed="${(THP.blur||0)===i}"${art==='none'?' disabled':''}>${x}</button>`).join('')}</div></div>`;
+function thArtAllView(){return {t:'Picture themes',s:`${Object.keys(ART).length-1} pictures`,key:'thart',html:()=>{const tk=tkOf(THP),art=ART[THP.art]?THP.art:'none';
+  return `${thBlurRow(art)}<div class="artg">${artCards(tk,art)}</div><p class="hint">Tap a picture to use it. It shows on the dark cards of the app.</p>`}}}
+function thPalAllView(){const mode=()=>resolveMode(THP.mode);return {t:THEMES[mode()].name+' themes',s:`${Object.keys(THEMES[mode()].pals).length} to choose`,key:'thpal',html:()=>{const m=mode(),P=THEMES[m].pals,cur=P[THP.pal[m]]?THP.pal[m]:'A';
+  return `<div class="pals">${palCards(m,cur)}</div>`}}}
+A.thArtAll=()=>{if(THP)push(thArtAllView())};
+A.thPalAll=()=>{if(THP)push(thPalAllView())};
+A.thb=el=>{if(!THP||el.disabled)return;const v=+el.dataset.v;if((THP.blur||0)===v)return;THP.blur=v;$$('[data-a="thb"]').forEach(b=>{const on=+b.dataset.v===v;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+  thBuzz();artPv();thVT(()=>{applyTheme(THP,true);thKeep()})};
 function openTheme(){THP=clone(TH);CPO='';fontPreviews();cwArm();cpArm();setTimeout(cwPaint,0);push({t:'Theme & colours',s:'Tap a theme to use it',html:themeHtml,leave:()=>{if(thRaf){window.cancelAnimationFrame(thRaf);thRaf=0;if(THP){TH=clone(THP);saveTheme()}}THP=null;clearTimeout(docT);applyTheme(TH)}})}
 /* Theme page: a tap is the choice. It is applied and saved at once (no Apply button); Reset sits in the page header.
    Light <-> Dark is a big jump, so a soft veil in the new background colour covers the swap for a moment (opacity
@@ -2771,8 +2812,9 @@ A.thReset=()=>{if(!THP)return;THP=clone(DEF_TH);CPO='';thVT(()=>thNow(true));toa
 /* picture themes, fonts and the colour wheel (v94). A picture or font change cross-fades the whole screen (View
    Transitions where the phone has them, else it simply changes); dragging on the wheel recolours live, frame by frame. */
 function thVT(fn){if(!RM&&document.startViewTransition){try{document.startViewTransition(fn);return}catch(e){}}fn()}
-function artPv(){if(!THP)return;const tk=tkOf(THP);$$('.artv').forEach(e=>{e.style.setProperty('--av',artUrl(e.dataset.k,tk))})}
-A.tha=el=>{if(!THP||THP.art===el.dataset.v)return;THP.art=el.dataset.v;$$('.artc').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+function artPv(){if(!THP)return;const tk=tkOf(THP);$$('.artv').forEach(e=>{e.style.setProperty('--av',artUrl(e.dataset.k,tk,THP.blur))})}
+A.tha=el=>{if(!THP||THP.art===el.dataset.v)return;THP.art=el.dataset.v;$$('.artc').forEach(b=>{const on=b.dataset.v===THP.art;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+  $$('.thblur').forEach(r=>r.classList.toggle('off',THP.art==='none'));$$('[data-a="thb"]').forEach(b=>{b.disabled=THP.art==='none'});
   thBuzz();thVT(()=>{applyTheme(THP,true);thKeep()})};
 A.thf=el=>{if(!THP||THP.font===el.dataset.v)return;THP.font=el.dataset.v;$$('.fnt').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
   const sec=el.closest('.th-sec'),a=sec&&sec.querySelector('.aside');if(a)a.textContent=FONTS[THP.font][0];thBuzz();thVT(()=>{applyTheme(THP,true);thKeep()})};

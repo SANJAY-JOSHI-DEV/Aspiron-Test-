@@ -670,7 +670,21 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     ok(await tap('[data-a="thm"][data-v="light"]'), 'Light can be tapped'); await p3.waitForTimeout(600); ts = await ths(); ok(ts[0] === 'light' && /^light\//.test(ts[2]), 'Light is shown and saved: ' + ts.join(' '));
     ok(await tap('[data-a="thp"][data-v="C"]'), 'a theme card can be tapped'); await p3.waitForTimeout(600); ts = await ths(); ok(ts[1] === 'C' && ts[2] === 'light/C' && ts[3] === 'C', 'the tapped theme (and no other) is shown, ticked and saved: ' + ts.join(' '));
     ok(await tap('[data-a="thp"][data-v="I"]'), 'a new theme card can be tapped'); await p3.waitForTimeout(600); ts = await ths(); ok(ts[1] === 'I' && ts[2] === 'light/I' && ts[3] === 'I', 'new theme shown, ticked and saved: ' + ts.join(' '));
-    ok(await tap('[data-a="thReset"]'), 'Reset can be tapped'); await p3.waitForTimeout(600); ts = await ths(); ok(ts[0] === 'system' && ts[1] === 'A', 'Reset returns to the default: ' + ts.join(' '));
+    // v102: the theme rows slide left-right, "See all" pages show everything, and the picture can be blurred (saved)
+    const rows = await p3.evaluate(() => { const r = document.getElementById('v3host').shadowRoot, T = L => new Set([...L].map(e => Math.round(e.getBoundingClientRect().top))).size; return { pal: T(r.querySelectorAll('.palr .pal')), art: T(r.querySelectorAll('.artr .artc')), np: r.querySelectorAll('.palr .pal').length, over: document.documentElement.scrollWidth > innerWidth }; });
+    ok(rows.pal === 1 && rows.art === 1 && rows.np === 9 && !rows.over, 'theme page: pictures and light themes are one left-right row each ' + JSON.stringify(rows));
+    ok(await tap('[data-a="thArtAll"]'), 'See all pictures can be tapped'); await p3.waitForTimeout(900);
+    const ag = await p3.evaluate(() => { const r = document.getElementById('v3host').shadowRoot; return [r.querySelector('#scrT').textContent, r.querySelectorAll('.artg .artc').length, r.querySelectorAll('[data-a="thb"]:disabled').length]; });
+    ok(ag[0] === 'Picture themes' && ag[1] === 15 && ag[2] === 3, 'See all: every picture in a grid, blur off while the picture is Plain ' + JSON.stringify(ag));
+    ok(await tap('.artg [data-v="sunset"]'), 'a new picture can be tapped'); await p3.waitForTimeout(700);
+    ok(await tap('[data-a="thb"][data-v="2"]'), 'Strong blur can be tapped'); await p3.waitForTimeout(700);
+    const bl = await p3.evaluate(() => { const h = document.getElementById('v3host'), s = JSON.parse(localStorage.getItem('cbt_v3_theme') || '{}'); return [s.art, s.blur, h.dataset.art, /stdDeviation%3D%2211%22|stdDeviation="11"/.test(h.style.getPropertyValue('--art'))]; });
+    ok(bl[0] === 'sunset' && bl[1] === 2 && bl[2] === 'sunset' && bl[3], 'picture and Strong blur are used and saved ' + JSON.stringify(bl));
+    await p3.goBack(); await p3.waitForTimeout(900);
+    ok(await tap('[data-a="thPalAll"]'), 'See all themes can be tapped'); await p3.waitForTimeout(900);
+    ok((await p3.evaluate(() => document.getElementById('v3host').shadowRoot.querySelectorAll('#scrB .pals:not(.palr) .pal').length)) === 9, 'See all themes: all 9 light themes');
+    await p3.goBack(); await p3.waitForTimeout(900);
+    ok(await tap('[data-a="thReset"]'), 'Reset can be tapped'); await p3.waitForTimeout(600); ts = await ths(); ok(ts[0] === 'system' && ts[1] === 'A' && !(await p3.evaluate(() => JSON.parse(localStorage.getItem('cbt_v3_theme') || '{}').blur)), 'Reset returns to the default (no blur): ' + ts.join(' '));
     ok(!e3.length, 'no page errors (theme page by touch) ' + e3.join(' | ')); await c3.close(); }
   // the old design never comes back: not for a student who once chose it, not when the network fails, not on an unknown address
   await q(`update cbt_private.students set fail_count=0, locked_until=0, devices='{}' where mobile = '9000000002'`);
