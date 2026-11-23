@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=98;
+const V3VER=99;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -459,7 +459,7 @@ function hbQd(){qdLoad();const G=QD.ok?qdGroups():[];if(!G.length)return '';cons
   return `<div class="hb-q${QD.fresh?' pop':''}${HBO?' open':''}" id="qdBox"><div class="hb-h" data-a="qdTg"><small class="hb-k">QUESTIONS OF THE DAY</small>
     <button class="hb-tg${HBO?' on':''}${dn<all?' new':''}" data-a="qdTg" aria-expanded="${HBO}" aria-controls="hbS" aria-label="${HBO?'Hide':'Show'} the questions of the day">${ic('down',16)}</button></div>
    <div class="hb-s${HBO?' on':''}" id="hbS"><div class="hb-si"><div class="qd-row hb-row" role="list">${G.map((g,i)=>`<button class="qd-c${g.done===g.L.length?' seen':''}" style="--i:${i}" role="listitem" data-a="qdOpen" data-s="${esc3(g.s)}" aria-label="${esc3(qbSub(g.s))}, ${g.done} of ${g.L.length} answered"${HBO?'':' tabindex="-1"'}><span class="qd-r"><span class="qd-i">${ic(QD_IC[g.s]||'book',24)}</span></span><span class="qd-l">${esc3(qbSub(g.s))}</span><small>${g.done}/${g.L.length}</small></button>`).join('')}</div></div></div>
-   <i class="hb-ln" aria-hidden="true"></i></div>`}
+   </div>`}
 A.qdTg=()=>{const el=$('#qdBox .hb-tg');if(!el)return;HBO=!HBO;try{localStorage.setItem('cbt_v3_qd_open',HBO?'1':'0')}catch(e){}const b=$('#hbS'),q=$('#qdBox');if(b)b.classList.toggle('on',HBO);if(q)q.classList.toggle('open',HBO);el.classList.toggle('on',HBO);
   el.setAttribute('aria-expanded',String(HBO));el.setAttribute('aria-label',(HBO?'Hide':'Show')+' the questions of the day');if(b)b.querySelectorAll('.qd-c').forEach(c=>{if(HBO)c.removeAttribute('tabindex');else c.setAttribute('tabindex','-1')})};
 function seriesHero(){const s=curSeries();

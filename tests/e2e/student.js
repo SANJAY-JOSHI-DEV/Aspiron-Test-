@@ -528,20 +528,20 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
   for (const cfg of [{ n: 'light', w: 390, h: 844, mode: 'light', flow: 1 }, { n: 'dark', w: 390, h: 844, mode: 'dark' }, { n: '360', w: 360, h: 800, mode: 'light' }, { n: 'desktop', w: 1280, h: 800, mode: 'light' }]) {
     await q(`delete from cbt_private.qotd_ans`);
     const t = await qdOpen(cfg);
-    const row = await t.sr(r => { const b = r.querySelector('#qdBox'); if (!b) return null; const C = [...b.querySelectorAll('.qd-c')]; return { labels: C.map(x => x.querySelector('.qd-l').textContent + ' ' + x.querySelector('small').textContent).join('|'), head: b.querySelector('.aside').textContent, over: document.documentElement.scrollWidth > innerWidth, above: !!(b.compareDocumentPosition(r.querySelector('#qkBox')) & 4) }; });
-    ok(row && row.labels === 'Physics 0/2|Biology 0/1' && row.head === '0 of 3 done' && !row.over && row.above, `${cfg.n}: Home shows a circle per subject with its count, above the shortcut tiles ` + JSON.stringify(row));
+    const row = await t.sr(r => { const b = r.querySelector('#qdBox'); if (!b) return null; const C = [...b.querySelectorAll('.qd-c')]; return { labels: C.map(x => x.querySelector('.qd-l').textContent + ' ' + x.querySelector('small').textContent).join('|'), head: /\bdone\b/.test(b.querySelector('.hb-h').textContent) ? 'has done text' : '', dot: !!b.querySelector('.hb-tg.new'), over: document.documentElement.scrollWidth > innerWidth, above: !!(b.compareDocumentPosition(r.querySelector('#qkBox')) & 4) }; });
+    ok(row && row.labels === 'Physics 0/2|Biology 0/1' && row.head === '' && row.dot && !row.over && row.above, `${cfg.n}: Home shows a circle per subject with its count, above the shortcut tiles ` + JSON.stringify(row));
     { // v93: the questions sit in the top card behind a small button; both labels look the same; the choice is remembered
       const st0 = await t.sr(r => { const k = [...r.querySelectorAll('#serBox .hb-k')].map(e => { const c = getComputedStyle(e); return [e.textContent, c.fontSize, c.fontWeight, c.color, c.letterSpacing].join('|'); }); const s = r.querySelector('#hbS'); return { k, open: s.classList.contains('on'), h: Math.round(s.getBoundingClientRect().height), inBand: !!r.querySelector('#serBox #qdBox'), meta: !!r.querySelector('#serBox .band-meta'), ser: getComputedStyle(r.querySelector('#serBox')).borderRadius }; });
       ok(st0.k.length === 2 && st0.k[0].split('|').slice(1).join() === st0.k[1].split('|').slice(1).join() && /QUESTIONS OF THE DAY/.test(st0.k[0]) && !st0.open && st0.h === 0 && st0.inBand && !st0.meta, `${cfg.n}: the questions are in the top card, closed, and both labels share one style ` + JSON.stringify(st0));
-      await t.sr(r => r.querySelector('[data-a="qdTg"]').click()); await t.pg.waitForTimeout(900);
-      const st1 = await t.sr(r => { const s = r.querySelector('#hbS'), b = r.querySelector('[data-a="qdTg"]'); return { open: s.classList.contains('on'), h: Math.round(s.getBoundingClientRect().height), ex: b.getAttribute('aria-expanded'), op: getComputedStyle(r.querySelector('#hbS .qd-c')).opacity }; });
+      await t.sr(r => r.querySelector('#qdBox .hb-tg').click()); await t.pg.waitForTimeout(900);
+      const st1 = await t.sr(r => { const s = r.querySelector('#hbS'), b = r.querySelector('#qdBox .hb-tg'); return { open: s.classList.contains('on'), h: Math.round(s.getBoundingClientRect().height), ex: b.getAttribute('aria-expanded'), op: getComputedStyle(r.querySelector('#hbS .qd-c')).opacity }; });
       ok(st1.open && st1.h > 60 && st1.ex === 'true' && st1.op === '1', `${cfg.n}: the small button opens the circles inside the card ` + JSON.stringify(st1));
       if (cfg.flow) {
         await t.pg.reload(); await t.pg.waitForTimeout(3500);
         ok(await t.sr(r => r.querySelector('#hbS').classList.contains('on')), 'stories: the open card is remembered after a reload');
-        await t.sr(r => r.querySelector('[data-a="qdTg"]').click()); await t.pg.waitForTimeout(900);
-        ok(await t.sr(r => { const s = r.querySelector('#hbS'); return !s.classList.contains('on') && Math.round(s.getBoundingClientRect().height) === 0 && r.querySelector('[data-a="qdTg"]').getAttribute('aria-expanded') === 'false'; }), 'stories: a second tap closes it again');
-        await t.sr(r => r.querySelector('[data-a="qdTg"]').click()); await t.pg.waitForTimeout(900);
+        await t.sr(r => r.querySelector('#qdBox .hb-tg').click()); await t.pg.waitForTimeout(900);
+        ok(await t.sr(r => { const s = r.querySelector('#hbS'); return !s.classList.contains('on') && Math.round(s.getBoundingClientRect().height) === 0 && r.querySelector('#qdBox .hb-tg').getAttribute('aria-expanded') === 'false'; }), 'stories: a second tap closes it again');
+        await t.sr(r => r.querySelector('#qdBox .hb-tg').click()); await t.pg.waitForTimeout(900);
       }
     }
     await t.pg.screenshot({ path: path.join(__dirname, 'shots', `student_qd_${cfg.n}.png`) });
@@ -562,8 +562,8 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
       ok(/2\s*of\s*2\s*answered/.test(sm.replace(/\s+/g, ' ')) && /1\s*right/.test(sm.replace(/\s+/g, ' ')), 'stories: the summary says 2 of 2 answered, 1 right ' + (sm || '').replace(/\s+/g, ' ').slice(0, 90));
       await t.pg.screenshot({ path: path.join(__dirname, 'shots', 'student_qd_summary.png') });
       await t.sr(r => r.querySelector('[data-a="back"]').click()); await t.pg.waitForTimeout(900);
-      const row2 = await t.sr(r => { const c = r.querySelector('[data-s="phy"]'); return { seen: c.classList.contains('seen'), n: c.querySelector('small').textContent, head: r.querySelector('#qdBox .aside').textContent }; });
-      ok(row2.seen && row2.n === '2/2' && row2.head === '2 of 3 done', 'stories: back on Home the Physics circle is grey with 2/2 ' + JSON.stringify(row2));
+      const row2 = await t.sr(r => { const c = r.querySelector('[data-s="phy"]'); return { seen: c.classList.contains('seen'), n: c.querySelector('small').textContent, dot: !!r.querySelector('#qdBox .hb-tg.new'), line: !!r.querySelector('#qdBox .hb-ln') }; });
+      ok(row2.seen && row2.n === '2/2' && row2.dot && !row2.line, 'stories: back on Home the Physics circle is grey with 2/2 ' + JSON.stringify(row2));
       await t.pg.reload(); await t.pg.waitForTimeout(3500);
       const row3 = await t.sr(r => { const c = r.querySelector('[data-s="phy"]'); return c ? c.querySelector('small').textContent : null; });
       ok(row3 === '2/2', 'stories: the answers are kept on the server (after a reload) ' + row3);
