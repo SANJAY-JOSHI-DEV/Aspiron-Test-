@@ -2199,3 +2199,45 @@ button.row:active{background:var(--surface2)}
 .lbr-u{min-height:0}
 .lbr-u .n span:last-child{font-size:12px;color:var(--mut)}
 .lbr-m span.lbr-t{display:block}
+
+/* v93: Home top card — Questions of the Day (opens inside the card) and Your test series; the tiles as cards */
+.band.hcd{display:block;border-radius:0 0 28px 28px;position:relative;overflow:hidden;isolation:isolate}
+.hb-bg{position:absolute;inset:0;width:100%;height:100%;color:var(--heroTx);opacity:.07;pointer-events:none;z-index:-1}
+.hcd .band-in{gap:12px;padding:14px 18px 20px}
+.hcd .hb-k{display:block;font-size:12px;font-weight:700;letter-spacing:.1em;line-height:1.2;color:var(--heroMut)}
+.hb-q{display:flex;flex-direction:column}
+.hb-q.pop{animation:hbIn .5s var(--out) both}
+.hb-h{display:flex;align-items:center;gap:10px;min-height:32px}
+.hb-h .hb-k{flex:1;min-width:0}
+.hb-n{font-size:12px;color:var(--heroMut);white-space:nowrap}
+.hb-tg{flex:none;width:32px;height:32px;border-radius:11px;display:grid;place-items:center;color:var(--heroTx);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);transition:transform .3s var(--spring),background .2s}
+.hb-tg .i{transition:transform .38s var(--out)}
+.hb-tg.on .i{transform:rotate(180deg)}
+.hb-tg:active{transform:scale(.9)}
+.hb-s{display:grid;grid-template-rows:0fr;transition:grid-template-rows .42s var(--out)}
+.hb-s.on{grid-template-rows:1fr}
+.hb-si{min-height:0;overflow:hidden}
+.hb-row{gap:16px;padding:12px 2px 4px}
+.hcd .qd-c{width:70px;color:var(--heroTx);opacity:0;transform:translateY(8px) scale(.9);transition:opacity .3s,transform .3s var(--out)}
+.hb-s.on .qd-c{opacity:1;transform:none;transition:opacity .35s var(--out) calc(var(--i) * 60ms + 90ms),transform .45s var(--spring) calc(var(--i) * 60ms + 90ms)}
+.hcd .qd-r{width:62px;height:62px;padding:2.5px;box-shadow:0 0 18px -4px color-mix(in srgb,var(--acc1) 60%,transparent)}
+.hcd .qd-c.seen .qd-r{background:rgba(255,255,255,.22);box-shadow:none}
+.hcd .qd-i{background:var(--hero2);border-color:var(--hero2);color:var(--acc1)}
+.hcd .qd-c.seen .qd-i{color:var(--heroMut)}
+.hcd .qd-l{color:var(--heroTx)}
+.hcd .qd-c small{color:var(--heroMut)}
+.hb-ln{display:block;height:1px;margin-top:12px;background:rgba(255,255,255,.14)}
+.hb-r{display:flex;align-items:center;gap:10px}
+.hb-ser{flex:1;min-width:0;height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px 0 16px;border-radius:99px;background:rgba(255,255,255,.95);color:#15131c;font-size:14px;font-weight:700;letter-spacing:.01em;text-align:left;box-shadow:0 10px 22px -14px rgba(0,0,0,.6);transition:transform .3s var(--spring)}
+.hb-ser span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.hb-ser .i{flex:none;color:#15131c}
+.hb-ser:active{transform:scale(.97)}
+.hb-ser.hb-none span{text-transform:none;font-weight:600}
+.pillbtn.hb-up{height:44px;font-size:13px;letter-spacing:.01em}
+.qk-g{gap:10px}
+.qk-t{padding:14px 6px 12px;gap:9px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:0 10px 22px -18px rgba(0,0,0,.35);transition:transform .3s var(--spring)}
+.qk-t:active{transform:scale(.96)}
+.qk-t .qk-i{width:46px;height:46px;border-radius:15px;color:var(--heroTx);border-color:color-mix(in srgb,var(--heroTx) 14%,transparent)}
+.qk-l{font-size:13px;font-weight:700}
+@keyframes hbIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.hb-s,.hcd .qd-c,.hb-s.on .qd-c,.hb-tg .i{transition:none}.hb-q.pop{animation:none}}

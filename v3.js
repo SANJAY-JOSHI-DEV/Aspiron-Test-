@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=96;
+const V3VER=97;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -365,13 +365,23 @@ const unread=()=>(NOTES||[]).filter(x=>x.at>seenAt()).length;
 function softRender(){if(!document.body.classList.contains('v3on')||document.body.classList.contains('v3old'))return;const y=scrollY;render(false);scrollTo(0,y)}
 
 /* ================= HOME ================= */
+/* v93: one dark card on top of Home. "QUESTIONS OF THE DAY" (when the admin set questions for today) with a small button that
+   opens the story circles inside the card (the series part slides down; the choice is remembered), then "YOUR TEST SERIES":
+   the series name in a white pill (tap = switch) and Upgrade plan. Both labels share one style; faint lines in the background. */
+const HB_BG=`<svg class="hb-bg" viewBox="0 0 400 220" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><path d="M120 230C190 150 250 120 410 96"/><path d="M160 232C222 166 286 140 410 128"/><path d="M200 234C254 182 318 160 410 160"/><path d="M60 -10C150 40 260 40 410 8"/><path d="M20 -14C130 60 270 70 410 40"/></g></svg>`;
+let HBO=(()=>{try{return localStorage.getItem('cbt_v3_qd_open')==='1'}catch(e){return false}})();
+function hbQd(){qdLoad();const G=QD.ok?qdGroups():[];if(!G.length)return '';const all=QD.items.length,dn=QD.items.filter(x=>x.done).length;
+  return `<div class="hb-q${QD.fresh?' pop':''}" id="qdBox"><div class="hb-h"><small class="hb-k">QUESTIONS OF THE DAY</small><span class="aside hb-n">${dn} of ${all} done</span>
+    <button class="hb-tg${HBO?' on':''}" data-a="qdTg" aria-expanded="${HBO}" aria-controls="hbS" aria-label="${HBO?'Hide':'Show'} the questions of the day">${ic('down',16)}</button></div>
+   <div class="hb-s${HBO?' on':''}" id="hbS"><div class="hb-si"><div class="qd-row hb-row" role="list">${G.map((g,i)=>`<button class="qd-c${g.done===g.L.length?' seen':''}" style="--i:${i}" role="listitem" data-a="qdOpen" data-s="${esc3(g.s)}" aria-label="${esc3(qbSub(g.s))}, ${g.done} of ${g.L.length} answered"${HBO?'':' tabindex="-1"'}><span class="qd-r"><span class="qd-i">${ic(QD_IC[g.s]||'book',24)}</span></span><span class="qd-l">${esc3(qbSub(g.s))}</span><small>${g.done}/${g.L.length}</small></button>`).join('')}</div></div></div>
+   <i class="hb-ln" aria-hidden="true"></i></div>`}
+A.qdTg=el=>{HBO=!HBO;try{localStorage.setItem('cbt_v3_qd_open',HBO?'1':'0')}catch(e){}const b=$('#hbS');if(b)b.classList.toggle('on',HBO);el.classList.toggle('on',HBO);
+  el.setAttribute('aria-expanded',String(HBO));el.setAttribute('aria-label',(HBO?'Hide':'Show')+' the questions of the day');if(b)b.querySelectorAll('.qd-c').forEach(c=>{if(HBO)c.removeAttribute('tabindex');else c.setAttribute('tabindex','-1')})};
 function seriesHero(){const s=curSeries();
-  if(!s)return `<section class="band"><div class="band-in"><small>YOUR TEST SERIES</small><div class="band-row"><b class="band-t">Choose your first test series</b><button class="pillbtn" data-a="tab" data-tab="test">OPEN STORE</button></div></div></section>`;
-  const k=seriesStats(s);
-  return `<section class="band" id="serBox"><div class="band-in"><small>YOUR TEST SERIES</small>
-   <div class="band-row"><button class="band-t" data-a="switchSeries" aria-label="Change test series"><span>${esc3(s.title)}</span>${ic('down',20)}</button>
-    <button class="pillbtn upg" data-a="upg" aria-label="Upgrade plan">${ic('crown',15)}<span>Upgrade plan</span></button></div>
-   <div class="band-meta"><span>${k.done} of ${k.n} tests attempted</span><button class="minibtn" data-a="openSD" data-id="${esc3(s.id)}">Open${ic('right',14)}</button></div></div></section>`}
+  if(!s)return `<section class="band hcd" id="serBox">${HB_BG}<div class="band-in">${hbQd()}<small class="hb-k">YOUR TEST SERIES</small><div class="hb-r"><b class="hb-ser hb-none"><span>Choose your first test series</span></b><button class="pillbtn hb-up" data-a="tab" data-tab="test">Open store</button></div></div></section>`;
+  return `<section class="band hcd" id="serBox">${HB_BG}<div class="band-in">${hbQd()}<small class="hb-k">YOUR TEST SERIES</small>
+   <div class="hb-r"><button class="hb-ser" data-a="switchSeries" aria-label="Change test series: ${esc3(s.title)}"><span>${esc3(s.title)}</span>${ic('down',18)}</button>
+    <button class="pillbtn upg hb-up" data-a="upg" aria-label="Upgrade plan">${ic('crown',15)}<span>Upgrade plan</span></button></div></div></section>`}
 /* ---------- v89: the shortcut tiles under the series band: Resources and All Tests (both need a series). My Doubts joins them with the Doubts feature.
    Everything else stays in "My study zone". Upgrade plan opens the series' plans when the admin set upgrades for it. ---------- */
 const QK=[['res','Resources','file'],['tests','All Tests','tests'],['doubts','My Doubts','doubt']];
@@ -398,8 +408,6 @@ function qdLoad(){const d=istDay();if(QD.loading||(QDT&&Date.now()-QDT<1200000&&
     QD.fresh=!had&&QD.items.length>0;try{if(S.tab==='home')softRender()}catch(e){}QD.fresh=false}).catch(()=>{QD.loading=false;QD.ok=false;QD.items=[];QD.sig=''})}
 function qdGroups(){const M=new Map(),ord=['phy','chem','bio'];QD.items.forEach(q=>{const k=q.s||'';if(!M.has(k))M.set(k,[]);M.get(k).push(q)});
   const rk=s=>{const j=ord.indexOf(s);return j<0?9:j};return [...M.entries()].map(([s,L])=>({s,L,done:L.filter(x=>x.done).length})).sort((a,b)=>rk(a.s)-rk(b.s)||a.s.localeCompare(b.s))}
-function qdRow(){qdLoad();const G=QD.ok?qdGroups():[];if(!G.length)return '';const all=QD.items.length,dn=QD.items.filter(x=>x.done).length;
-  return `<section class="qd${QD.fresh?' pop':''}" id="qdBox"><div class="qd-in"><div class="sh"><h2>Question of the Day</h2><span class="aside">${dn} of ${all} done</span></div><div class="qd-row" role="list">${G.map(g=>`<button class="qd-c${g.done===g.L.length?' seen':''}" role="listitem" data-a="qdOpen" data-s="${esc3(g.s)}" aria-label="${esc3(qbSub(g.s))}, ${g.done} of ${g.L.length} answered"><span class="qd-r"><span class="qd-i">${ic(QD_IC[g.s]||'book',26)}</span></span><span class="qd-l">${esc3(qbSub(g.s))}</span><small>${g.done}/${g.L.length}</small></button>`).join('')}</div></div></section>`}
 let QV=null;
 const qdList=()=>QV?QD.items.filter(x=>(x.s||'')===QV.s):[];
 const qdErr=r=>r&&r.error==='busy'?'Too many answers in a short time. Try again in a minute.':r&&r.error==='not_found'?'This question is not available any more.':'Could not save your answer. Please try again.';
@@ -519,7 +527,7 @@ function storeCard(x,cls){const off=x.mrp&&x.mrp>x.price?Math.round((1-x.price/x
   return `<article class="card ${cls||'tc'}"><span class="tag">${[courseOf(x),esc3(x.section||'')].filter(Boolean).join(', ')||'Test series'}</span><h3>${esc3(x.title)}</h3>${x.subtitle?`<p class="mut" style="font-size:13px">${esc3(x.subtitle)}</p>`:''}
    <div class="ft"><span class="price">${x.price?`<b>₹${fmtN(x.price)}</b>${off?`<s>₹${fmtN(x.mrp)}</s><span class="badge off">${off}% off</span>`:''}`:'<span class="free">Free</span>'}</span><a class="btn sm ${soon?'':'gold'}" href="${storeUrl(x)}">${soon?ic('bell',15)+'Notify me':x.prebook&&x.buy_on===false?'Pre-book':'Buy now'}</a></div></article>`}
 function trending(){if(!STORE){loadStore();return `<section class="sec"><div class="sh"><h2>Trending test series</h2></div><div class="card sk" style="height:190px"></div></section>`}loadExtras();return trendRail(true)}
-VIEW.home=()=>seriesHero()+qdRow()+quickGrid()+cdCard3()+upcoming()+zone()+trending();
+VIEW.home=()=>seriesHero()+quickGrid()+cdCard3()+upcoming()+zone()+trending();
 AFTER.home=()=>{tick(true);planMine();every(()=>{tick(false);evTick()},1000);autoRail('#trRail','#trDots')};
 function autoRail(rs,ds){const c=$(rs);if(!c||!c.children.length)return;const dots=[...root.querySelectorAll(ds+' i')];let i=0,touched=false;const st=()=>c.children[0].getBoundingClientRect().width+12;
   c.addEventListener('scroll',()=>{const k=Math.round(c.scrollLeft/st());if(k!==i){i=k;dots.forEach((d,j)=>d.classList.toggle('on',j===k))}},{passive:true});
