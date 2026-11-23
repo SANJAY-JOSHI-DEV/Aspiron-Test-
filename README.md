@@ -231,6 +231,16 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Setup:** run `supabase_v90_plans.sql` once (after v89), then `supabase_v35_admin_team.sql` again. Until then the
   Upgrade pill works as before.
 
+## Question of the Day: three ways to add (`supabase_v88_qotd.sql`, `supabase_v93_qotd_sources.sql`)
+- Admin → Question of the Day → **Add questions** first asks how:
+  1. **Write a question:** subject (chapter optional), the question, 4 options, the right one, the explanation.
+  2. **From a test series:** pick a series, one of its tests, tick its questions, and choose their subject.
+  3. **From the Question bank** (as before).
+- Written and test questions are saved in the Question bank too (a test question once, linked as `test:<test>:<n>`), so
+  students can practise them later. Text questions only, at most 40 a day. A test whose result is not out yet is refused,
+  so its answers never show early.
+- **Setup:** run `supabase_v93_qotd_sources.sql` once (after v92), then `supabase_v35_admin_team.sql` again.
+
 ## Plan access: what each plan may use (`supabase_v91_plan_access.sql`)
 - **The server decides.** One list of features with a limit per plan: -1 = unlimited, 0 = not in the plan, N = N uses a
   day / a month (India time) / in total. Start: Question bank and PYQ = Pro and Ultra, Test generator = 4 a month on Pro

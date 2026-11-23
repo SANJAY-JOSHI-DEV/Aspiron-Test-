@@ -180,6 +180,28 @@ async function rpcRoute(route) {
     ok(gr && gr.plan === 'pro' && +gr.d === 15 && !/[<>]/.test(gr.note), tag + ' Access: Pro given for 15 days, the note cleaned ' + JSON.stringify(gr));
     ok(await page.evaluate(() => /Plans given by the admin[\s\S]*Pro/.test(document.querySelector('#ax-page').innerText)), tag + ' Access: the given plan is listed');
     const ovf5 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); ok(!ovf5, tag + ' no horizontal scroll (access)');
+    // v93: Question of the Day — Add asks how; write a question; take questions from a test of a series
+    await q(`delete from cbt_private.qotd where show_on = cbt_private.qotd_day() + 3`); await q(`update cbt_private.tests set result_at = null where id = 'aaaaaaaa-0000-0000-0000-000000000004'`);
+    const d93 = (await q(`select (cbt_private.qotd_day() + 3)::text d`))[0].d;
+    await page.goto(BASE + 'cp-dt764twzf54s5m.html#/qotd'); await page.waitForSelector('[data-act=add]'); await page.waitForTimeout(500);
+    await page.click('#ax-page [data-act=add], #ax-ph [data-act=add]'); await page.waitForSelector('.qa-way');
+    ok((await page.$$('.qa-way')).length === 3, tag + ' QOTD: Add first asks how (write, test series, Question bank)');
+    await page.click('.qa-way[data-w=write]'); await page.waitForSelector('#qw'); await page.waitForTimeout(700);
+    await page.fill('#qw-d', d93); await page.selectOption('#qw-s', 'phy'); await page.fill('#qw [name=q]', 'Admin <i>wrote</i> this question?');
+    for (const [i, v] of [[0, 'one'], [1, 'two'], [2, 'three'], [3, 'four']]) await page.fill(`#qw [name=o${i}]`, v);
+    await page.check('#qw [name=answer][value="1"]'); await page.fill('#qw [name=explanation]', 'Because two.');
+    await page.click('.modal [data-act=go]'); await page.waitForSelector('#qw', { state: 'detached', timeout: 15000 }).catch(() => {}); await page.waitForTimeout(800);
+    const w93 = (await q(`select b.q, b.answer, b.subject, b.options->>3 o from cbt_private.qotd t join cbt_private.qbank b on b.id = t.qid where t.show_on = $1::date`, [d93]));
+    ok(w93.length === 1 && w93[0].q === 'Admin <i>wrote</i> this question?' && w93[0].answer === 1 && w93[0].subject === 'phy' && w93[0].o === 'four', tag + ' QOTD: a written question is saved for the day ' + JSON.stringify(w93) + (w93.length ? '' : ' ' + await page.evaluate(() => [...document.querySelectorAll('[class*=toast]')].map(e => e.textContent).join('/') + ' || ' + [...document.querySelectorAll('#qw [name]')].map(e => e.name + '=' + (e.type === 'radio' ? e.checked : e.value)).join('|') + ' d=' + (document.querySelector('#qw-d') || {}).value)));
+    await page.waitForTimeout(600); await page.click('#ax-page [data-act=add], #ax-ph [data-act=add]'); await page.waitForSelector('.qa-way'); await page.click('.qa-way[data-w=test]'); await page.waitForSelector('#qt-s option[value="22222222-2222-2222-2222-222222222222"]', { state: 'attached' });
+    await page.fill('#qt-d', d93); await page.selectOption('#qt-s', '22222222-2222-2222-2222-222222222222'); await page.selectOption('#qt-t', 'aaaaaaaa-0000-0000-0000-000000000004');
+    await page.waitForSelector('#qt-l input[data-i="0"]'); await page.check('#qt-l input[data-i="0"]'); await page.selectOption('#qt-sub', 'chem');
+    await page.click('#qt-go'); await page.waitForSelector('#qt-go', { state: 'detached', timeout: 15000 }).catch(() => {}); await page.waitForTimeout(800);
+    const t93 = (await q(`select count(*)::int n from cbt_private.qotd t join cbt_private.qbank b on b.id = t.qid where t.show_on = $1::date and b.src = 'test:aaaaaaaa-0000-0000-0000-000000000004:0'`, [d93]))[0].n;
+    ok(t93 === 1, tag + ' QOTD: a question ticked in a test of a series is put on the day');
+    ok(await page.evaluate(() => /Admin <i>wrote<\/i>/.test(document.querySelector('#ax-page').innerText) && ![...document.querySelectorAll('#ax-page i')].some(e => e.textContent === 'wrote')), tag + ' QOTD: the written question is shown as text on the day list');
+    const ovf6 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); ok(!ovf6, tag + ' no horizontal scroll (qotd)');
+    await q(`delete from cbt_private.qotd where show_on = cbt_private.qotd_day() + 3`);
     await q(`delete from cbt_private.plan_grants`); await q(`update cbt_private.plan_settings set enforce = false`); await q(`update cbt_private.plan_features set free = 0 where key = 'qb'`);
     await q(`update cbt_private.plans set price = null, mrp = null`); await q(`delete from cbt_private.plan_addons`);
     ok(!errs.length, tag + ' no page errors ' + errs.join(' | '));
