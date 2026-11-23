@@ -2226,7 +2226,7 @@ button.row:active{background:var(--surface2)}
 .hcd .qd-c.seen .qd-i{color:var(--heroMut)}
 .hcd .qd-l{color:var(--heroTx)}
 .hcd .qd-c small{color:var(--heroMut)}
-.hb-ln{display:block;height:1px;margin-top:12px;background:rgba(255,255,255,.14)}
+.hb-ln{display:none}
 .hb-r{display:flex;align-items:center;gap:10px}
 .hb-ser{flex:1;min-width:0;height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px 0 16px;border-radius:99px;background:rgba(255,255,255,.95);color:#15131c;font-size:14px;font-weight:700;letter-spacing:.01em;text-align:left;box-shadow:0 10px 22px -14px rgba(0,0,0,.6);transition:transform .3s var(--spring)}
 .hb-ser span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
@@ -2348,7 +2348,6 @@ button.row:active{background:var(--surface2)}
 .hb-tg.new::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:color-mix(in srgb,var(--acc1) 65%,var(--heroTx));box-shadow:0 0 0 2px var(--hero2);animation:hbDot 2.4s var(--ease) infinite}
 @keyframes hbDot{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 .hb-h:active .hb-tg{transform:scale(.92)}
-.hb-ln{transform-origin:left center;transition:opacity .3s var(--ease),transform .42s var(--out),margin .42s var(--out)}
-.hb-q.open .hb-ln{opacity:0;transform:scaleX(.6);margin-top:4px}
 .hb-row{padding:14px 2px 8px}
-@media (prefers-reduced-motion:reduce){.hb-tg.new::after{animation:none}.hb-ln{transition:none}}
+@media (prefers-reduced-motion:reduce){.hb-tg.new::after{animation:none}}
+.hb-q{margin-bottom:6px}
