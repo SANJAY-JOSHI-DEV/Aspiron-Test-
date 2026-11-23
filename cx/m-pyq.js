@@ -11,7 +11,7 @@ const EXAM = 'NEET';
 const can = () => AX.can('content', 'manage');
 const P = { papers: [], total: 0, rows: null, paper: '', year: 0, only: false, ready: [] };
 let sylP = null;
-const syl = () => sylP || (sylP = window.PYQ_SYL ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'pyq-syllabus.js?v=4'; s.onload = res; s.onerror = () => { sylP = null; rej(new Error('pyq-syllabus.js')); }; document.head.appendChild(s); }));
+const syl = () => sylP || (sylP = window.PYQ_SYL ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'pyq-syllabus.js?v=5'; s.onload = res; s.onerror = () => { sylP = null; rej(new Error('pyq-syllabus.js')); }; document.head.appendChild(s); }));
 const S = () => window.PYQ_SYL[EXAM];
 const subj = id => S().subjects.find(s => s.id === id) || S().subjects[0];
 const chap = (sid, cid) => (subj(sid).chapters || []).find(c => c.id === cid);
@@ -55,11 +55,14 @@ async function overview(ctx) {
       : h`<div class="card mt16 sm">Run <b>supabase_v93_pyq_analyzer.sql</b> once (then supabase_v35_admin_team.sql) to turn on editing, verification, student reports, free chapters and CSV import.</div>`}
     ${idx.length ? h`<div class="card mt16"><div class="card-h">${icon('download')}<h3>Ready-made papers</h3><span class="grow"></span>${can() && P.ready.length > 1 ? h`<button class="btn sm pri" data-act="all">Add all ${P.ready.length}</button>` : ''}</div>
       <div class="list">${join(idx, i => h`<div class="li" style="padding:10px 0"><span class="av sm" style="--c:#c9a45c">${icon('book', 14)}</span><div class="grow"><div class="t">${i.paper}</div><div class="s">${i.n} questions · answers checked · own explanations</div></div>${have.has(i.paper) ? UI.pill('In bank', 'ok') : can() ? h`<button class="btn sm" data-act="imp" data-f="${i.file}">${icon('plus', 14)} Add</button>` : ''}</div>`)}</div></div>` : ''}
-    ${can() ? h`<div class="card mt16" id="pq-add"><div class="card-h">${icon('plus')}<h3>Add a paper from a test</h3></div>
-      <p class="sm mut">1) Create the paper as a normal test (Test studio → import the PDF) or pick one you have. 2) Choose it here with its paper name. 3) Check the auto-tagged chapters and save.</p>
-      <div class="form-grid mt12"><div class="fld"><label>Test</label><select class="inp" id="pq-t"><option value="">Select a test…</option>${join(tests, t => h`<option value="${t.id}">${t.title} (${t.questions || '?'} Q)</option>`)}</select></div>
-        <div class="fld"><label>Paper</label><select class="inp" id="pq-p"><option value="">Choose the paper…</option>${join(S().papers.slice().reverse(), p => h`<option value="${p}" ${have.has(p) ? raw('disabled') : ''}>${p}${have.has(p) ? ' ✓' : ''}</option>`)}<option value="__c">Other…</option></select></div></div>
-      <div class="row end mt12"><button class="btn pri" data-act="load">${icon('wand', 16)} Load & auto-tag questions</button></div><div id="pq-prev"></div></div>` : ''}
+    ${can() ? h`<div class="card mt16" id="pq-add"><div class="card-h">${icon('plus')}<h3>Add questions</h3></div>
+      <ol class="sm mut" style="margin:4px 0 0;padding-left:18px;line-height:1.8"><li>Choose the paper (exam + year).</li><li>Choose how you have the questions — paste them, or upload a PDF, Word, text file, photo or Excel/CSV.</li><li>Check the chapter of each question (filled in automatically) and save.</li></ol>
+      <div class="form-grid mt12"><div class="fld"><label>1. Paper</label><select class="inp" id="pq-p"><option value="">Choose the paper…</option>${join(S().papers.slice().reverse(), p => h`<option value="${p}">${p}${have.has(p) ? ' ✓ (add more)' : ''}</option>`)}<option value="__c">Other paper…</option></select></div></div>
+      <div class="fld mt12"><label>2. How do you have the questions?</label>
+        <div class="pq-ways">${join([['paste', 'fileText', 'Paste text', 'Copy from anywhere'], ['pdf', 'file', 'PDF', 'Question paper PDF'], ['docx', 'fileText', 'Word', '.docx file'], ['txt', 'file', 'Text file', '.txt file'], ['image', 'image', 'Photo', 'Read by OCR'], ['csv', 'upload', 'Excel / CSV', 'One row per question'], ['test', 'layers', 'From a test', 'A test you made']], ([k, ic, t, d]) => h`<button type="button" class="pq-way" data-act="way" data-k="${k}">${icon(ic, 20)}<b>${t}</b><small>${d}</small></button>`)}</div></div>
+      <div id="pq-tsel" class="row wrap gap6 mt12 hide"><select class="inp" id="pq-t" style="max-width:420px"><option value="">Select a test…</option>${join(tests, t => h`<option value="${t.id}">${t.title} (${t.questions || '?'} Q)</option>`)}</select><button class="btn pri" data-act="load">${icon('wand', 16)} Load questions</button></div>
+      <p class="xs faint mt8">Tip: if the PDF has the answer key at the end, it is read too. Diagrams are not stored — such questions are marked "has a diagram" for students.</p>
+      <div id="pq-prev"></div></div>` : ''}
     <div class="section-t">Papers in the bank · ${P.papers.length}</div>
     <div class="card pad0 list">${P.papers.length ? join(P.papers, p => h`<div class="li"><span class="av sm" style="--c:${AX.u.hue(p.paper)}">${String(p.year).slice(2)}</span><div class="grow"><div class="t">${p.paper}</div><div class="s">${p.year} · ${fmt.plural(p.n, 'question')} · ${(p.subjects || []).map(s => SUBJ_SHORT[s] || s).join(', ')}${p.verified != null ? h` · ${p.verified === p.n ? '✓ all verified' : p.verified + ' verified'}` : ''}</div></div>
         ${can() && p.verified != null && p.verified < p.n ? h`<button class="btn sm" data-act="verp" data-p="${p.paper}">${icon('check', 14)} Verify all</button>` : ''}
@@ -73,26 +76,48 @@ async function overview(ctx) {
     csv: () => csvImport(ctx),
     addq: () => editQ(ctx, null),
     async delp(el) { const p = el.dataset.p; if (!(await UI.confirm({ title: 'Delete "' + p + '"?', text: 'All its questions are removed from the PYQ bank.', yes: 'Delete paper', tone: 'danger' }))) return; const x = await call('delete_paper', { paper: p }); if (!x.ok) return UI.err(x); UI.toast('Deleted'); ctx.reload(); },
+    async way(el) {
+      const k = el.dataset.k;
+      if (k === 'csv') return csvImport(ctx);
+      const pp = await pickPaper(ctx, have); if (!pp) return;
+      if (k === 'test') { ctx.el.querySelector('#pq-tsel').classList.remove('hide'); ctx.el.querySelector('#pq-t').focus(); return; }
+      if (k === 'txt') { const f = await pickFile('.txt,.md,text/plain'); if (!f) return; if (f.size > 3 * 1024 * 1024) return UI.toast('The file is larger than 3 MB', { tone: 'warn' }); AX.imp.raw = await f.text(); }
+      const r = await AX.importQuestions({ source: k === 'txt' ? 'paste' : k });
+      if (!r || !r.questions || !r.questions.length) return;
+      toRows(r.questions, pp); preview(ctx); ctx.el.querySelector('#pq-prev').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
     async load(btn) {
-      const id = ctx.el.querySelector('#pq-t').value, sel = ctx.el.querySelector('#pq-p'); let paper = sel.value;
+      const id = ctx.el.querySelector('#pq-t').value;
       if (!id) return UI.toast('Select the test first', { tone: 'warn' });
-      if (paper === '__c') { paper = await UI.prompt({ title: 'Paper name', label: 'Exam and year, e.g. NEET 2026', placeholder: 'NEET 2026', max: 60 }); if (!paper) return; }
-      if (!paper) return UI.toast('Choose which paper it is', { tone: 'warn' });
-      const year = +((paper.match(/((?:19|20)\d\d)/) || [])[1] || 0);
-      if (!year) return UI.toast('The paper name must contain the year, e.g. NEET 2024', { tone: 'warn' });
-      if (have.has(paper)) return UI.toast(paper + ' is already in the bank', { tone: 'warn' });
+      const pp = await pickPaper(ctx, have); if (!pp) return;
       await UI.busy(btn, async () => {
         const r = await AX.api.admin('test_get', { id });
         if (!r.ok || !r.test) return UI.toast('Could not load the test', { tone: 'bad' });
-        const Q = (r.test.data || []).filter(q => q && (q.q || q.img));
-        P.paper = paper; P.year = year; P.only = false;
-        P.rows = Q.map((q, i) => { const hint = window.pyqSubjOf(q.sec), t = window.pyqTag(EXAM, [q.q, ...(q.options || []), q.explanation].join(' '), hint) || {};
-          return { qno: i + 1, q: q.q || '', options: (q.options || []).slice(0, 4), answer: q.answer, explanation: q.explanation || '', has_img: !!(q.img || (q.oimg || []).some(Boolean)), subject: t.subject || hint || 'bio', chapter: t.chapter || '', topic: t.topic || '', sure: (t.score || 0) >= 2 && (!hint || t.subject === hint) }; });
-        preview(ctx);
+        toRows(r.test.data || [], pp); preview(ctx);
       });
     }
   });
 }
+/* the chosen paper: {paper, year}; asks for the name when "Other" is chosen, and before adding to a paper already in the bank */
+async function pickPaper(ctx, have) {
+  const sel = ctx.el.querySelector('#pq-p'); let paper = sel ? sel.value : '';
+  if (paper === '__c') { paper = await UI.prompt({ title: 'Paper name', label: 'Exam and year, e.g. NEET 2026 or NEET 2024 Re-exam', placeholder: 'NEET 2026', max: 60 }); if (!paper) return null; }
+  if (!paper) { UI.toast('Step 1: choose the paper first', { tone: 'warn' }); if (sel) sel.focus(); return null; }
+  const year = +((paper.match(/((?:19|20)\d\d)/) || [])[1] || 0);
+  if (!year) { UI.toast('The paper name must contain the year, e.g. NEET 2024', { tone: 'warn' }); return null; }
+  if (have.has(paper) && !(await UI.confirm({ title: paper + ' is already in the bank', text: 'The new questions are added to it. Questions already there stay. Use this to add a missing part (for example only Biology).', yes: 'Add more' }))) return null;
+  return { paper, year };
+}
+const pickFile = accept => new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = accept; i.onchange = () => res(i.files[0] || null); i.click(); });
+/* questions (from the importer or a test) → rows to check, with the chapter and topic filled in */
+function toRows(Q, pp) {
+  P.paper = pp.paper; P.year = pp.year; P.only = false;
+  P.rows = Q.filter(q => q && (q.q || q.img)).map((q, i) => { const hint = window.pyqSubjOf(q.sec), t = window.pyqTag(EXAM, [q.q, ...(q.options || []), q.explanation].join(' '), hint) || {};
+    return { qno: i + 1, q: q.q || '', options: (q.options || []).concat(['', '', '', '']).slice(0, 4), answer: q.answer == null ? null : q.answer, explanation: q.explanation || '', has_img: !!(q.img || (q.oimg || []).some(Boolean)), subject: t.subject || hint || 'bio', chapter: t.chapter || '', topic: t.topic || '', sure: (t.score || 0) >= 2 && (!hint || t.subject === hint) }; });
+}
+AX.css('pyq-ways', `.pq-ways{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;margin-top:6px}
+.pq-way{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--solid-2);color:var(--tx);text-align:left;cursor:pointer}
+.pq-way:hover{border-color:var(--pri-line);background:var(--pri-soft)}.pq-way .ax-ic{color:var(--pri)}.pq-way b{font-size:13.5px}.pq-way small{font-size:11.5px;color:var(--mut)}`);
 async function importFile(f, btn, quiet) {
   if (!/^[a-z0-9-]+\.json$/.test(f)) return false;
   let d; try { d = await (await fetch('pyq-data/' + f, { cache: 'no-cache' })).json(); } catch (e) { d = null; }
