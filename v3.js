@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=101;
+const V3VER=102;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -210,8 +210,8 @@ function artSvg(k,c){const A1=c.a1,A2=c.a2,AC=c.acc;let b='';
 <radialGradient id="rg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${A1}" stop-opacity=".55"/><stop offset="1" stop-color="${A1}" stop-opacity="0"/></radialGradient>
 <filter id="bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter><filter id="bs" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter></defs>`;
   if(k==='wave'){b=`<ellipse cx="300" cy="130" rx="120" ry="70" fill="url(#rg)"/>`;
-    for(let i=0;i<9;i++){const y=150+i*7,a=(.25+i*.08).toFixed(2);b+=`<path d="M120 ${y+30} C210 ${y-40} 260 ${y+60} 400 ${y-25}" fill="none" stroke="url(#g1)" stroke-width="${i===5?2.2:1}" opacity="${a}"/>`}
-    b+=`<path d="M140 200 C230 120 290 230 400 140" fill="none" stroke="${A1}" stroke-width="5" opacity=".55" filter="url(#bs)"/>`}
+    for(let i=0;i<9;i++){const y=150+i*7,a=(.12+i*.04).toFixed(2);b+=`<path d="M120 ${y+30} C210 ${y-40} 260 ${y+60} 400 ${y-25}" fill="none" stroke="url(#g1)" stroke-width="${i===5?2.2:1}" opacity="${a}"/>`}
+    b+=`<path d="M140 200 C230 120 290 230 400 140" fill="none" stroke="${A1}" stroke-width="5" opacity=".28" filter="url(#bs)"/>`}
   else if(k==='aurora'){b=`<g filter="url(#bl)" opacity=".9"><path d="M150 40 C230 120 260 20 400 90 L400 140 C280 70 250 170 150 90Z" fill="${A1}" opacity=".55"/><path d="M200 120 C270 170 320 80 400 150 L400 190 C310 130 280 220 200 160Z" fill="${A2}" opacity=".7"/><path d="M240 10 C300 60 330 0 400 30 L400 70 C330 40 300 90 240 40Z" fill="${AC}" opacity=".45"/></g>`;
     for(let i=0;i<14;i++)b+=`<circle cx="${160+((i*67)%240)}" cy="${12+((i*41)%90)}" r="${i%3?0.8:1.3}" fill="#fff" opacity=".7"/>`}
   else if(k==='mount'){b=`<rect x="120" width="280" height="240" fill="url(#rg)" opacity=".5"/><circle cx="320" cy="70" r="26" fill="${A1}" opacity=".9"/><circle cx="320" cy="70" r="46" fill="${A1}" opacity=".15" filter="url(#bs)"/>`;
@@ -469,10 +469,10 @@ function seriesHero(){const s=curSeries();
     <button class="pillbtn upg hb-up" data-a="upg" aria-label="Upgrade plan">${ic('crown',15)}<span>Upgrade plan</span></button></div></div></section>`}
 /* ---------- v89: the shortcut tiles under the series band: Resources and All Tests (both need a series). My Doubts joins them with the Doubts feature.
    Everything else stays in "My study zone". Upgrade plan opens the series' plans when the admin set upgrades for it. ---------- */
-const QK=[['res','Resources','file'],['tests','All Tests','tests'],['doubts','My Doubts','doubt']];
+const QK=[['res','Resources','file'],['tests','All Tests','tests'],['doubts','My Doubts','doubt'],['results','Results','trophy']];
 function quickGrid(){const s=curSeries();if(!s)return '';
   return `<section class="qk" id="qkBox" aria-label="Shortcuts"><div class="qk-g" style="--n:${QK.length}">${QK.map((x,i)=>`<button class="qk-t" data-a="qk" data-k="${x[0]}" style="--i:${i}"><span class="qk-i">${ic(x[2],21)}</span><span class="qk-l">${x[1]}</span></button>`).join('')}</div></section>`}
-A.qk=el=>{const s=curSeries();if(!s)return;if(el.dataset.k==='doubts'){openDoubts();return}A.openSD({dataset:{id:s.id,t:el.dataset.k==='res'?'r':'t'}})};
+A.qk=el=>{const s=curSeries();if(!s)return;if(el.dataset.k==='doubts'){openDoubts();return}if(el.dataset.k==='results'){openResHub();return}A.openSD({dataset:{id:s.id,t:el.dataset.k==='res'?'r':'t'}})};
 let UPGB=false;   // one tap at a time; the page opens only if the student is still on Home with nothing open; the store after 2.5 s without the plans data
 /* v90: the plans page (Basic / Pro / Ultra) when the plans are set up; the series' upgrades or the store as before otherwise */
 A.upg=()=>{if(UPGB)return;UPGB=true;Promise.all([planLoad(),planMine()]).then(()=>{if(PL3.d){UPGB=false;openUpgrade();return}UPGB=false;upgOld()})};
@@ -1380,7 +1380,7 @@ function spark(att){const n=att.length,P=att.map(rawPct),mx=Math.max(20,...P),W=
    RA3.ok stays false (no bell) until the server has the functions. */
 const RA3={ok:false,ids:new Set(),loading:false,loaded:false,busy:false};
 function raLoad(){if(RA3.loading||RA3.loaded)return;RA3.loading=true;
-  rpc('cbt_result_alerts_mine',{}).then(r=>{RA3.loading=false;RA3.loaded=true;if(r&&r.ok){RA3.ok=true;RA3.ids=new Set((r.ids||[]).map(String));try{if(top()&&(top().key==='hist'))redraw();else if(!scrOpen())softRender()}catch(e){}}}).catch(()=>{RA3.loading=false})}
+  rpc('cbt_result_alerts_mine',{}).then(r=>{RA3.loading=false;RA3.loaded=true;if(r&&r.ok){RA3.ok=true;RA3.ids=new Set((r.ids||[]).map(String));try{if(top()&&(top().key==='hist'||top().key==='rhub'))redraw();else if(!scrOpen())softRender()}catch(e){}}}).catch(()=>{RA3.loading=false})}
 const raBell=id=>RA3.ok?`<button class="hs3-bell${RA3.ids.has(id)?' on':''}" data-a="raBell" data-id="${esc3(id)}" aria-pressed="${RA3.ids.has(id)}" aria-label="${RA3.ids.has(id)?'Result alert on':'Notify me when the result is out'}">${ic('bell',17)}<span>${RA3.ids.has(id)?'Alert on':'Notify me'}</span></button>`:'';
 A.raBell=async el=>{const id=el.dataset.id;if(!id||RA3.busy)return;const on=RA3.ids.has(id);
   if(!on){try{if(!npSup()||npInApp()){npHelp('app');return}let pm=window.Notification.permission;if(pm==='default'){try{pm=await window.Notification.requestPermission()}catch(e){pm=window.Notification.permission}}
@@ -1388,13 +1388,13 @@ A.raBell=async el=>{const id=el.dataset.id;if(!id||RA3.busy)return;const on=RA3.
   RA3.busy=true;let r=null;try{r=await rpc('cbt_result_alert_set',{p_test:id,p_on:!on})}catch(e){}RA3.busy=false;
   if(!r||!r.ok){toast3(r&&r.error==='already'?'The result is already out.':r&&r.status===404?'Result alerts are not set up yet.':'Could not save. Please try again.');if(r&&r.error==='already'){loadCat(true).then(()=>{try{redraw()}catch(e){}})}return}
   if(on)RA3.ids.delete(id);else RA3.ids.add(id);hap(8);toast3(on?'Alert off':'Done! We will notify you when the result is out');
-  if(top()&&top().key==='hist')redraw();else softRender()};
+  if(top()&&(top().key==='hist'||top().key==='rhub'))redraw();else softRender()};
 function waitCard(p){const t=tOf(p.test_id),s=t&&sOf(t.series_id),ra=p.result_at||0;raLoad();
   return `<article class="card hs3-w"><div class="hs3-wt"><span class="hs3-wp">${ic('clock',14)}WAITING FOR RESULT</span>${ra?raBell(p.test_id):''}</div>
    <b class="hs3-wn">${esc3(p.title||titleOf(p))}</b><small>${s?esc3(s.title)+' · ':''}Submitted ${dayWord(p.at)}, ${fT(p.at)}</small>
    ${ra?`<div class="hs3-cd"><span>Result in</span><b data-cdw="${ra}">${cdTxt(ra-nowMs())}</b></div><p class="hint" style="margin:0">Result, rank and answer key at <b>${dayWord(ra)}, ${fT(ra)}</b>. You can re-attempt after that.</p>`:''}</article>`}
 function histTick(){const n=nowMs();let due=false;root.querySelectorAll('[data-cdw]').forEach(e=>{const ms=+e.dataset.cdw-n;if(ms<=0)due=true;e.textContent=cdTxt(ms)});
-  if(due){clearInterval(histT);histT=0;try{loadCat(true).then(()=>{if(top()&&(top().key==='hist'||top().key==='hist3'))redraw()})}catch(e){}}}
+  if(due){clearInterval(histT);histT=0;try{loadCat(true).then(()=>{if(top()&&(top().key==='hist'||top().key==='hist3'||top().key==='rhub'))redraw()})}catch(e){}}}
 function histAfter(){clearInterval(histT);histT=0;if(root.querySelector('[data-cdw]'))histT=setInterval(histTick,1000)}
 const histLeave=()=>{clearInterval(histT);histT=0};
 function histView(){return {t:'Test history',s:`${histGroups().length} tests`,key:'hist',after:histAfter,leave:histLeave,html:()=>{raLoad();
@@ -2619,6 +2619,48 @@ A.rkTab=async el=>{RK3.i=+el.dataset.i;qbKeep();if(!RK3.i)return;let T=[];try{T=
 A.ranks=()=>openRanks();
 V3H.push([/^#\/r$/,()=>openRanks()]);
 V3H.push([/^#\/h$/,()=>A.hist()]);   // the "Result is out" notification opens Test history
+
+/* ================= RESULTS (Home tile): one page, segments side by side =================
+   Waiting · History · Leaderboard · Analysis · Mistakes. The chips on top and a left-right swipe move between them (no
+   long page); each segment is a short preview with a button to its full page. Same data as Test history and Ranks. */
+const RH={i:0};
+const RH_SEG=[['wait','Waiting','clock'],['hist','History','hist'],['lb','Leaderboard','trophy'],['ana','Analysis','chart'],['mk','Mistakes','pen']];
+function rhWait(){const W=C().pending||[];raLoad();
+  if(!W.length)return `<div class="rh-e"><span class="ti">${ic('clock',22)}</span><b>No result is waiting</b><p>When a live test holds its result back, it shows here with a countdown.</p></div>`;
+  return `<div class="rh-l">${W.slice(0,3).map(p=>{const ra=p.result_at||0;return `<div class="rh-w"><div class="rh-wt"><b>${esc3(p.title||titleOf(p))}</b>${ra?raBell(p.test_id):''}</div>
+    <small>Submitted ${dayWord(p.at)}, ${fT(p.at)}</small>${ra?`<div class="hs3-cd"><span>Result in</span><b data-cdw="${ra}">${cdTxt(ra-nowMs())}</b></div>`:''}</div>`}).join('')}</div>
+   ${W.length>3?`<button class="btn ghost blk" data-a="hist">See all ${W.length} waiting</button>`:''}`}
+function rhHist(){const G=histGroups();
+  if(!G.length)return `<div class="rh-e"><span class="ti">${ic('hist',22)}</span><b>No tests yet</b><p>Your results appear here once you attempt a test.</p></div>`;
+  return `<div class="rh-l">${G.slice(0,4).map(g=>`<button class="rh-r" data-a="histOpen" data-id="${esc3(g.id||'')}" data-k="${esc3(g.id||('t:'+g.title))}"><span><b>${esc3(g.title)}</b><small>${dS(g.last.at)} · ${g.att.length} attempt${g.att.length===1?'':'s'}</small></span><em>${Math.max(0,rawPct(g.last))}%</em>${ic('right',16)}</button>`).join('')}</div>
+   <button class="btn ghost blk" data-a="hist">${ic('hist',16)}Full test history${G.length>4?` (${G.length})`:''}</button>`}
+function rhLb(){const b=RK3.ov;
+  if(!b)return '<div class="card sk" style="height:200px"></div>';
+  const btn=`<button class="btn ghost blk" data-a="ranks">${ic('medal',16)}Ranks for every test</button>`;
+  if(!b.ok||!b.top||!b.top.length)return `<div class="rh-e"><span class="ti">${ic('trophy',22)}</span><b>No ranks yet</b><p>Take a test to get your overall rank.</p></div>${btn}`;
+  const tot=b.total||1;
+  return `<div class="rh-big"><div><small>OVERALL RANK</small><b>${b.my_rank?'#'+b.my_rank:'–'}<em> of ${fmtN(tot)}</em></b></div>${b.my_pct!=null?`<span><b>${b.my_pct}%</b><small>Your average</small></span>`:''}</div>
+   <div class="rh-l">${b.top.slice(0,3).map((x,i)=>{const r=x.rank||i+1;return `<div class="rh-r rh-p${x.me||r===b.my_rank?' me':''}"><span class="rkn">${r}</span><span><b>${esc3(x.name||x.student||'Student')}</b></span><em>${esc3(rkVal(x))}</em></div>`}).join('')}</div>${btn}`}
+function rhAna(){const R=allRes();
+  if(!R.length)return `<div class="rh-e"><span class="ti">${ic('chart',22)}</span><b>Nothing to analyse yet</b><p>Attempt a test to see your scores and trend.</p></div>`;
+  const P=R.map(rawPct),avg=Math.round(P.reduce((a,b)=>a+b,0)/P.length*10)/10,L=P.slice(-8),mx=Math.max(20,...L.map(Math.abs));
+  return `<div class="rh-st"><div><b>${R.length}</b><small>Attempts</small></div><div><b>${Math.max(0,avg)}%</b><small>Average</small></div><div><b>${Math.max(0,Math.max(...P))}%</b><small>Best</small></div></div>
+   <div class="rh-ch" aria-label="Your last ${L.length} scores">${L.map((p,i)=>`<span style="--h:${Math.max(4,Math.abs(p)/mx*100).toFixed(0)}%"${i===L.length-1?' class="on"':''}><i>${Math.max(0,Math.round(p))}</i></span>`).join('')}</div>
+   <button class="btn ghost blk" data-a="tab" data-tab="stats">${ic('chart',16)}Open Analytics</button>`}
+function rhMk(){return `<div class="rh-e"><span class="ti">${ic('pen',22)}</span><b>Mistake notebook</b><p>Every wrong and skipped question from your tests, to revise before the exam.</p></div>
+   <button class="btn ghost blk" data-a="rhMk">${ic('pen',16)}Open Mistake notebook</button>`}
+function rhSync(){const p=$('#scrB .rh-pg');if(!p)return;const k=Math.round(p.scrollLeft/Math.max(1,p.clientWidth));if(k===RH.i)return;RH.i=Math.max(0,Math.min(RH_SEG.length-1,k));
+  $('#scrB').querySelectorAll('.rh-tabs button').forEach((b,j)=>{b.classList.toggle('on',j===RH.i);b.setAttribute('aria-selected',String(j===RH.i))});
+  const a=$('#scrB .rh-tabs .on');if(a)try{a.parentNode.scrollTo({left:a.offsetLeft-a.parentNode.clientWidth/2+a.clientWidth/2,behavior:RM?'auto':'smooth'})}catch(e){}}
+function resHubView(){return {t:'Results',s:'Waiting, history, ranks and more',key:'rhub',leave:histLeave,html:()=>{const W=(C().pending||[]).length,F={wait:rhWait,hist:rhHist,lb:rhLb,ana:rhAna,mk:rhMk};
+  return `<div class="chips rh-tabs" role="tablist">${RH_SEG.map((x,i)=>`<button role="tab" aria-selected="${i===RH.i}" class="${i===RH.i?'on':''}" data-a="rhTab" data-i="${i}">${ic(x[2],14)} ${x[1]}${x[0]==='wait'&&W?`<small>${W}</small>`:''}</button>`).join('')}</div>
+   <div class="rh-pg">${RH_SEG.map((x,i)=>`<div class="rh-pn" role="tabpanel" aria-label="${x[1]}"><section class="card rh-c">${F[x[0]]()}</section></div>`).join('')}</div>`},
+  after:()=>{histAfter();const p=$('#scrB .rh-pg');if(!p)return;p.scrollLeft=RH.i*p.clientWidth;let t=0;p.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(rhSync,60)},{passive:true});
+    const a=$('#scrB .rh-tabs .on');if(a)try{a.parentNode.scrollLeft=a.offsetLeft-a.parentNode.clientWidth/2+a.clientWidth/2}catch(e){}}}}
+async function openResHub(){closeLayer();RH.i=(C().pending||[]).length?0:1;push(resHubView());
+  let r=null;try{r=await rpc('cbt_overall',{})}catch(e){}RK3.ov=r||{ok:false};if(top()&&top().key==='rhub')redraw()}
+A.rhTab=el=>{const i=+el.dataset.i,p=$('#scrB .rh-pg');if(!p)return;p.scrollTo({left:i*p.clientWidth,behavior:RM?'auto':'smooth'})};
+A.rhMk=()=>openMistakes();
 
 /* ================= REFER AND EARN in the new design =================
    Same server as the classic page (app22.js): cbt_refer_app through the classic rfLoad; the link and the message

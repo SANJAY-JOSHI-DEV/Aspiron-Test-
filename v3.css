@@ -2548,3 +2548,53 @@ sup,sub{font-size:.72em;line-height:0}
 .pq4-u.open .pq4-uc{transform:rotate(180deg)}
 .pq4-u.open .pq4-uh{border-bottom:1px solid var(--line)}
 .pq4-ub{display:flex;flex-direction:column;padding:4px;background:color-mix(in srgb,var(--surface2) 45%,var(--surface))}
+/* v100: four shortcut tiles in one row (Resources, All Tests, My Doubts, Results), a little smaller */
+.qk-g{gap:8px}
+.qk-t{padding:11px 3px 10px;gap:7px;border-radius:16px}
+.qk-t .qk-i{width:40px;height:40px;border-radius:13px}
+.qk-t .qk-i svg{width:19px;height:19px}
+.qk-l{font-size:12px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:340px){.qk-l{font-size:11px}.qk-t .qk-i{width:36px;height:36px}}
+
+/* v100: Results page: segments side by side (chips + swipe left/right) */
+.rh-tabs{margin-bottom:12px}
+.rh-tabs button small{margin-left:2px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;display:inline-grid;place-items:center;font-size:11px;font-weight:700;opacity:1;background:var(--accSoft);color:var(--acc)}
+.rh-tabs button.on small{background:rgba(255,255,255,.18);color:inherit}
+.rh-pg{display:flex;align-items:flex-start;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin-inline:-16px;overscroll-behavior-x:contain}
+.rh-pg::-webkit-scrollbar{display:none}
+.rh-pn{flex:0 0 100%;box-sizing:border-box;padding:0 16px 6px;scroll-snap-align:start;scroll-snap-stop:always;min-width:0}
+.rh-c{display:flex;flex-direction:column;gap:12px;padding:16px}
+.rh-e{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:10px 6px 4px}
+.rh-e b{font-size:16px;font-weight:650}.rh-e p{margin:0;font-size:13.5px;color:var(--mut);max-width:30ch}
+.rh-l{display:flex;flex-direction:column}
+.rh-r{display:flex;align-items:center;gap:12px;width:100%;padding:11px 2px;border-top:1px solid var(--line);text-align:left;color:var(--tx)}
+.rh-r:first-child{border-top:0}
+.rh-r>span:not(.rkn){flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rh-r b{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rh-r small{font-size:12px;color:var(--mut)}
+.rh-r em{font-style:normal;font-weight:700;font-size:14.5px;font-variant-numeric:tabular-nums}
+.rh-r>svg{color:var(--faint);flex:none}
+.rh-p.me{background:var(--accSoft);border-radius:12px;padding-inline:10px;border-top-color:transparent}
+.rh-w{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
+.rh-w:first-child{border-top:0;padding-top:0}
+.rh-wt{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rh-wt b{font-size:15px;font-weight:650;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rh-w small{font-size:12.5px;color:var(--mut)}
+.rh-big{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:16px;border-radius:18px;color:var(--heroTx);background:radial-gradient(120% 90% at 100% 0%,var(--glow),transparent 60%),linear-gradient(155deg,var(--hero1),var(--hero2))}
+.rh-big small{display:block;font-size:11px;letter-spacing:.12em;color:var(--heroMut);font-weight:600}
+.rh-big>div>b{font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.rh-big em{font-style:normal;font-size:14px;font-weight:500;color:var(--heroMut)}
+.rh-big>span{display:flex;flex-direction:column;align-items:flex-end}.rh-big>span b{font-size:18px}
+.rh-st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rh-st>div{display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:14px;background:var(--surface2)}
+.rh-st b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}.rh-st small{font-size:12px;color:var(--mut)}
+.rh-ch{display:flex;align-items:flex-end;gap:6px;height:110px;padding:18px 4px 0}
+.rh-ch span{position:relative;flex:1;height:var(--h);min-height:4px;border-radius:6px 6px 3px 3px;background:color-mix(in srgb,var(--acc) 30%,var(--surface2))}
+.rh-ch span.on{background:var(--acc)}
+.rh-ch i{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:3px;font-style:normal;font-size:10.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+
+/* v100: picture themes (Wave etc.): the lines stay behind the content. The lower part of the card fades to the card
+   colour, and the stat boxes / buttons on top get a frosted, more solid fill so no line runs through them. */
+:host([data-art]) :is(.hero,.band,.pbn.hero,.mkh,.pfh,.rsh,.bk3.k0){background:linear-gradient(180deg,transparent 38%,color-mix(in srgb,var(--hero2) 62%,transparent) 100%),linear-gradient(90deg,color-mix(in srgb,var(--hero2) 55%,transparent) 0%,transparent 62%),var(--art) right center/cover no-repeat,linear-gradient(155deg,var(--hero1),var(--hero2))!important}
+:host([data-art]) :is(.mkh-st>div,.trq button,.c3 div,.myts .cnt span,.trday span,.pqx3 button:not(.on),.pre,.minibtn,.qbic,.hb-tg){background:color-mix(in srgb,var(--hero2) 78%,transparent);border-color:rgba(255,255,255,.1);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+:host([data-art]) .pqx3 button.soon{opacity:.7}
