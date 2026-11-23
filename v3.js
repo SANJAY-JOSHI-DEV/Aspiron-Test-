@@ -378,8 +378,8 @@ function hbQd(){qdLoad();const G=QD.ok?qdGroups():[];if(!G.length)return '';cons
 A.qdTg=el=>{HBO=!HBO;try{localStorage.setItem('cbt_v3_qd_open',HBO?'1':'0')}catch(e){}const b=$('#hbS');if(b)b.classList.toggle('on',HBO);el.classList.toggle('on',HBO);
   el.setAttribute('aria-expanded',String(HBO));el.setAttribute('aria-label',(HBO?'Hide':'Show')+' the questions of the day');if(b)b.querySelectorAll('.qd-c').forEach(c=>{if(HBO)c.removeAttribute('tabindex');else c.setAttribute('tabindex','-1')})};
 function seriesHero(){const s=curSeries();
-  if(!s)return `<section class="band hb" id="serBox">${HB_BG}<div class="band-in">${hbQd()}<small class="hb-k">YOUR TEST SERIES</small><div class="hb-r"><b class="hb-ser hb-none"><span>Choose your first test series</span></b><button class="pillbtn hb-up" data-a="tab" data-tab="test">Open store</button></div></div></section>`;
-  return `<section class="band hb" id="serBox">${HB_BG}<div class="band-in">${hbQd()}<small class="hb-k">YOUR TEST SERIES</small>
+  if(!s)return `<section class="band hcd" id="serBox">${HB_BG}<div class="band-in">${hbQd()}<small class="hb-k">YOUR TEST SERIES</small><div class="hb-r"><b class="hb-ser hb-none"><span>Choose your first test series</span></b><button class="pillbtn hb-up" data-a="tab" data-tab="test">Open store</button></div></div></section>`;
+  return `<section class="band hcd" id="serBox">${HB_BG}<div class="band-in">${hbQd()}<small class="hb-k">YOUR TEST SERIES</small>
    <div class="hb-r"><button class="hb-ser" data-a="switchSeries" aria-label="Change test series: ${esc3(s.title)}"><span>${esc3(s.title)}</span>${ic('down',18)}</button>
     <button class="pillbtn upg hb-up" data-a="upg" aria-label="Upgrade plan">${ic('crown',15)}<span>Upgrade plan</span></button></div></div></section>`}
 /* ---------- v89: the shortcut tiles under the series band: Resources and All Tests (both need a series). My Doubts joins them with the Doubts feature.
