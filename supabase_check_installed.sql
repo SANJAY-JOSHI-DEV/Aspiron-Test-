@@ -109,5 +109,11 @@ select 35, 'supabase_v95_promo_board.sql', case when to_regprocedure('public.cbt
   and to_regprocedure('cbt_private.cbt_admin_promos__core(text,text,jsonb)') is not null
   and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_promos__core(text,text,jsonb)')) like '%cbt_promo_rates%' then 'ok'
   else 'MISSING — run this file' end
+union all
+-- v96: 'ok' when a promotion commission can be a % of the price and set for everyone at once
+select 36, 'supabase_v96_promo_percent.sql', case when exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'cbt_promo_rates' and column_name = 'pct')
+  and to_regprocedure('cbt_private.cbt_admin_promos__core(text,text,jsonb)') is not null
+  and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_promos__core(text,text,jsonb)')) like '%rates_all%' then 'ok'
+  else 'MISSING — run this file (after v95)' end
 ) x
 order by n;

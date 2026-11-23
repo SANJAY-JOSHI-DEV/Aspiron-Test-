@@ -61,6 +61,8 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   - [ ] Naya email `VAPID_SUBJECT` (1.2) me daalo.
 
 ## Promotions board: influencer list, commission per series, code, leads (v95)
+- [ ] **PB.0 👤 SQL chalao (v96):** Supabase → SQL Editor: `supabase_v96_promo_percent.sql` (sirf yahi; v30 / v35 dobara NAHI).
+  *Check:* `supabase_check_installed.sql` row 36 = "ok". Phir Promotions → **Commission for everyone** me 10 aur % chuno.
 - [ ] **PB.1 👤 SQL chalao:** Supabase → SQL Editor: `supabase_v95_promo_board.sql` (v35 dobara chalane ki zarurat nahi).
   Kuch delete nahi hota. *Check:* `supabase_check_installed.sql` row 35 = "ok"; Admin → Promotions par **Board** table dikhe.
 - [ ] **PB.2 👤 Har influencer ka code (optional):** Promotions → influencer par tap → Edit → *Influencer code* (jaise RAHUL10) → *Code is on*.

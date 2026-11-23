@@ -2358,6 +2358,36 @@ select pg_temp.chk('54h admin: get shows code, leads count and series; orders sh
   and public.cbt_admin_promos(:'ow95','orders','{"code":"rahul-yt"}')->'orders'->0->>'via' = 'code');
 select set_config('request.headers', '{"x-real-ip":"203.0.113.10"}', false);
 
+-- ===== 55. v96 commission as a % of the price; one commission for everyone =====
+insert into public.cbt_store_items(id,title,price,active,buy_on,series_id) values
+  ('cccccccc-0000-0000-0000-000000000096','Series 799',799,true,true,'11111111-1111-1111-1111-111111111111') on conflict do nothing;
+select public.cbt_admin_promos(:'ow95','create','{"name":"Pct Link","code":"pct-link","commission":"10","pct":true}')->>'id' as pl96 \gset
+select public.cbt_admin_promos(:'ow95','create','{"name":"Other Link","code":"other-link","commission":"20"}')->>'id' as ol96 \gset
+select pg_temp.chk('55a % above 100 is refused (normal, per series, everyone)',
+  public.cbt_admin_promos(:'ow95','create','{"name":"Bad","code":"bad-pct","commission":"150","pct":true}')->>'error' = 'pct'
+  and public.cbt_admin_promos(:'ow95','rates', jsonb_build_object('id', :'pl96', 'rates', '[{"item":"cccccccc-0000-0000-0000-000000000001","commission":"101","pct":true}]'::jsonb))->>'error' = 'rates'
+  and public.cbt_admin_promos(:'ow95','bulk','{"commission":"200","pct":true}')->>'error' = 'pct'
+  and (select commission_pct from public.cbt_promo_links where code = 'pct-link'));
+select public.cbt_admin_promos(:'ow95','rates', jsonb_build_object('id', :'pl96', 'rates', '[{"item":"cccccccc-0000-0000-0000-000000000096","commission":"15","pct":true}]'::jsonb))->>'ok' as rt96 \gset
+select public.cbt_store_order('cccccccc-0000-0000-0000-000000000001','Pct One','9877000001')->>'code' as o96a \gset
+select public.cbt_store_order('cccccccc-0000-0000-0000-000000000096','Pct Two','9877000002')->>'code' as o96b \gset
+update public.cbt_store_orders set promo_code = 'pct-link' where code in (:'o96a', :'o96b');
+update public.cbt_store_orders set status = 'paid' where code in (:'o96a', :'o96b');
+select pg_temp.chk('55b 10% of ₹499 = ₹50 (normal %), 15% of ₹799 = ₹120 (series %)',
+  :'rt96' = 'true' and (select promo_rate from public.cbt_store_orders where code = :'o96a') = 50
+  and (select promo_rate from public.cbt_store_orders where code = :'o96b') = 120);
+select public.cbt_admin_promos(:'ow95','update', jsonb_build_object('id', :'ol96', 'name', 'Other Link', 'commission', '20'))->>'ok' as u96 \gset
+select pg_temp.chk('55c an update without pct keeps ₹', :'u96' = 'true' and not (select commission_pct from public.cbt_promo_links where code = 'other-link'));
+select public.cbt_admin_promos(:'ow95','rates_all', jsonb_build_object('id', :'pl96'))->>'ok' as ra96 \gset
+select pg_temp.chk('55d per-series commissions copied to every influencer',
+  :'ra96' = 'true' and (select commission = 15 and pct from public.cbt_promo_rates where link_id = :'ol96' and item_id = 'cccccccc-0000-0000-0000-000000000096'));
+select public.cbt_admin_promos(:'ow95','bulk','{"commission":"12","pct":true,"clear":true}')->>'ok' as bk96 \gset
+select pg_temp.chk('55e one commission for every active influencer; per-series removed; paid orders unchanged',
+  :'bk96' = 'true' and not exists (select 1 from public.cbt_promo_links where active and not (commission = 12 and commission_pct))
+  and not exists (select 1 from public.cbt_promo_rates r join public.cbt_promo_links l on l.id = r.link_id where l.active)
+  and (select promo_rate from public.cbt_store_orders where code = :'o96b') = 120
+  and public.cbt_admin_promos('wrong-password','bulk','{"commission":"1","pct":false}')->>'ok' = 'false');
+
 -- ===== report =====
 \t off
 \a
