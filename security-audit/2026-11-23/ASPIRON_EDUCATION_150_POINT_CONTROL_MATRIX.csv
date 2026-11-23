@@ -11,8 +11,8 @@
 10,People & accounts,Periodic access review of GitHub collaborators / Supabase members,NOT VERIFIED,No dashboard access,Medium,Quarterly review; record date in SECURITY_RUNBOOK,-
 11,People & accounts,Privileged-action audit trail,PASS,"admin_audit (who, fn, act, result, masked IP), 180-day retention",,,Tests rerun: unchanged
 12,People & accounts,Owner alerted on insider actions (grants/approvals by members),PASS,R6 fix v48; security_events + Telegram alerts v63,,,Tests rerun: unchanged
-13,People & accounts,High-risk actions need re-authentication,FAIL,No step-up before delete/grant/approve,Medium,A26-03,-
-14,People & accounts,Admin session idle/absolute timeout appropriate for privileged use,PARTIAL,30 d idle / 180 d absolute,Medium,A26-03,-
+13,People & accounts,High-risk actions need re-authentication,PASS,FIXED A26-03: sign-in < 12 h for delete/grant/approve/money/team; break_it 50a-50c,,,Tests rerun: unchanged
+14,People & accounts,Admin session idle/absolute timeout appropriate for privileged use,PASS,"FIXED A26-03: team 12 h/7 d, owner 24 h/14 d; break_it 50d/50e",,,Tests rerun: unchanged
 15,People & accounts,Support workflow never asks for codes/passwords/OTP,PARTIAL,SECURITY_RUNBOOK covers staff; app text does not ask; no written support script,Low,Add one line to the support script,-
 16,People & accounts,No social-engineering path to change a student's number without proof,PASS,G9 fix; 'taken' on number move; break_it,,,Tests rerun: unchanged
 17,People & accounts,Developer/contractor access & IP assignment documented,NOT VERIFIED,No contracts in repo,Medium,LEGAL REVIEW REQUIRED,-
@@ -43,7 +43,7 @@
 42,Authentication & sessions,Device limit enforced atomically,PASS,auth(): conditional array_append,,,Tests rerun: unchanged
 43,Authentication & sessions,Suspended/blocked student loses access,PASS,status blocked -> error; tokens checked each call,,,Tests rerun: unchanged
 44,Authentication & sessions,Disabled team member loses access immediately,PASS,admin_session_ok active check per call,,,Tests rerun: unchanged
-45,Authentication & sessions,Account enumeration at login,PARTIAL,Unknown number = 'invalid'; 'pending'/'locked' leak existence,Low,A26-04,-
+45,Authentication & sessions,Account enumeration at login,PASS,FIXED A26-04: pending = 'invalid' for strangers (break_it 51a); lock after 8 wrong codes kept,,,Tests rerun: unchanged
 46,Authentication & sessions,Email/Google login linked only after access-code proof,PASS,student_link/student_signin (v65/v74); break_it 30x,,,Tests rerun: unchanged
 47,Authentication & sessions,"Supabase JWT kept in sessionStorage, removed from URL",PASS,app28.js; student.js 'token gone from the address',,,Tests rerun: unchanged
 48,Authentication & sessions,Admin token storage,PARTIAL,cx/core.js localStorage/sessionStorage; XSS-sensitive,Low,Keep strict CSP,-
@@ -96,7 +96,7 @@
 95,Admin panel,Paid orders cannot be hidden by deletion,PASS,order_trash (v46),,,Tests rerun: unchanged
 96,Admin panel,Grant/approve by members alerts the owner,PASS,R6,,,Tests rerun: unchanged
 97,Admin panel,Decoy admin.html,PASS,"admin.html = 404 decoy, default-src 'none'",,,Tests rerun: unchanged
-98,Admin panel,Confirmation + reason for high-risk actions,PARTIAL,UI confirms; no reason capture / step-up,Low,A26-03,-
+98,Admin panel,Confirmation + reason for high-risk actions,PARTIAL,UI confirms + fresh sign-in (A26-03); no reason text captured,Low,,-
 99,"Store, orders & payments",Payment integration type,PARTIAL,"Manual UPI QR + payer name/UTR; admin verifies. No gateway, no webhook (Razorpay NOT implemented)",,,-
 100,"Store, orders & payments",Price/discount computed on the server,PASS,cbt_store_order_apply uses item price + coupon from DB,,,Tests rerun: unchanged
 101,"Store, orders & payments",Client cannot mark an order paid,PASS,cbt_store_paid keeps status 'pending'; approval needs store:manage,,,Tests rerun: unchanged
@@ -153,8 +153,8 @@
 152,"Backup, DR, monitoring",Daily encrypted backup,PASS,db-backup.yml AES-256 gpg,,,Tests rerun: unchanged
 153,"Backup, DR, monitoring",Monthly restore drill,PASS,restore-drill.yml,,,Tests rerun: unchanged
 154,"Backup, DR, monitoring",Restore drill latest run green,NOT VERIFIED,Actions history not visible,Medium,Check Actions,-
-155,"Backup, DR, monitoring",Backup confidentiality (public artifacts),PARTIAL,A26-02,Medium,,-
-156,"Backup, DR, monitoring",Backup includes Supabase Auth users,FAIL,A26-09,Low,,-
+155,"Backup, DR, monitoring",Backup confidentiality (public artifacts),PARTIAL,A26-02: retention cut to 30 days; still public + passphrase,Medium,Owner: strong passphrase,-
+156,"Backup, DR, monitoring",Backup includes Supabase Auth users,PASS,FIXED A26-09: separate locked auth file (non-fatal),,,Tests rerun: unchanged
 157,"Backup, DR, monitoring",Read-only backup login (R11),NOT VERIFIED,secret SUPABASE_BACKUP_DB_URL optional,Low,,-
 158,"Backup, DR, monitoring",Daily security alert workflow,PASS,security-alerts.yml,,,Tests rerun: unchanged
 159,"Backup, DR, monitoring",Incident runbook,PASS,SECURITY_RUNBOOK.md,,,Tests rerun: unchanged
@@ -164,5 +164,5 @@
 163,Privacy & legal,"IPs stored as keyed hash, cleared after 30 days",PASS,R4,,,Tests rerun: unchanged
 164,Privacy & legal,Minors / guardian consent (DPDP 2023),NOT VERIFIED,No document,Medium,LEGAL REVIEW REQUIRED,-
 165,Cleanup & regression,Unused files removed only with proof,PASS,0 removed: no file proven unused (see cleanup report),,,Tests rerun: unchanged
-166,Cleanup & regression,Regression test added for every code fix,PASS,break_it 49a/49b,,,Tests rerun: unchanged
-167,Cleanup & regression,All suites rerun after change,PASS,357/357 DB; student 195; admin 87,,,Tests rerun: unchanged
+166,Cleanup & regression,Regression test added for every code fix,PASS,"break_it 49a/49b, 50a-50e, 51a; backup step simulated",,,Tests rerun: unchanged
+167,Cleanup & regression,All suites rerun after change,PASS,363/363 DB; student 195; admin 87,,,Tests rerun: unchanged

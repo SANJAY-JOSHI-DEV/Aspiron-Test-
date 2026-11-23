@@ -16,7 +16,7 @@
 - 196 functions in `public` (158 SECURITY DEFINER), ~181 executable by `anon` (incl. pgcrypto helpers of the test stub), 0 in `cbt_private`.
 - Every SECURITY DEFINER function has a fixed `search_path` (0 exceptions).
 - `authenticated` can run only `student_link`, `student_request`, `student_signin` (v65).
-- Attack suite: **357/357 PASS** (was 355; +2 new checks for A26-01).
+- Attack suite: **363/363 PASS** (was 355; +8 new checks for A26-01, A26-03, A26-04).
 - NOT VERIFIED in production: effective grants, extensions schema, Data API exposed schemas, legacy JWT keys (R7), Auth settings (A26-12), backups' restore result. Run `supabase_check_installed.sql` and `supabase_security_check.sql`.
 
 ## Edge Function `send-push`

@@ -1,16 +1,22 @@
 # Aspiron Education - Remediation changelog (2026-11-23)
 
-Branch: `ccr-c50d872f-cvdgho` (started equal to `main`, commit `8679166`, clean working tree, no pre-existing changes).
-**Not committed, not pushed, not deployed** - waiting for the owner's approval.
+Branch: `ccr-c50d872f-cvdgho` (started equal to `main`, commit `8679166`, clean tree). Pushed to this branch only; **not merged, not deployed**.
 
-| File | Change | Why |
+| File | Change | Finding |
 |---|---|---|
-| `supabase_v35_admin_team.sql` (cbt_admin_login, ~line 644) | +3 lines: `if u.id is null then perform adm_pw_new(p_pw); end if;` with comment | A26-01: same bcrypt work for unknown usernames, so timing does not reveal valid team usernames |
-| `tests/db/break_it.sql` (new section 49) | +2 checks (49a timing, 49b same error) | Regression test: failed before the fix, passes after |
-| `security-audit/2026-11-23/*` | New audit reports | Deliverables (no secrets, no personal data) |
+| `supabase_v35_admin_team.sql` cbt_admin_login | bcrypt work also for unknown usernames | A26-01 |
+| `supabase_v35_admin_team.sql` admin_session_ok, new admin_high_risk, cbt_admin_login | team sessions 12 h idle + 7 d total, owner 24 h + 14 d; risky changes need a sign-in younger than 12 h (else `reauth`); new sessions start with the short expiry | A26-03 |
+| `cx/core.js`, `cx/shell.js`, `cp-dt764twzf54s5m.html` | panel treats `reauth` as "sign in again" with a clear message; fixed the old "30 days" text; cache versions core v12, shell v22 | A26-03 |
+| `supabase_v76_low_fixes.sql` cbt_private.auth | `pending` only for the student's own valid token/code; strangers get `invalid` | A26-04 |
+| `app1.js`, `index.html` | "incorrect" message now says the code comes after approval; app1 v42 | A26-04 |
+| `.github/workflows/db-backup.yml`, `BACKUP.md` | second locked file with Supabase Auth users (warning only if unreadable); artifact retention 90 -> 30 days (Drive keeps 90). Same schedule, no new workflow | A26-09, A26-02 |
+| `tests/db/break_it.sql` | sections 49 (2 checks), 50 (5 checks), 51 (1 check) | all |
+| `security-audit/2026-11-23/*` | reports | - |
 
-No change to scoring, pricing, timing, order status, entitlements or content visibility.
+Behaviour changes: team members sign in at least weekly (owner every 2 weeks) and again before risky changes once their sign-in is 12 h old;
+a stranger typing a code for a pending number sees the normal "incorrect" message.
+No change to scoring, pricing, test timing, order status rules, entitlements or content visibility.
 
 ## Production rollout (owner)
-1. Review the diff. 2. Supabase -> SQL Editor: run `supabase_v35_admin_team.sql` (it is safe to run again and is already run last after other files).
-3. Admin -> sign in as owner and as one team member (normal sign-in still works). 4. Nothing else changes.
+1. Merge the branch (Pages publishes the admin/app files). 2. Supabase -> SQL Editor: `supabase_v76_low_fixes.sql`, then `supabase_v35_admin_team.sql`.
+3. Run `supabase_check_installed.sql`. 4. Sign in as owner and as one team member; try one risky change. 5. Actions -> Database backup -> Run workflow: green, and check whether the auth file appears.

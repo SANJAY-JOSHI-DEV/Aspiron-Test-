@@ -2185,6 +2185,45 @@ select pg_temp.chk('49b team sign-in: unknown username and wrong password still 
   = public.cbt_admin_login('viewer1', 'Wrong-pass-123', 'timing')->>'error');
 delete from cbt_private.admin_fails; delete from cbt_private.admin_fail_ips; delete from cbt_private.admin_ip_blocks;
 
+-- ===== 50. audit 2026-11-23 (A26-03): shorter admin sessions + a fresh sign-in for risky changes =====
+-- sessions are made directly here (known secret) so their ages can be set
+create function pg_temp.mk_sess(p_user uuid, p_created interval, p_seen interval) returns text language plpgsql as $$
+declare v uuid := gen_random_uuid(); sec text := repeat('5a', 32);
+begin
+  insert into cbt_private.admin_sessions (id, user_id, token_hash, device, ua, ip, created_at, last_seen, expires_at)
+  values (v, p_user, cbt_private.adm_sha(sec), 'audit50', '', '', now() - p_created, now() - p_seen, now() + interval '1 day');
+  return 'as1.' || v::text || '.' || sec;
+end $$;
+select pg_temp.mk_sess(null, interval '13 hours', interval '1 minute') as s50_old,
+       pg_temp.mk_sess(null, interval '1 hour', interval '1 minute') as s50_new,
+       pg_temp.mk_sess(null, interval '2 days', interval '25 hours') as s50_idle,
+       pg_temp.mk_sess(null, interval '15 days', interval '1 minute') as s50_abs,
+       pg_temp.mk_sess((select id from cbt_private.admin_users where username = 'viewer1'), interval '13 hours', interval '13 hours') as s50_team_idle,
+       pg_temp.mk_sess((select id from cbt_private.admin_users where username = 'viewer1'), interval '8 days', interval '1 minute') as s50_team_abs \gset
+select pg_temp.chk('50a a 13-hour-old owner sign-in can still read but must sign in again to delete a student or grant a series',
+  public.cbt_admin(:'s50_old', 'ping', '{}')->>'ok' = 'true'
+  and public.cbt_admin(:'s50_old', 'students', '{}')->>'ok' = 'true'
+  and public.cbt_admin(:'s50_old', 'student_delete', '{"mobile":"9000000099"}')->>'error' = 'reauth'
+  and public.cbt_admin(:'s50_old', 'grant', '{"mobile":"9000000099"}')->>'error' = 'reauth'
+  and public.cbt_admin_store(:'s50_old', 'order_status', '{"code":"NOPE","status":"paid"}')->>'error' = 'reauth');
+select pg_temp.chk('50b a fresh owner sign-in passes the recent-sign-in check (the action runs its own checks)',
+  coalesce(public.cbt_admin_store(:'s50_new', 'order_status', '{"code":"NOPE","status":"paid"}')->>'error', '') <> 'reauth');
+select pg_temp.chk('50c the refused risky change is in the activity log as refused',
+  exists (select 1 from cbt_private.admin_audit where act = 'student_delete' and result = 'refused' and at > now() - interval '1 minute'));
+select pg_temp.chk('50d owner sign-in unused for 25 hours, or older than 14 days, has expired',
+  public.cbt_admin(:'s50_idle', 'ping', '{}')->>'error' = 'expired' and public.cbt_admin(:'s50_abs', 'ping', '{}')->>'error' = 'expired');
+select pg_temp.chk('50e team sign-in unused for 13 hours, or older than 7 days, has expired',
+  public.cbt_admin(:'s50_team_idle', 'catalog', '{}')->>'error' = 'expired' and public.cbt_admin(:'s50_team_abs', 'catalog', '{}')->>'error' = 'expired');
+delete from cbt_private.admin_sessions where device = 'audit50';
+
+-- ===== 51. audit 2026-11-23 (A26-04): sign-in does not tell strangers that a number asked to join =====
+select public.cbt_request_access('Pending Person', '9000000051')->>'status' as r51 \gset
+select pg_temp.chk('51a a wrong code for a number with a pending request gives the same "invalid" as an unknown number',
+  :'r51' = 'received'
+  and public.cbt_login('9000000051', 'ABCD1234', 'dev-51515151')->>'error' = 'invalid'
+  and public.cbt_login('9000000052', 'ABCD1234', 'dev-51515151')->>'error' = 'invalid');
+select set_config('request.headers', '{"x-real-ip":"203.0.113.10"}', false);
+
 -- ===== report =====
 \t off
 \a

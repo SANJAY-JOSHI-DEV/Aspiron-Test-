@@ -97,7 +97,13 @@ begin
     end if;
   end if;
   if s.status = 'pending' then
-    return jsonb_build_object('ok',false,'error','pending');
+    -- audit 2026-11-23 (A26-04): "waiting for approval" only for the student's own phone (valid token or code); anyone
+    -- else gets the usual "invalid", so the sign-in cannot be used to find out who asked to join (same rule as v45)
+    if v_tok or (s.code_hash is not null and s.code_hash = hash_code(s.salt, c)) then
+      return jsonb_build_object('ok',false,'error','pending');
+    end if;
+    perform cbt_private.code_ip_fail(v_ip);
+    return jsonb_build_object('ok',false,'error','invalid');
   end if;
   if not v_tok and (s.code_hash is null or s.code_hash <> hash_code(s.salt, c)) then
     -- counted in the update itself, so wrong codes sent at the same moment are all counted

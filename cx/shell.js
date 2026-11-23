@@ -46,7 +46,8 @@ async function check() {
 /* ---------- sign in ---------- */
 const LOST = {
   signed_out: 'You were signed out. The owner may have ended this session, or it was signed out from another device.',
-  expired: 'Your sign-in expired after 30 days without use. Please sign in again.',
+  expired: 'Your sign-in expired (the panel was not used for a while, or the sign-in is more than a week old). Please sign in again.',
+  reauth: 'For safety, deleting, granting, approving orders, money and team changes need a fresh sign-in. Please sign in again, then repeat the change.',
   disabled: 'This team account has been paused by the owner.',
   need_2fa: 'Two-step sign-in is on. Sign in with your password and the code from your authenticator app.',
   invalid: 'Please sign in again.', network: 'No internet connection. Check it and try again.', locked: 'Too many wrong attempts. Try again in 15 minutes.'
