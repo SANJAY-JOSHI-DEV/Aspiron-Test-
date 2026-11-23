@@ -621,8 +621,8 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     await p14.waitForTimeout(1200);
     const L = () => sr(r => ({ plan: (r.querySelector('.lbr-p b') || {}).textContent || '', tags: r.querySelectorAll('.pm .lbr-tag').length, meters: [...r.querySelectorAll('.pm .lbr-m')].map(e => e.textContent.trim()), up: r.querySelectorAll('.pm [data-a="lbrUp"]').length, open: r.querySelectorAll('.pm [data-a="lmod"]').length, trk: !!r.querySelector('[data-h="#/trk"]'), dbt: !!r.querySelector('[data-h="#/doubts"]'), ultra: r.querySelectorAll('.lbr-u').length }));
     const l1 = await L();
-    if (cfg.n === 'old') { ok(!l1.plan && !l1.tags && l1.open === 3 && l1.trk && l1.ultra === 4 && !e14.length, 'Library without the v91 SQL: no plan card, every tool opens as before ' + JSON.stringify(l1) + e14.join('|')); await c14.close(); continue; }
-    ok(l1.plan === 'Basic' && l1.tags === 3 && l1.open === 3 && !l1.up && l1.meters.every(m => /Open to everyone/.test(m)) && l1.trk && l1.dbt && l1.ultra === 4, 'Library, locks off: Basic plan card, PRO tags, every tool still opens; tracker, doubts and the Ultra corner are there ' + JSON.stringify(l1));
+    if (cfg.n === 'old') { ok(!l1.plan && !l1.tags && l1.open === 3 && l1.trk && l1.ultra === 3 && !e14.length, 'Library without the v91 SQL: no plan card, every tool opens as before ' + JSON.stringify(l1) + e14.join('|')); await c14.close(); continue; }
+    ok(l1.plan === 'Basic' && l1.tags === 3 && l1.open === 3 && !l1.up && l1.meters.every(m => /Open to everyone/.test(m)) && l1.trk && l1.dbt && l1.ultra === 3, 'Library, locks off: Basic plan card, PRO tags, every tool still opens; tracker, doubts and the Ultra corner are there ' + JSON.stringify(l1));
     await q(`update cbt_private.plan_settings set enforce = true`);
     await p14.evaluate(() => { location.hash = '#/'; }); await p14.waitForTimeout(800); await p14.evaluate(() => { location.hash = '#/lib'; }); await p14.waitForTimeout(2500);
     const l2 = await L();

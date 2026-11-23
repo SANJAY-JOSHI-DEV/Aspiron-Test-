@@ -2224,6 +2224,71 @@ select pg_temp.chk('51a a wrong code for a number with a pending request gives t
   and public.cbt_login('9000000052', 'ABCD1234', 'dev-51515151')->>'error' = 'invalid');
 select set_config('request.headers', '{"x-real-ip":"203.0.113.10"}', false);
 
+-- ===== 52. v93: PYQ analyzer — own progress only, server-checked answers, free chapters, reports, verification =====
+reset role;
+insert into cbt_private.students(id,name,mobile,status,salt,code_hash) values
+  ('bbbbbbbb-0000-0000-0000-000000000093','Pyq Student','9000000093','approved','s93',cbt_private.hash_code('s93','PPPP9393')) on conflict do nothing;
+delete from cbt_private.plan_grants where student_id = 'bbbbbbbb-0000-0000-0000-000000000093';
+insert into public.cbt_pyq (id, exam, subject, chapter, topic, year, paper, qno, q, options, answer, rkey) values
+  ('93930000-0000-0000-0000-000000000001', 'NEET', 'bio', 'cell', 'Cell organelles', 2023, 'NEET 2023', 5, 'Which organelle <script>x93()</script>?', '["a","b","c","d"]', 2, 'whichorganelle93'),
+  ('93930000-0000-0000-0000-000000000002', 'NEET', 'bio', 'cell', 'Cell organelles', 2021, 'NEET 2021', 9, 'Which organelle again?', '["a","b","c","d"]', 2, 'whichorganelle93'),
+  ('93930000-0000-0000-0000-000000000003', 'NEET', 'phy', 'nuclei', 'Radioactivity', 2022, 'NEET 2022', 3, 'Half life?', '["a","b","c","d"]', 0, 'halflife93')
+  on conflict do nothing;
+update cbt_private.plan_settings set enforce = false;
+select public.cbt_admin_login('','OwnerPass2026x','Owner')->>'token' as ow93 \gset
+set role anon;
+select public.cbt_pyq_attempt('9000000093','PPPP9393','dev-93939393','93930000-0000-0000-0000-000000000001'::uuid,1)::text as at93 \gset
+select pg_temp.chk('52a an answer is marked by the server, saved only for the student who gave it, never shown to another student',
+  (:'at93')::jsonb->>'right' = 'false' and ((:'at93')::jsonb->>'answer')::int = 2
+  and public.cbt_pyq_attempt('9000000093','PPPP9393','dev-93939393','93930000-0000-0000-0000-000000000001'::uuid,2)->>'right' = 'true'
+  and jsonb_array_length(public.cbt_pyq_progress('9000000093','PPPP9393','dev-93939393','NEET')->'items') = 1
+  and jsonb_array_length(public.cbt_pyq_progress('9000000002','BBBB2222','dev-bbbbbbbb','NEET')->'items') = 0
+  and public.cbt_pyq_progress('9000000093','WRONG999','dev-93939393','NEET')->>'ok' = 'false'
+  and public.cbt_pyq_attempt('9000000093','PPPP9393','dev-93939393','93930000-0000-0000-0000-000000000001'::uuid,7)->>'error' = 'invalid_choice'
+  and public.cbt_pyq_mark('9000000093','PPPP9393','dev-93939393','93930000-0000-0000-0000-000000000003'::uuid,true,null)->>'ok' = 'true'
+  and jsonb_array_length(public.cbt_pyq_progress('9000000093','PPPP9393','dev-93939393','NEET')->'items') = 2);
+select pg_temp.chk('52b the summary gives counts and totals only (no single student''s answers), and says the repeat',
+  public.cbt_pyq_summary('9000000002','BBBB2222','dev-bbbbbbbb','NEET')->>'v93' = 'true'
+  and (public.cbt_pyq_summary('9000000002','BBBB2222','dev-bbbbbbbb','NEET')->'ch'->'cell'->>6)::int >= 2
+  and public.cbt_pyq_summary('9000000002','BBBB2222','dev-bbbbbbbb','NEET')::text !~ '9000000093'
+  and public.cbt_pyq_summary('9000000002','WRONG999','dev-bbbbbbbb','NEET')->>'ok' = 'false');
+reset role;
+update cbt_private.plan_settings set enforce = true;
+select public.cbt_admin_pyq(:'ow93','free_set','{"chapters":["nuclei","bad id!"]}')->>'n' as fr93 \gset
+set role anon;
+select pg_temp.chk('52c locks on: a Free student opens only the free chapters, analysis counts stay open, practice and revision lists keep to free chapters',
+  :'fr93' = '1'
+  and public.cbt_pyq_chapter('9000000093','PPPP9393','dev-93939393','NEET','cell')->>'error' = 'plan'
+  and public.cbt_pyq_chapter('9000000093','PPPP9393','dev-93939393','NEET','nuclei')->>'ok' = 'true'
+  and public.cbt_pyq_summary('9000000093','PPPP9393','dev-93939393','NEET')->'acc'->>'open' = 'false'
+  and public.cbt_pyq_summary('9000000093','PPPP9393','dev-93939393','NEET')->'free' ? 'nuclei'
+  and public.cbt_pyq_attempt('9000000093','PPPP9393','dev-93939393','93930000-0000-0000-0000-000000000001'::uuid,2)->>'error' = 'plan'
+  and jsonb_array_length(public.cbt_pyq_questions('9000000093','PPPP9393','dev-93939393',array['93930000-0000-0000-0000-000000000001','93930000-0000-0000-0000-000000000003']::uuid[])->'items') = 1
+  and public.cbt_pyq_practice('9000000093','PPPP9393','dev-93939393','{"n":50}')->>'limited' = 'true'
+  and not exists (select 1 from jsonb_array_elements(public.cbt_pyq_practice('9000000093','PPPP9393','dev-93939393','{"n":50}')->'items') x where x->>'c' <> 'nuclei'));
+select pg_temp.chk('52d reports: bad reasons refused, one open report per question',
+  public.cbt_pyq_report('9000000093','PPPP9393','dev-93939393','93930000-0000-0000-0000-000000000003'::uuid,'hack','x')->>'error' = 'invalid'
+  and public.cbt_pyq_report('9000000093','PPPP9393','dev-93939393','93930000-0000-0000-0000-000000000003'::uuid,'answer','<img src=x onerror=alert(1)>')->>'ok' = 'true'
+  and public.cbt_pyq_report('9000000093','PPPP9393','dev-93939393','93930000-0000-0000-0000-000000000003'::uuid,'answer','again')->>'already' = 'true');
+select public.cbt_admin_pyq(:'ow93','bulk','{"items":[{"subject":"bio","chapter":"cell","year":2020,"paper":"NEET 2020","q":"imported","options":["a","b","c","d"],"answer":1,"verified":true}]}')->>'added' as bk93 \gset
+select pg_temp.chk('52e admin: a view-only member cannot verify or edit; import never marks verified; verify and edits are logged with who',
+  public.cbt_admin_pyq(:'vt','verify','{"paper":"NEET 2023"}')->>'error' = 'forbidden'
+  and public.cbt_admin_pyq(:'vt','free_set','{"chapters":[]}')->>'error' = 'forbidden'
+  and :'bk93' = '1'
+  and public.cbt_admin_pyq(:'ow93','list','{"paper":"NEET 2020"}')->'items'->0->>'verified' = 'false'
+  and (public.cbt_admin_pyq(:'ow93','verify','{"paper":"NEET 2023"}')->>'n')::int >= 1
+  and public.cbt_admin_pyq(:'ow93','save','{"id":"93930000-0000-0000-0000-000000000003","item":{"subject":"phy","chapter":"nuclei","year":2022,"paper":"NEET 2022","q":"Half life?","options":["a","b","c","d"],"answer":0,"difficulty":"hard","qtype":"numerical","verified":true}}')->>'ok' = 'true'
+  and public.cbt_admin_pyq(:'ow93','save','{"id":"93930000-0000-0000-0000-000000000003","item":{"subject":"xx","chapter":"nuclei","year":2022,"paper":"P","q":"q","options":["a"]}}')->>'error' = 'invalid'
+  and jsonb_array_length(public.cbt_admin_pyq(:'ow93','reports','{}')->'items') >= 1
+  and jsonb_array_length(public.cbt_admin_pyq(:'ow93','audit','{"id":"93930000-0000-0000-0000-000000000003"}')->'items') >= 1
+  and jsonb_array_length(public.cbt_admin_pyq(:'ow93','dups','{}')->'repeated') >= 1);
+reset role;
+select pg_temp.chk('52f students cannot read or change the new tables directly',
+  not has_table_privilege('anon', 'cbt_private.pyq_progress', 'select') and not has_table_privilege('anon', 'cbt_private.pyq_reports', 'select')
+  and not has_table_privilege('anon', 'cbt_private.pyq_free', 'insert') and not has_table_privilege('anon', 'cbt_private.pyq_audit', 'select')
+  and not has_table_privilege('authenticated', 'cbt_private.pyq_progress', 'update'));
+update cbt_private.plan_settings set enforce = false;
+
 -- ===== report =====
 \t off
 \a

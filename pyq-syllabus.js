@@ -107,7 +107,7 @@ const mk=(id,name,L)=>({id,name,chapters:L.map(c=>({id:c[0],cls:c[1],name:c[2],o
 window.PYQ_SYL={
   NEET:{name:'NEET (UG)',subjects:[mk('phy','Physics',P),mk('chem','Chemistry',C),mk('bio','Biology',B)],
     papers:['AIPMT 1998','AIPMT 1999','AIPMT 2000','AIPMT 2010','AIPMT 2011','AIPMT 2012','NEET 2013','AIPMT 2014','AIPMT 2015','AIPMT 2015 Re-exam','NEET 2016 Phase I','NEET 2016 Phase II','NEET 2017','NEET 2018','NEET 2019','NEET 2020','NEET 2021','NEET 2022','NEET 2023','NEET 2023 Manipur','NEET 2024','NEET 2024 Re-exam','NEET 2025','NEET 2026']},
-  JEE:{name:'JEE Main',soon:1},JEEA:{name:'JEE Advanced',soon:1},CBSE12:{name:'CBSE Class 12',soon:1},CBSE10:{name:'CBSE Class 10',soon:1}
+  JEE:{name:'JEE Main',soon:1},JEEA:{name:'JEE Advanced',soon:1},CUET:{name:'CUET (UG)',soon:1},CBSE12:{name:'CBSE Class 12',soon:1},CBSE10:{name:'CBSE Class 10',soon:1}
 };
 /* Question bank / Test generator (app25.js, cx/m-qbank.js): Mathematics chapters (NCERT 11 + 12) for JEE, and the
    subjects of each exam. Not part of PYQ_SYL, so the PYQ analysis stays NEET-only. */

@@ -344,7 +344,7 @@ create or replace function cbt_private.admin_need(p_fn text, p_act text) returns
     when 'cbt_admin_ann' then case when p_act in ('list', 'img') then 'messaging:view' else 'messaging:manage' end
     when 'cbt_admin_ann_aud'        then case when p_act = 'set' or p_act = 'forget' then 'messaging:manage' else 'messaging:view' end   -- v36
     when 'cbt_admin_practice' then case when p_act = 'list' then 'any' else 'content:manage' end
-    when 'cbt_admin_pyq'            then case when p_act in ('list', 'papers') then 'content:view' else 'content:manage' end
+    when 'cbt_admin_pyq'            then case when p_act in ('list', 'papers', 'get', 'reports', 'free_get', 'dups', 'audit') then 'content:view' else 'content:manage' end   -- v93: + get, reports, free_get, dups, audit
     when 'cbt_admin_series_cover'   then case when p_act = 'get' then 'content:view' else 'content:manage' end
     when 'cbt_admin_series_msg'     then case when p_act = 'get' then 'any' else 'content:manage' end   -- v40
     when 'cbt_admin_lang'           then case when p_act in ('overview', 'orders') then 'any' when p_act = 'test_get' then 'content:view'
