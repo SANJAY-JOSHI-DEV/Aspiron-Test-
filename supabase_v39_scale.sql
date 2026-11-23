@@ -141,7 +141,7 @@ begin
 
   perform autosubmit(null, null);   -- expired, auto-saved attempts get their result before ranking
 
-  delete from overall_rank;
+  delete from overall_rank where true;   -- v94: Supabase refuses a DELETE without WHERE
   -- per student and test: the FIRST attempt, if not late and (for held-back tests) after the result time and submitted before it
   insert into overall_rank (student_id, pc, n, rk)
   with b as (select f1.student_id, f1.test_id, f1.score / nullif(f1.max_score,0) * 100 p
