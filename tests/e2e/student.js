@@ -398,7 +398,7 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     const tx12 = sel => p12.evaluate(x => { const e = document.getElementById('v3host').shadowRoot.querySelector(x); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null; }, sel);
     await ck12('[data-ob="skip"]'); await p12.waitForTimeout(2600); await ck12('#sheet.open [data-a="close"]'); await p12.waitForTimeout(900);
     const tiles = await p12.evaluate(() => [...document.getElementById('v3host').shadowRoot.querySelectorAll('#qkBox .qk-t')].map(x => x.textContent.trim()));
-    ok(tiles.join('|') === 'Resources|All Tests|My Doubts', 'Home: My Doubts is the third shortcut tile (' + tiles.join('|') + ')');
+    ok(tiles.join('|') === 'Resources|All Tests|My Doubts|Results', 'Home: My Doubts is the third shortcut tile, Results the fourth (' + tiles.join('|') + ')');
     await ck12('#qkBox [data-k="doubts"]'); await p12.waitForTimeout(1500);
     if (off) {
       ok(/being set up/.test(await tx12('#scrB') || ''), 'Doubts: without the SQL the page says doubts are being set up');
@@ -469,7 +469,7 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     await sr(r => { const b = r.querySelector('[data-ob="skip"]'); if (b) b.click(); }); await p6.waitForTimeout(2600);
     await sr(r => { const b = r.querySelector('#sheet.open [data-a="close"]'); if (b) b.click(); }); await p6.waitForTimeout(1200);
     const g = await sr(r => { const b = r.querySelector('#qkBox'); if (!b) return null; const L = [...b.querySelectorAll('.qk-t')]; return { n: L.length, labels: L.map(x => x.textContent.trim()).join('|'), clip: L.filter(x => { const l = x.querySelector('.qk-l'); return l.scrollWidth > l.clientWidth + 1; }).length, over: document.documentElement.scrollWidth > innerWidth, right: Math.max(...L.map(x => x.getBoundingClientRect().right)), w: innerWidth, up: (r.querySelector('.pillbtn.upg') || {}).textContent, zone: !!r.querySelector('.zgrid') }; });
-    ok(g && g.n === 3 && g.labels === 'Resources|All Tests|My Doubts' && !g.clip && !g.over && g.right <= g.w && g.up === 'Upgrade plan' && g.zone, `${cfg.n}: Home has the Resources, All Tests and My Doubts tiles, the Upgrade plan pill, and My study zone is still there ` + JSON.stringify(g));
+    ok(g && g.n === 4 && g.labels === 'Resources|All Tests|My Doubts|Results' && !g.clip && !g.over && g.right <= g.w && g.up === 'Upgrade plan' && g.zone, `${cfg.n}: Home has the Resources, All Tests, My Doubts and Results tiles in one row, the Upgrade plan pill, and My study zone is still there ` + JSON.stringify(g));
     await p6.screenshot({ path: path.join(__dirname, 'shots', `student_home_${cfg.n}.png`) });
     if (cfg.n === 'light' || cfg.n === 'dark') {
       await sr(r => r.querySelector('[data-k="res"]').click()); await p6.waitForTimeout(1200);
@@ -477,6 +477,15 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
       await p6.goBack(); await p6.waitForTimeout(900);
       await sr(r => r.querySelector('[data-k="tests"]').click()); await p6.waitForTimeout(1200);
       ok((await sr(r => { const b = r.querySelector('.utabs .on'); return b ? b.textContent.trim() : null; })) === 'Tests', `${cfg.n}: the All Tests tile opens the Tests tab`);
+      await p6.goBack(); await p6.waitForTimeout(900);
+      // v100: the Results tile opens one page with its segments side by side (chips + swipe), not a long list
+      await sr(r => r.querySelector('[data-k="results"]').click()); await p6.waitForTimeout(1500);
+      const rh0 = await sr(r => { const p = r.querySelector('#scrB .rh-pg'); return { t: r.querySelector('#scrT').textContent, tabs: [...r.querySelectorAll('#scrB .rh-tabs button')].map(b => b.textContent.trim().replace(/\d+$/, '').trim()).join('|'), panes: p ? p.children.length : 0, w: p ? p.scrollWidth > p.clientWidth * 4 : false, over: document.documentElement.scrollWidth > innerWidth }; });
+      ok(rh0.t === 'Results' && rh0.tabs === 'Waiting|History|Leaderboard|Analysis|Mistakes' && rh0.panes === 5 && rh0.w && !rh0.over, `${cfg.n}: Results page: five segments side by side ` + JSON.stringify(rh0));
+      await sr(r => r.querySelector('#scrB .rh-tabs [data-i="2"]').click()); await p6.waitForTimeout(1300);
+      const rh1 = await sr(r => { const p = r.querySelector('#scrB .rh-pg'); return { i: Math.round(p.scrollLeft / p.clientWidth), on: r.querySelector('#scrB .rh-tabs .on').textContent.trim() }; });
+      ok(rh1.i === 2 && /Leaderboard/.test(rh1.on), `${cfg.n}: Results: the Leaderboard chip slides to its segment ` + JSON.stringify(rh1));
+      await p6.screenshot({ path: path.join(__dirname, 'shots', `student_results_${cfg.n}.png`) });
       await p6.goBack(); await p6.waitForTimeout(900);
     }
     if (cfg.n === 'light') {
