@@ -10,7 +10,7 @@ const EXAM = 'NEET';
 const can = () => AX.can('content', 'manage');
 const call = (a, d) => AX.api.call('cbt_admin_qbank', a, d || {});
 let sylP = null;
-const syl = () => sylP || (sylP = window.PYQ_SYL ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'pyq-syllabus.js?v=4'; s.onload = res; s.onerror = () => { sylP = null; rej(new Error('pyq-syllabus.js')); }; document.head.appendChild(s); }));
+const syl = () => sylP || (sylP = window.PYQ_SYL ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'pyq-syllabus.js?v=5'; s.onload = res; s.onerror = () => { sylP = null; rej(new Error('pyq-syllabus.js')); }; document.head.appendChild(s); }));
 const SUBS = () => window.qbSubjects ? window.qbSubjects() : window.PYQ_SYL[EXAM].subjects;
 // best chapter + topic for a question (NEET subjects and Maths), same scoring as pyqTag
 const tag = (text, hint) => {

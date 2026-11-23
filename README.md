@@ -232,11 +232,15 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   Upgrade pill works as before.
 
 ## PYQ Analyzer (`supabase_v93_pyq_analyzer.sql`, `v3.js`, `cx/m-pyq.js`)
-- **Student (Library → PYQ Analyzer, `#/pyq`):** one dark summary card (questions, papers, years), a short *How to use* (can be
-  closed), *Continue where you left off*, four big buttons (Smart practice, My performance, Wrong answers, Saved questions),
-  Physics / Chemistry / Biology, **Most asked chapters** (questions · years · weightage · difficulty) and **All chapters**
-  (NCERT order or Most asked, Class 11 / 12, one search box that finds any chapter or topic of any subject). Exams JEE Main,
-  JEE Advanced and CUET show *Soon*. *Data coverage* lists the years whose papers are not added yet — gaps are never shown as 0.
+- **Student (Library → PYQ Analyzer):** three steps, each its own page.
+  1. `#/pyq`: how many years of real papers we have (questions, papers, chapters), then **Choose your exam**: NEET (UG),
+     JEE Main and JEE Advanced (the JEE ones say *Coming soon*). *Data coverage* lists the years not added yet (never shown as 0).
+  2. `#/pyq/NEET`: the three subjects (Biology, Chemistry, Physics: questions, chapters, most asked chapter), a search for any
+     chapter or topic, then **Your practice**: Continue where you left off, Smart practice, My performance, Wrong answers, Saved
+     questions; a short *How to use* (can be closed) and the plan card.
+  3. `#/pyq/NEET/s/bio`: Class 11 / Class 12, the most asked chapters of that class, and the chapters: **Biology by NCERT unit**
+     (Unit 1 Diversity in the Living World … Unit 10 Ecology; `PYQ_UNITS` in `pyq-syllabus.js`), a unit opens its chapters in
+     place; Physics and Chemistry as a chapter list. *By unit / NCERT order* or *Most asked*.
 - **Chapter (`#/pyq/NEET/<chapter>`):** questions, per paper, years, papers, repeated; syllabus status; **Practice chapter PYQs**;
   year-wise bar chart (5 / 10 / all years, tap a year; years without a paper are hatched); topic weightage (tap → its questions);
   key insights (most asked topic, recent years, repeats, numerical vs theory, formulas and concepts when the admin added them);
@@ -255,6 +259,9 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Plans:** the analysis (counts, charts, weightage) is open to every student. Questions follow Plans → Access & limits
   (feature *PYQ bank*): Ultra (and any plan set to unlimited) opens every chapter; Free / Basic open only the **free chapters**
   the admin picks. A locked chapter shows its full analysis and an *Unlock* card, and opening it spends nothing.
+- **Admin → PYQ bank → Add questions:** 1) choose the paper, 2) choose how: Paste text, PDF, Word, Text file, Photo (OCR),
+  Excel / CSV or From a test (the same reader as Test studio; an answer key at the end is read too), 3) check the chapter of each
+  question (filled in automatically) and save. A paper already in the bank can get more questions (e.g. only Biology).
 - **Admin → PYQ bank:** verified count, **Verify all** per paper (only after checking the official key), **Edit** every
   field (question, options, answer, solution, difficulty, type, concept, formula, NCERT / source reference, session, paper
   code, syllabus status, verified) with **History** (who changed what, when), **Add one question**, **Import CSV** (checks every

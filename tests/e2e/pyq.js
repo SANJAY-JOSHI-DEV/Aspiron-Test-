@@ -88,19 +88,31 @@ const shot = async (p, n) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: tru
     await p.goto(BASE + 'index.html'); await p.waitForSelector('#lp');
     await p.evaluate(() => { lpLogin(); login('code'); }); await p.waitForSelector('#ph');
     await p.fill('#ph', '9000000002'); await p.fill('#cd', 'BBBB2222'); await p.click('#lbtn'); await wait(3500);
-    // 1. open the analyzer
+    // 1. open the analyzer: how much data, then the three exams
     await p.evaluate(() => { location.hash = '#/pyq'; }); await wait(1800);
     let t = await txt(p);
-    ok(t.includes(String(n)) && /PYQ ANALYZER/i.test(t), tag + ' 1 analyzer opens with the real question count (' + n + ')');
-    ok(/Most asked chapters/.test(t) && /All chapters/.test(t) && /Class 11/.test(t), tag + ' 1b most asked + all chapters (Class 11 / 12)');
+    ok(/PYQ ANALYZER/.test(t) && /years of real papers/.test(t) && t.includes(String(n)), tag + ' 1 home: years of data and the real question count (' + n + ')');
+    ok(/Choose your exam/.test(t) && /NEET \(UG\)/.test(t) && /JEE Main/.test(t) && /JEE Advanced/.test(t) && /Coming soon/.test(t), tag + ' 1b home: NEET, JEE Main, JEE Advanced');
     ok(/Data coverage/.test(t), tag + ' 1c years without papers are shown as a data gap, not as zero');
-    await shot(p, tag + '-1-home');
-    // 2. switch subjects
-    await click(p, '[data-a="pqSub"][data-v="phy"]'); await wait(500); t = await txt(p);
-    ok(/Nuclei/.test(t), tag + ' 2 Physics shows its chapters (Nuclei)');
-    await click(p, '[data-a="pqSub"][data-v="chem"]'); await wait(500); t = await txt(p);
-    ok(/Equilibrium/.test(t), tag + ' 2b Chemistry shows Equilibrium');
-    // 3. search a chapter (any subject)
+    await shot(p, tag + '-0-home');
+    await click(p, '[data-a="pqEx"][data-v="NEET"]'); await wait(1200); t = await txt(p);
+    ok(/Subjects/.test(t) && /Biology/.test(t) && /Chemistry/.test(t) && /Physics/.test(t) && /Your practice/.test(t) && /Smart practice/.test(t) && /Wrong answers/.test(t), tag + ' 1d NEET page: three subjects, then your practice');
+    await shot(p, tag + '-1-neet');
+    // 2. a subject: Class 11 / 12; Biology is grouped by unit, a unit opens its chapters in place
+    await click(p, '[data-a="pqSub"][data-v="bio"]'); await wait(800); t = await txt(p);
+    ok(/Class 11/.test(t) && /Class 12/.test(t) && /Unit 1/i.test(t) && /Diversity in the Living World/.test(t) && /The Living World/.test(t), tag + ' 2 Biology: Class 11 units, Unit 1 open with its chapters');
+    ok(/Cell: Structure and Function/.test(t) && (await S(p, 'return root.querySelectorAll(".pq4-u.open").length')) === 1, tag + ' 2b other units stay closed');
+    await click(p, '[data-a="pqUnit"][data-k="bio-3"]'); await wait(300); t = await txt(p);
+    ok(/Cell: The Unit of Life/.test(t), tag + ' 2c tapping Unit 3 shows its chapters');
+    await shot(p, tag + '-2-bio');
+    await click(p, '[data-a="pqCls"][data-v="12"]'); await wait(300); t = await txt(p);
+    ok(/Unit 6/i.test(t) && /Reproduction/.test(t) && !/Unit 1\b/i.test(t), tag + ' 2d Class 12 shows Units 6–10');
+    await p.evaluate(() => history.back()); await wait(500);
+    await click(p, '[data-a="pqSub"][data-v="phy"]'); await wait(600); t = await txt(p);
+    await click(p, '[data-a="pqCls"][data-v="12"]'); await wait(300); t = await txt(p);
+    ok(/Nuclei/.test(t) && /Most asked in Class 12/.test(t), tag + ' 2e Physics Class 12 lists Nuclei and the most asked chapters');
+    await p.evaluate(() => history.back()); await wait(500);
+    // 3. search a chapter (any subject) on the NEET page
     await S(p, `const i=root.querySelector('#pq4q');i.value='nucl';i.dispatchEvent(new Event('input'));return 1`); await wait(300);
     t = await S(p, 'return root.querySelector("#pq4L").innerText');
     ok(/Nuclei/.test(t) && /Physics ·/.test(t) && /chapters? found/.test(t), tag + ' 3 chapter search finds Nuclei from another subject');
@@ -191,7 +203,7 @@ const shot = async (p, n) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: tru
     await p.goto(BASE + 'index.html'); await p.waitForSelector('#lp');
     await p.evaluate(() => { lpLogin(); login('code'); }); await p.waitForSelector('#ph');
     await p.fill('#ph', '9000000094'); await p.fill('#cd', 'FFFF9494'); await p.click('#lbtn'); await wait(3500);
-    await p.evaluate(() => { location.hash = '#/pyq'; }); await wait(1800);
+    await p.evaluate(() => { location.hash = '#/pyq/NEET'; }); await wait(1800);
     let t = await txt(p);
     ok(/1 chapter is free to practise/.test(t), 'lock: the plan card says how many chapters are free');
     await shot(p, 'lock-1-home');

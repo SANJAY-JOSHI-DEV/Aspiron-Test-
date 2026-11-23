@@ -104,6 +104,21 @@ async function rpcRoute(route) {
   const im = (await q(`select chapter, answer, verified, q from public.cbt_pyq where paper = 'NEET 2015'`));
   ok(im.length === 1 && im[0].chapter === 'nuclei' && im[0].answer === 2 && im[0].verified === false && /with a comma/.test(im[0].q), 'csv: imported with chapter by name, answer C, not verified');
   await q(`delete from public.cbt_pyq where paper = 'NEET 2015'`);
+  // Add questions: choose the paper, Paste text, review, check chapters, save
+  await page.goto(BASE + 'cp-dt764twzf54s5m.html#/pyq'); await page.waitForTimeout(1500);
+  ok(/Add questions/.test(await page.textContent('#pq-add')) && (await page.$$('#pq-add [data-act=way]')).length === 7, 'add: one card with 7 ways (paste, PDF, Word, text file, photo, Excel/CSV, test)');
+  await page.click('[data-act=way][data-k=paste]'); await page.waitForTimeout(400);
+  ok(await page.$('#im-raw') === null, 'add: asks for the paper first');
+  await page.selectOption('#pq-p', 'AIPMT 2014');
+  await page.click('[data-act=way][data-k=paste]'); await page.waitForSelector('#im-raw');
+  await page.fill('#im-raw', 'Physics\n1. The half life of a radioactive nucleus is 5 days. Find the fraction left after 10 days.\n(A) 1/2 (B) 1/4 (C) 1/8 (D) 1/16\nBiology\n2. Which organelle is the powerhouse of the cell, the mitochondria?\n(A) Ribosome (B) Mitochondria (C) Golgi (D) Nucleus\n\nAnswer key\n1. B 2. B 3. A 4. C 5. D 6. A 7. B 8. C 9. D 10. A\n');
+  await page.waitForTimeout(600); await page.click('.modal [data-act=review]'); await page.waitForSelector('.modal [data-act=add]'); await page.click('.modal [data-act=add]'); await page.waitForTimeout(800);
+  t = await page.textContent('#pq-prev');
+  ok(/AIPMT 2014/.test(t) && /2 questions/.test(t), 'add: the pasted questions show for checking');
+  await page.click('#pq-prev [data-act=save]'); await page.waitForTimeout(1500);
+  const pa = await q(`select chapter, answer, verified from public.cbt_pyq where paper = 'AIPMT 2014' order by qno`);
+  ok(pa.length === 2 && pa[0].chapter === 'nuclei' && pa[1].chapter === 'cell' && pa[0].answer === 1 && !pa[0].verified, 'add: saved with chapters filled in, answers from the key, not verified (' + pa.map(x => x.chapter).join(',') + ')');
+  await q(`delete from public.cbt_pyq where paper = 'AIPMT 2014'`);
   ok(!errs.length, 'no page errors ' + errs.join(' | '));
   await br.close(); server.close(); await db.end();
   console.log(fails ? fails + ' FAILED' : 'ALL PYQ ADMIN CHECKS PASSED');
