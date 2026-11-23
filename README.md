@@ -231,6 +231,41 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Setup:** run `supabase_v90_plans.sql` once (after v89), then `supabase_v35_admin_team.sql` again. Until then the
   Upgrade pill works as before.
 
+## PYQ Analyzer (`supabase_v93_pyq_analyzer.sql`, `v3.js`, `cx/m-pyq.js`)
+- **Student (Library → PYQ Analyzer, `#/pyq`):** one dark summary card (questions, papers, years), a short *How to use* (can be
+  closed), *Continue where you left off*, four big buttons (Smart practice, My performance, Wrong answers, Saved questions),
+  Physics / Chemistry / Biology, **Most asked chapters** (questions · years · weightage · difficulty) and **All chapters**
+  (NCERT order or Most asked, Class 11 / 12, one search box that finds any chapter or topic of any subject). Exams JEE Main,
+  JEE Advanced and CUET show *Soon*. *Data coverage* lists the years whose papers are not added yet — gaps are never shown as 0.
+- **Chapter (`#/pyq/NEET/<chapter>`):** questions, per paper, years, papers, repeated; syllabus status; **Practice chapter PYQs**;
+  year-wise bar chart (5 / 10 / all years, tap a year; years without a paper are hatched); topic weightage (tap → its questions);
+  key insights (most asked topic, recent years, repeats, numerical vs theory, formulas and concepts when the admin added them);
+  the question list with search, topic / year / status (not tried, wrong, right, saved) and *Repeated*, with active filters and *Clear all*.
+- **Practice:** one question at a time — paper, year, Q no., topic, *Verified* (only when the admin verified it), *Asked 2×*;
+  pick → **Submit answer** → right / wrong → correct answer, step-by-step solution, formula, concept, NCERT reference, related
+  PYQs (each a fold-out, shown only when the data exists — nothing is made up); Save, Revise later, Report error; Previous / Next,
+  the list of all question numbers (right / wrong / not answered) and a summary with *Practise the wrong ones*. `x^2`, `H_2O`
+  style text is shown as superscript / subscript.
+- **Smart practice (`#/pyq/practice`):** chapter-wise, topic-wise, year-wise (a whole paper in question order), repeated, weak
+  chapters, wrong answers, mixed; subject, chapter, topic, years, difficulty (only if set), 10–45 questions, *only current
+  syllabus*. The server picks **real PYQs only** (no AI questions).
+- **My performance (`#/pyq/me`):** answered / right / wrong / left, accuracy, each subject, chapter strength (Strong 75%+,
+  Improving 50–74%, Needs practice below 50%, after 3 answers) and revision lists (wrong, saved, revise later, all) with *Practice again*.
+  Progress is saved to the student's account (`cbt_private.pyq_progress`); a student only ever gets their own rows.
+- **Plans:** the analysis (counts, charts, weightage) is open to every student. Questions follow Plans → Access & limits
+  (feature *PYQ bank*): Ultra (and any plan set to unlimited) opens every chapter; Free / Basic open only the **free chapters**
+  the admin picks. A locked chapter shows its full analysis and an *Unlock* card, and opening it spends nothing.
+- **Admin → PYQ bank:** verified count, **Verify all** per paper (only after checking the official key), **Edit** every
+  field (question, options, answer, solution, difficulty, type, concept, formula, NCERT / source reference, session, paper
+  code, syllabus status, verified) with **History** (who changed what, when), **Add one question**, **Import CSV** (checks every
+  row, explains bad rows, chapter by name; Excel → Save as CSV UTF-8; template button), **Student reports** (open / fixed /
+  dismissed), **Free chapters**, **Duplicates & repeats**. Imported questions are never marked verified.
+- **Setup:** run `supabase_v93_pyq_analyzer.sql` once (after v92), then `supabase_v35_admin_team.sql` again. Nothing is deleted:
+  new columns have empty defaults, existing questions start as not verified. Then Admin → PYQ bank → Free chapters, and
+  Admin → Plans → Access & limits (PYQ bank: Free / Basic 0, Ultra unlimited; Pro as you like) and turn the locks on when ready.
+- **Tests:** `tests/db/break_it.sql` section 52; by hand `tests/e2e/pyq.js` (student walk-through on phone + computer, plan lock)
+  then `tests/e2e/pyq_admin.js`.
+
 ## Plan access: what each plan may use (`supabase_v91_plan_access.sql`)
 - **The server decides.** One list of features with a limit per plan: -1 = unlimited, 0 = not in the plan, N = N uses a
   day / a month (India time) / in total. Start: Question bank and PYQ = Pro and Ultra, Test generator = 4 a month on Pro

@@ -13,7 +13,7 @@ const load = force => AX.cache.get('qotd', () => call('list', {}), 20000, force)
 const missing = r => r && (r.error === 'missing' || (r.error === 'server' && (r.status === 404 || r.status === 400)));
 // subject and chapter names come from pyq-syllabus.js (the same file the Question bank page loads)
 let sylP = null;
-const syl = () => sylP || (sylP = window.PYQ_SYL ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'pyq-syllabus.js?v=3'; s.onload = res; s.onerror = () => { sylP = null; rej(new Error('syllabus')); }; document.head.appendChild(s); }));
+const syl = () => sylP || (sylP = window.PYQ_SYL ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'pyq-syllabus.js?v=4'; s.onload = res; s.onerror = () => { sylP = null; rej(new Error('syllabus')); }; document.head.appendChild(s); }));
 const SUBS = () => { try { return window.qbSubjects ? window.qbSubjects() : window.PYQ_SYL.NEET.subjects; } catch (e) { return []; } };
 const subName = s => { const x = SUBS().find(y => y.id === s); return x ? x.name : (s ? String(s).replace(/\b\w/g, c => c.toUpperCase()) : 'General'); };
 const chapName = (s, c) => { if (!c) return ''; const x = SUBS().find(y => y.id === s), ch = x && x.chapters.find(y => y.id === c); return ch ? ch.name : c; };

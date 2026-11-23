@@ -60,6 +60,16 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   **Saare DNS records yahan note kar lo, Cloudflare (Phase 7) me copy karne honge.**
   - [ ] Naya email `VAPID_SUBJECT` (1.2) me daalo.
 
+## PYQ Analyzer upgrade (v93)
+- [ ] **P.1 👤 SQL chalao:** Supabase → SQL Editor: `supabase_v93_pyq_analyzer.sql` → `supabase_v35_admin_team.sql`.
+  Kuch delete nahi hota; purane sawal "not verified" se shuru hote hain.
+  *Check:* Admin → PYQ bank par "Verified answers", "Student reports", "Free chapters", "Import CSV" dikhte hain.
+- [ ] **P.2 👤 Free chapters chuno:** Admin → PYQ bank → Free chapters (jo chapter Free / Basic bachche practice kar sakein).
+- [ ] **P.3 👤 Plan limits:** Admin → Plans → Access & limits → *PYQ bank*: Free 0, Basic 0, Ultra unlimited (Pro aapki marzi).
+  Phir locks ON karo. (Analysis — charts, weightage — sabke liye khula rehta hai; sirf sawal lock hote hain.)
+- [ ] **P.4 👤 Answer key verify karo:** har paper ki official key se milao, phir Admin → PYQ bank → paper ke saamne *Verify all*.
+- [ ] **P.5 👤 Baaki papers daalo:** 2002–2009 aur jo saal missing hain (app me "Data coverage" me dikhte hain) — Import CSV ya test se.
+
 ## Phase 3: Public pages (legal, homepage, SEO)
 - [ ] **3.1 👤 Business details do:**
   - Legal naam (proprietor ya firm)
