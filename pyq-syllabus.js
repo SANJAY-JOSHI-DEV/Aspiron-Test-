@@ -109,6 +109,19 @@ window.PYQ_SYL={
     papers:['AIPMT 1998','AIPMT 1999','AIPMT 2000','AIPMT 2010','AIPMT 2011','AIPMT 2012','NEET 2013','AIPMT 2014','AIPMT 2015','AIPMT 2015 Re-exam','NEET 2016 Phase I','NEET 2016 Phase II','NEET 2017','NEET 2018','NEET 2019','NEET 2020','NEET 2021','NEET 2022','NEET 2023','NEET 2023 Manipur','NEET 2024','NEET 2024 Re-exam','NEET 2025','NEET 2026']},
   JEE:{name:'JEE Main',soon:1},JEEA:{name:'JEE Advanced',soon:1},CUET:{name:'CUET (UG)',soon:1},CBSE12:{name:'CBSE Class 12',soon:1},CBSE10:{name:'CBSE Class 10',soon:1}
 };
+/* NCERT units (Biology): Class 11 = Units 1–5, Class 12 = Units 6–10. The PYQ Analyzer groups chapters by these. */
+window.PYQ_UNITS={bio:[
+ [11,'Diversity in the Living World',['living','bioclass','plantk','animalk']],
+ [11,'Structural Organisation in Plants and Animals',['morph','anat','structanimal']],
+ [11,'Cell: Structure and Function',['cell','biomolb','cellcycle']],
+ [11,'Plant Physiology',['transport','mineral','photo','resp','pgd']],
+ [11,'Human Physiology',['digest','breath','circ','excretion','locomotion','neural','chemco']],
+ [12,'Reproduction',['reproorg','sexplant','humrepro','rephealth']],
+ [12,'Genetics and Evolution',['inherit','molecular','evolution']],
+ [12,'Biology and Human Welfare',['health','food','microbes']],
+ [12,'Biotechnology and its Applications',['biotechp','biotecha']],
+ [12,'Ecology and Environment',['organisms','ecosystem','biodiv','envissues']]
+]};
 /* Question bank / Test generator (app25.js, cx/m-qbank.js): Mathematics chapters (NCERT 11 + 12) for JEE, and the
    subjects of each exam. Not part of PYQ_SYL, so the PYQ analysis stays NEET-only. */
 window.QB_MATH=mk('math','Mathematics',[

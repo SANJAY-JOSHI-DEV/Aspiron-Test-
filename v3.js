@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=102;
+const V3VER=104;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -2186,55 +2186,93 @@ const pqIsNum=q=>q.ty?q.ty==='numerical':/\b(calculate|find the value|how much|h
 function pqChRow(c,o,W,showSub){const lk=pqLocked(c.id),ys=o?Object.keys(o.y).length:0;
   return `<button class="pq4-r" data-a="pqCh" data-id="${esc3(c.id)}"><span class="pq4-rt"><b>${esc3(c.name)}</b><small>${showSub?`${esc3(pqChap(c.id).s.name)} · `:''}${o?`${pqPl(o.n,'question')} · ${pqPl(ys,'year')}`:'No questions added yet'}</small>
     <span class="pq4-tg">${pqWtTag(o&&o.n,W)}${pqDiffTag(c.id)}${c.old?'<span class="pq4-old">Not in current syllabus</span>':''}</span></span>${lk?`<span class="pq4-lk" aria-label="Locked">${ic('lock',15)}</span>`:''}${ic('right',16)}</button>`}
-function pqHomeList(){const E=PYQ_SYL[PQ.exam],A=pqAgg(),S=pqSubj(),q=PQV.q.trim().toLowerCase();
-  if(q){const hits=[];E.subjects.forEach(s=>s.chapters.forEach(c=>{const tp=c.topics.filter(t=>t.name.toLowerCase().includes(q));if(c.name.toLowerCase().includes(q)||tp.length)hits.push({c,o:A.ch[c.id],tp})}));
-    const W=pqWts(hits);
-    return hits.length?`<p class="gh">${hits.length} chapter${hits.length===1?'':'s'} found</p><div class="card pq4-l">${hits.map(x=>pqChRow(x.c,x.o,W,1)).join('')}</div>`
-      :`<div class="card empty"><span class="ti">${ic('search',22)}</span><b>No chapter found</b><p>Try a shorter word, like “motion”, “cell” or “bond”.</p></div>`}
-  const chs=S.chapters.map(c=>({c,o:A.ch[c.id]})),W=pqWts(chs);
-  const grp=cls=>{let l=chs.filter(x=>x.c.cls===cls);if(!l.length)return '';if(PQ.sort==='most')l=[...l].sort((a,b)=>(b.o?b.o.n:0)-(a.o?a.o.n:0));
-    return `<p class="gh">Class ${cls} <span>${l.length} chapters</span></p><div class="card pq4-l">${l.map(x=>pqChRow(x.c,x.o,W)).join('')}</div>`};
-  return grp(11)+grp(12)}
-function pyqView(){return {t:'PYQ Analyzer',get s(){try{return PYQ_SYL[PQ.exam].name+' · previous year questions'}catch(e){return ''}},key:'pyq',
- after:()=>{const i=$('#pq4q');if(i)i.addEventListener('input',()=>{PQV.q=i.value;const b=$('#pq4L');if(b)b.innerHTML=pqHomeList();const x=$('#pq4qx');if(x)x.hidden=!PQV.q})},
- html:()=>{const E=PYQ_SYL,ex=E[PQ.exam];if(!ex||ex.soon)return '';
-  if(!PQ.sum)return '<div class="card sk" style="height:210px"></div><div class="card sk" style="height:90px"></div><div class="card sk" style="height:320px"></div>';
-  const A=pqAgg(),S=pqSubj(),total=(PQ.sum||[]).reduce((a,r)=>a+r[5],0),{Y,have}=pqYearSpan(),hv=[...have].sort((a,b)=>a-b);
-  const chs=S.chapters.map(c=>({c,o:A.ch[c.id]})),W=pqWts(chs),top=chs.filter(x=>x.o).sort((a,b)=>b.o.n-a.o.n).slice(0,5),tmx=Math.max(1,...top.map(x=>x.o.n));
-  const st=pgStats(),miss=Y.filter(y=>!have.has(y));
-  const last=Object.entries(st.ch).sort((a,b)=>b[1].at-a[1].at)[0],lastC=last&&pqChap(last[0]);
-  return `<section class="mkh pq4-hero"><div class="mkh-top"><div><small>${esc3(ex.name)} · PYQ ANALYZER</small><b>${fmtN(total)}</b><span>real questions from ${pqPl(A.papers.size,'paper')}${hv.length?` · ${hv[0]}–${hv[hv.length-1]}`:''}</span></div><span class="ti qbic">${ic('pyq',30)}</span></div>
-     <div class="pqx3">${Object.keys(E).map(k=>`<button class="${k===PQ.exam?'on':''}${E[k].soon?' soon':''}" ${E[k].soon?'disabled':`data-a="pqEx" data-v="${k}"`}>${esc3(E[k].name)}${E[k].soon?'<small>Soon</small>':''}</button>`).join('')}</div></section>
-   ${PQ.err?'<div class="card empty"><b>Being set up</b><p>PYQ data is being added. Please check back soon.</p></div>':''}
-   ${PX.fail&&!total?`<div class="card empty"><span class="ti">${ic('wifiOff',22)}</span><b>Could not load</b><p>Check your internet and try again.</p><button class="btn sm" data-a="pqRe">Try again</button></div>`:''}
-   ${PQV.help?`<section class="card p pq4-help"><div class="sh" style="margin:0"><h2>How to use</h2><button class="lnk" data-a="pqHelpX">Got it</button></div>
-     <ol><li><b>Pick a subject</b> and see which chapters are asked the most.</li><li><b>Open a chapter</b> to see year-wise trends and its important topics.</li><li><b>Practise</b> the real questions and check your answer with the solution.</li></ol></section>`:''}
-   ${lastC?`<button class="card pq4-cont" data-a="pqCh" data-id="${esc3(lastC.c.id)}"><span class="ti g">${ic('play',18)}</span><span><small>Continue where you left off</small><b>${esc3(lastC.c.name)}</b></span>${ic('right',18)}</button>`:''}
-   <div class="pq4-qa">
-    <button class="card" data-a="pqGen"><span class="ti g">${ic('target',20)}</span><b>Smart practice</b><small>Make your own set</small></button>
-    <button class="card" data-a="pqMe"><span class="ti g">${ic('chart',20)}</span><b>My performance</b><small>${st.at?`${pqAcc(st.ok,st.at)}% right · ${fmtN(st.at)} done`:'Start practising'}</small></button>
-    <button class="card" data-a="pqRev" data-k="wrong"><span class="ti g">${ic('redo',20)}</span><b>Wrong answers</b><small>${st.wr?`${fmtN(st.wr)} to fix`:'None yet'}</small></button>
-    <button class="card" data-a="pqRev" data-k="bm"><span class="ti g">${ic('bookmark',20)}</span><b>Saved questions</b><small>${st.bm?`${fmtN(st.bm)} saved`:'None yet'}</small></button></div>
-   ${pqPlanCard()}
-   <div class="seg pq4-sub">${ex.subjects.map(s=>`<button class="${s.id===S.id?'on':''}" data-a="pqSub" data-v="${s.id}">${esc3(s.name)}<small>${fmtN(A.sub[s.id]||0)}</small></button>`).join('')}</div>
-   ${top.length?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Most asked chapters</h2>${pqInfo('Chapters with the most questions in all the papers we have. High weightage = asked a lot.')}</div>
-     <div class="card p pq4-top">${top.map((x,i)=>{const ys=Object.keys(x.o.y).length;return `<button data-a="pqCh" data-id="${esc3(x.c.id)}"><span class="pqt3-n">${i+1}</span><span class="pqt3-b"><b>${esc3(x.c.name)}</b><small>${pqPl(x.o.n,'question')} · ${pqPl(ys,'year')}</small><span class="bar"><i style="--p:${(x.o.n/tmx).toFixed(3)}"></i></span></span><span class="pq4-tg col">${pqWtTag(x.o.n,W)}${pqDiffTag(x.c.id)}</span></button>`}).join('')}</div></section>`
-    :`<div class="card empty"><span class="ti">${ic('pyq',22)}</span><b>Questions are being added</b><p>${esc3(S.name)} questions are added paper by paper. The chapter list is ready below.</p></div>`}
-   <section class="stack" style="gap:10px"><div class="sh" style="margin:0;align-items:center"><h2>All chapters</h2><div class="seg pqs3"><button class="${PQ.sort!=='most'?'on':''}" data-a="pqSort" data-v="ncert">NCERT order</button><button class="${PQ.sort==='most'?'on':''}" data-a="pqSort" data-v="most">Most asked</button></div></div>
-    <label class="sbox pq4-s">${ic('search',18)}<input id="pq4q" type="search" autocomplete="off" placeholder="Search any chapter or topic" value="${esc3(PQV.q)}" aria-label="Search chapters"><button class="clr" id="pq4qx" data-a="pqQx" aria-label="Clear search"${PQV.q?'':' hidden'}>${ic('x',16)}</button></label>
-    <div id="pq4L" class="stack" style="gap:10px">${pqHomeList()}</div></section>
-   ${miss.length&&total?`<details class="card p pq4-gap"><summary>${ic('info',15)} Data coverage: ${hv.length} of ${Y.length} years added</summary><p>We only show real papers. Years not added yet: <b>${pqRanges(miss)}</b>. Their numbers will appear when the papers are added.</p></details>`:''}`}}}
 function pqRanges(L){const o=[];let a=null,b=null;L.forEach(y=>{if(a===null){a=b=y}else if(y===b+1)b=y;else{o.push(a===b?a:a+'–'+b);a=b=y}});if(a!==null)o.push(a===b?a:a+'–'+b);return o.join(', ')}
-async function openPyq(exam){closeLayer();if(exam&&PYQ_SYL[exam]&&!PYQ_SYL[exam].soon)PQ.exam=exam;if(!(top()&&top().key==='pyq'))push(pyqView());else redraw();
-  planMine().catch(()=>{});pgLoad().then(()=>{if(top()&&top().key==='pyq')qbKeep()}).catch(()=>{});
-  await pqLoad3().catch(()=>{});if(top()&&top().key==='pyq')qbKeep()}
+/* search: any chapter or topic of any subject of the exam */
+function pqSearchList(){const E=PYQ_SYL[PQ.exam],A=pqAgg(),q=PQV.q.trim().toLowerCase();if(!q)return '';
+  const hits=[];E.subjects.forEach(s=>s.chapters.forEach(c=>{const tp=c.topics.filter(t=>t.name.toLowerCase().includes(q));if(c.name.toLowerCase().includes(q)||tp.length)hits.push({c,o:A.ch[c.id],tp})}));
+  const W=pqWts(hits);
+  return hits.length?`<p class="gh">${hits.length} chapter${hits.length===1?'':'s'} found</p><div class="card pq4-l">${hits.map(x=>pqChRow(x.c,x.o,W,1)).join('')}</div>`
+    :`<div class="card empty"><span class="ti">${ic('search',22)}</span><b>No chapter found</b><p>Try a shorter word, like “motion”, “cell” or “bond”.</p></div>`}
+const pqSearchBox=()=>`<label class="sbox pq4-s">${ic('search',18)}<input id="pq4q" type="search" autocomplete="off" placeholder="Search any chapter or topic" value="${esc3(PQV.q)}" aria-label="Search chapters"><button class="clr" id="pq4qx" data-a="pqQx" aria-label="Clear search"${PQV.q?'':' hidden'}>${ic('x',16)}</button></label>`;
+const pqSearchAfter=()=>{const i=$('#pq4q');if(i)i.addEventListener('input',()=>{PQV.q=i.value;const b=$('#pq4L');if(b){b.innerHTML=pqSearchList();b.hidden=!PQV.q.trim()}const r=$('#pq4R');if(r)r.hidden=!!PQV.q.trim();const x=$('#pq4qx');if(x)x.hidden=!PQV.q})};
+const PQEX=['NEET','JEE','JEEA'];   // the exams shown on the first page
+const EXSUB={NEET:'Physics · Chemistry · Biology',JEE:'Physics · Chemistry · Maths',JEEA:'Physics · Chemistry · Maths'};
+function pqCover(){const A=pqAgg(),total=(PQ.sum||[]).reduce((a,r)=>a+r[5],0),{Y,have}=pqYearSpan(),hv=[...have].sort((a,b)=>a-b);return {A,total,Y,have,hv,miss:Y.filter(y=>!have.has(y))}}
+const pqGap=C=>C.miss.length&&C.total?`<details class="card p pq4-gap"><summary>${ic('info',15)} Data coverage: ${C.hv.length} of ${C.Y.length} years added</summary><p>We only show real papers. Years not added yet: <b>${pqRanges(C.miss)}</b>. Their numbers appear when the papers are added.</p></details>`:'';
+
+/* ================= 1. HOME: how much data + choose the exam ================= */
+function pyqView(){return {t:'PYQ Analyzer',s:'Previous year questions',key:'pyq',html:()=>{
+  if(!PQ.sum)return '<div class="card sk" style="height:220px"></div><div class="card sk" style="height:110px"></div><div class="card sk" style="height:110px"></div>';
+  const C=pqCover(),E=PYQ_SYL;
+  return `<section class="mkh pq4-hero"><div class="mkh-top"><div><small>PYQ ANALYZER</small><b>${C.hv.length}</b><span>${C.hv.length===1?'year':'years'} of real papers${C.hv.length?` · ${C.hv[0]}–${C.hv[C.hv.length-1]}`:''}</span></div><span class="ti qbic">${ic('pyq',30)}</span></div>
+     <div class="mkh-st"><div><b>${fmtN(C.total)}</b><small>Questions</small></div><div><b>${C.A.papers.size}</b><small>Papers</small></div><div><b>${(PYQ_SYL.NEET.subjects||[]).reduce((a,s)=>a+s.chapters.length,0)}</b><small>Chapters</small></div></div>
+     <p class="pq4-hp">See which chapters come most, year by year, and practise the real questions.</p></section>
+   ${PQ.err?'<div class="card empty"><b>Being set up</b><p>PYQ data is being added. Please check back soon.</p></div>':''}
+   ${PX.fail&&!C.total?`<div class="card empty"><span class="ti">${ic('wifiOff',22)}</span><b>Could not load</b><p>Check your internet and try again.</p><button class="btn sm" data-a="pqRe">Try again</button></div>`:''}
+   <section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Choose your exam</h2></div>
+    <div class="pq4-ex">${PQEX.filter(k=>E[k]).map(k=>{const x=E[k],on=!x.soon;return `<button class="card${on?'':' soon'}" ${on?`data-a="pqEx" data-v="${k}"`:'disabled'}><span class="pq4-exi">${esc3(x.name.replace(/ \(.*/,'').replace('JEE Advanced','JEE Adv'))}</span><span class="pq4-rt"><b>${esc3(x.name)}</b><small>${EXSUB[k]||''}</small>${on&&k==='NEET'?`<small class="pq4-exn">${fmtN(C.total)} questions · ${C.A.papers.size} papers</small>`:''}</span>${on?ic('right',18):'<span class="badge pro">Coming soon</span>'}</button>`}).join('')}</div></section>
+   ${pqGap(C)}`}}}
+async function openPyq(exam){closeLayer();if(exam&&PYQ_SYL[exam]&&!PYQ_SYL[exam].soon){PQ.exam=exam;return openPyqExam(exam)}
+  if(!(top()&&top().key==='pyq'))push(pyqView());else redraw();
+  planMine().catch(()=>{});pgLoad().catch(()=>{});await pqLoad3().catch(()=>{});if(top()&&top().key==='pyq')qbKeep()}
 A.pyqOpen=()=>openPyq();
 A.pqRe=()=>{pqLoad3(true).then(()=>{if(top())qbKeep()});};
-A.pqEx=async el=>{if(PQ.exam===el.dataset.v)return;PQ.exam=el.dataset.v;PQ.sum=null;PQ.ch={};PX.at=0;redraw();await pqLoad3(true).catch(()=>{});redraw()};
-A.pqSub=el=>{PQ.sub=el.dataset.v;lsSet('cbt_pq_sub',PQ.sub);PQV.q='';qbKeep()};
-A.pqSort=el=>{PQ.sort=el.dataset.v;qbKeep()};
-A.pqQx=()=>{PQV.q='';const i=$('#pq4q');if(i){i.value='';i.focus()}const b=$('#pq4L');if(b)b.innerHTML=pqHomeList();const x=$('#pq4qx');if(x)x.hidden=true};
+
+/* ================= 2. EXAM (NEET): subjects + your practice ================= */
+function pyqExamView(){return {get t(){return (PYQ_SYL[PQ.exam]||{}).name||'PYQ'},s:'Choose a subject',key:'pyqe',after:pqSearchAfter,html:()=>{
+  if(!PQ.sum)return '<div class="card sk" style="height:180px"></div><div class="card sk" style="height:260px"></div>';
+  const C=pqCover(),E=PYQ_SYL[PQ.exam],A=C.A,st=pgStats(),last=Object.entries(st.ch).sort((a,b)=>b[1].at-a[1].at)[0],lastC=last&&pqChap(last[0]);
+  const order=['bio','chem','phy'],subs=order.map(id=>E.subjects.find(s=>s.id===id)).filter(Boolean);
+  return `<section class="mkh pq4-hero"><div class="mkh-top"><div><small>${esc3(E.name)} · PYQ</small><b>${fmtN(C.total)}</b><span>real questions from ${pqPl(A.papers.size,'paper')}${C.hv.length?` · ${C.hv[0]}–${C.hv[C.hv.length-1]}`:''}</span></div><span class="ti qbic">${ic('pyq',30)}</span></div></section>
+   <section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Subjects</h2></div>
+    <div class="pq4-sj">${subs.map(s=>{const n=A.sub[s.id]||0,top=s.chapters.map(c=>({c,o:A.ch[c.id]})).filter(x=>x.o).sort((a,b)=>b.o.n-a.o.n)[0],me=st.sub[s.id];
+      return `<button class="card pq4-sjc s-${s.id}" data-a="pqSub" data-v="${s.id}"><span class="ti g">${ic(SUBIC[s.id]||'book',22)}</span><span class="pq4-rt"><b>${esc3(s.name)}</b><small>${pqPl(n,'question')} · ${s.chapters.length} chapters</small>${top?`<small>Most asked: ${esc3(top.c.name)}</small>`:''}${me&&me.a?`<small class="pq4-sjm">You: ${pqAcc(me.o,me.a)}% right</small>`:''}</span>${ic('right',18)}</button>`}).join('')}</div></section>
+   ${PQV.help?`<section class="card p pq4-help"><div class="sh" style="margin:0"><h2>How to use</h2><button class="lnk" data-a="pqHelpX">Got it</button></div>
+     <ol><li><b>Pick a subject</b>, then Class 11 or Class 12.</li><li><b>Open a chapter</b> to see how often it comes and its important topics.</li><li><b>Practise</b> the real questions with solutions.</li></ol></section>`:''}
+   ${pqSearchBox()}<div id="pq4L" class="stack" style="gap:10px"${PQV.q.trim()?'':' hidden'}>${pqSearchList()}</div>
+   <div id="pq4R" class="stack" style="gap:var(--gap)"${PQV.q.trim()?' hidden':''}>
+   <section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Your practice</h2><span class="aside">${st.at?`${fmtN(st.at)} answered · ${pqAcc(st.ok,st.at)}% right`:'Saved to your account'}</span></div>
+    ${lastC?`<button class="card pq4-cont" data-a="pqCh" data-id="${esc3(lastC.c.id)}"><span class="ti g">${ic('play',18)}</span><span><small>Continue where you left off</small><b>${esc3(lastC.c.name)}</b></span>${ic('right',18)}</button>`:''}
+    <div class="pq4-qa">
+     <button class="card" data-a="pqGen"><span class="ti g">${ic('target',20)}</span><b>Smart practice</b><small>Make your own set</small></button>
+     <button class="card" data-a="pqMe"><span class="ti g">${ic('chart',20)}</span><b>My performance</b><small>${st.at?`${pqAcc(st.ok,st.at)}% right · ${fmtN(st.at)} done`:'Start practising'}</small></button>
+     <button class="card" data-a="pqRev" data-k="wrong"><span class="ti g">${ic('redo',20)}</span><b>Wrong answers</b><small>${st.wr?`${fmtN(st.wr)} to fix`:'None yet'}</small></button>
+     <button class="card" data-a="pqRev" data-k="bm"><span class="ti g">${ic('bookmark',20)}</span><b>Saved questions</b><small>${st.bm?`${fmtN(st.bm)} saved`:'None yet'}</small></button></div></section>
+   ${pqPlanCard()}${pqGap(C)}</div>`}}}
+async function openPyqExam(k){if(k&&PYQ_SYL[k]&&!PYQ_SYL[k].soon&&PQ.exam!==k){PQ.exam=k;PQ.sum=null;PQ.ch={};PX.at=0}PQV.q='';
+  push(pyqExamView());planMine().catch(()=>{});
+  await Promise.all([pqLoad3(),pgLoad()]).catch(()=>{});if(top()&&top().key==='pyqe')qbKeep()}
+A.pqEx=el=>openPyqExam(el.dataset.v);
+A.pqQx=()=>{PQV.q='';const i=$('#pq4q');if(i){i.value='';i.focus()}const b=$('#pq4L');if(b){b.innerHTML='';b.hidden=true}const r=$('#pq4R');if(r)r.hidden=false;const x=$('#pq4qx');if(x)x.hidden=true};
 A.pqHelpX=()=>{PQV.help=0;lsSet('cbt_pq3_help',0);qbKeep()};
+
+/* ================= 3. SUBJECT: Class 11 / 12, units (Biology) or chapters ================= */
+const PQU={open:lsGet('cbt_pq3_units',{})};
+function pyqSubView(){return {get t(){return pqSubj().name},get s(){return (PYQ_SYL[PQ.exam]||{}).name||''},key:'pyqs',html:()=>{
+  if(!PQ.sum)return '<div class="card sk" style="height:160px"></div><div class="card sk" style="height:320px"></div>';
+  const A=pqAgg(),S=pqSubj(),cls=PQ.cls||11,chs=S.chapters.filter(c=>c.cls===cls).map(c=>({c,o:A.ch[c.id]})),W=pqWts(S.chapters.map(c=>({c,o:A.ch[c.id]})));
+  const n=x=>x.reduce((a,y)=>a+(y.o?y.o.n:0),0),nc=k=>n(S.chapters.filter(c=>c.cls===k).map(c=>({o:A.ch[c.id]})));
+  const top=chs.filter(x=>x.o).sort((a,b)=>b.o.n-a.o.n).slice(0,5),tmx=Math.max(1,...top.map(x=>x.o.n));
+  const U=((window.PYQ_UNITS||{})[S.id]||[]).map((u,i)=>({no:i+1,cls:u[0],name:u[1],ids:u[2]})).filter(u=>u.cls===cls);
+  let list;
+  if(PQ.sort==='most')list=`<div class="card pq4-l">${[...chs].sort((a,b)=>(b.o?b.o.n:0)-(a.o?a.o.n:0)).map(x=>pqChRow(x.c,x.o,W)).join('')}</div>`;
+  else if(U.length)list=U.map(u=>{const L=u.ids.map(id=>S.chapters.find(c=>c.id===id)).filter(Boolean).map(c=>({c,o:A.ch[c.id]})),k=S.id+'-'+u.no,op=!!PQU.open[k],q=n(L),act=L.filter(x=>!x.c.old).length;
+    return `<section class="card pq4-u${op?' open':''}"><button class="pq4-uh" data-a="pqUnit" data-k="${k}" aria-expanded="${op}"><span class="pq4-un">${u.no}</span><span class="pq4-rt"><small>Unit ${u.no}</small><b>${esc3(u.name)}</b><small>${act} chapter${act===1?'':'s'}${L.length>act?` (+${L.length-act} removed)`:''} · ${pqPl(q,'question')}</small></span><span class="pq4-uc">${ic('down',18)}</span></button>
+      ${op?`<div class="pq4-ub">${L.map(x=>pqChRow(x.c,x.o,W)).join('')}</div>`:''}</section>`}).join('');
+  else list=`<div class="card pq4-l">${chs.map(x=>pqChRow(x.c,x.o,W)).join('')}</div>`;
+  return `<section class="mkh pq4-hero"><div class="mkh-top"><div><small>${esc3((PYQ_SYL[PQ.exam]||{}).name||'')} · ${esc3(S.name).toUpperCase()}</small><b>${fmtN(A.sub[S.id]||0)}</b><span>questions · ${S.chapters.length} chapters</span></div><span class="ti qbic">${ic(SUBIC[S.id]||'book',30)}</span></div>
+     <div class="pq4-cl">${[11,12].map(k=>`<button class="${cls===k?'on':''}" data-a="pqCls" data-v="${k}" aria-pressed="${cls===k}"><b>Class ${k}</b><small>${pqPl(nc(k),'question')}</small></button>`).join('')}</div></section>
+   ${top.length?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Most asked in Class ${cls}</h2>${pqInfo('Chapters with the most questions in all the papers we have. High weightage = asked a lot.')}</div>
+     <div class="card p pq4-top">${top.map((x,i)=>{const ys=Object.keys(x.o.y).length;return `<button data-a="pqCh" data-id="${esc3(x.c.id)}"><span class="pqt3-n">${i+1}</span><span class="pqt3-b"><b>${esc3(x.c.name)}</b><small>${pqPl(x.o.n,'question')} · ${pqPl(ys,'year')}</small><span class="bar"><i style="--p:${(x.o.n/tmx).toFixed(3)}"></i></span></span><span class="pq4-tg col">${pqWtTag(x.o.n,W)}${pqDiffTag(x.c.id)}</span></button>`}).join('')}</div></section>`:''}
+   <section class="stack" style="gap:10px"><div class="sh" style="margin:0;align-items:center"><h2>${U.length&&PQ.sort!=='most'?'Units':'Chapters'}</h2><div class="seg pqs3"><button class="${PQ.sort!=='most'?'on':''}" data-a="pqSort" data-v="ncert">${U.length?'By unit':'NCERT order'}</button><button class="${PQ.sort==='most'?'on':''}" data-a="pqSort" data-v="most">Most asked</button></div></div>
+    ${list}</section>`}}}
+async function openPyqSub(sid){PQ.sub=sid;lsSet('cbt_pq_sub',sid);PQ.cls=+lsGet('cbt_pq3_cls_'+sid,11)||11;
+  if(window.PYQ_UNITS&&PYQ_UNITS[sid]&&!Object.keys(PQU.open).some(k=>k.startsWith(sid+'-'))){PQU.open[sid+'-1']=1;PQU.open[sid+'-6']=1}
+  push(pyqSubView());if(!PQ.sum){await pqLoad3().catch(()=>{});if(top()&&top().key==='pyqs')qbKeep()}}
+A.pqSub=el=>openPyqSub(el.dataset.v);
+A.pqCls=el=>{PQ.cls=+el.dataset.v;lsSet('cbt_pq3_cls_'+PQ.sub,PQ.cls);qbKeep()};
+A.pqUnit=el=>{const k=el.dataset.k;if(PQU.open[k])delete PQU.open[k];else PQU.open[k]=1;lsSet('cbt_pq3_units',PQU.open);qbKeep()};
+A.pqSort=el=>{PQ.sort=el.dataset.v;qbKeep()};
 A.pqCh=el=>openPyqCh(el.dataset.id);
 
 /* ================= 2. CHAPTER ANALYSIS ================= */
@@ -2462,6 +2500,7 @@ A.pqRev=async el=>{const k=el.dataset.k;if(!PG.m)await pgLoad().catch(()=>{});co
   pqPlay(L,{wrong:'Wrong answers',bm:'Saved questions',rev:'Revise later',all:'Attempted questions'}[k],{mix:true})};
 
 V3H.push([/^#\/pyq\/practice$/,()=>openPyqGen()],[/^#\/pyq\/me$/,()=>openPyqMe()],
+  [/^#\/pyq\/([A-Z0-9]+)\/s\/(phy|chem|bio)$/,m=>{if(PYQ_SYL[m[1]]&&!PYQ_SYL[m[1]].soon)PQ.exam=m[1];openPyqSub(m[2])}],
   [/^#\/pyq(\/([A-Z0-9]+))?$/,m=>openPyq(m[2])],[/^#\/pyq\/([A-Z0-9]+)\/([\w-]+)$/,m=>{if(PYQ_SYL[m[1]]&&!PYQ_SYL[m[1]].soon)PQ.exam=m[1];openPyqCh(m[2])}]);
 
 /* ================= STUDY TRACKER in the new design =================
