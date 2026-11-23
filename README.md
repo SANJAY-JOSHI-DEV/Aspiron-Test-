@@ -273,6 +273,15 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Tests:** `tests/db/break_it.sql` section 52; by hand `tests/e2e/pyq.js` (student walk-through on phone + computer, plan lock)
   then `tests/e2e/pyq_admin.js`.
 
+## "DELETE requires a WHERE clause" fix (`supabase_v94_where_fix.sql`)
+- Supabase refuses a DELETE or UPDATE without WHERE that comes through the app's API, even inside our functions. Three
+  places cleared a whole table that way: **Turn locks on** (Admin → Plans → Access & limits) always failed with
+  "DELETE requires a WHERE clause" and the locks stayed Off; the students' overall rank could not be rebuilt; and the
+  admin sign-in pause after 100 wrong passwords in an hour was never set. Each now says `where true` (same rows as before).
+- `tests/db/break_it.sql` check 53 reads every function and fails if any DELETE / UPDATE has no WHERE.
+- **Setup:** run `supabase_v94_where_fix.sql` once (after v93), then `supabase_v35_admin_team.sql` again.
+  `supabase_check_installed.sql` row 34 then says "ok".
+
 ## Plan access: what each plan may use (`supabase_v91_plan_access.sql`)
 - **The server decides.** One list of features with a limit per plan: -1 = unlimited, 0 = not in the plan, N = N uses a
   day / a month (India time) / in total. Start: Question bank and PYQ = Pro and Ultra, Test generator = 4 a month on Pro

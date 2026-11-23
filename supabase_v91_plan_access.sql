@@ -328,7 +328,7 @@ begin
   elsif p_action = 'enforce' then
     -- turning the locks on starts every count from zero (uses while the locks were off do not eat a demo)
     if coalesce((d->>'on')::boolean, false) and not coalesce((select enforce from plan_settings where id = 1), false) then
-      delete from plan_usage;
+      delete from plan_usage where true;   -- v94: Supabase refuses a DELETE without WHERE
     end if;
     update plan_settings set enforce = coalesce((d->>'on')::boolean, false) where id = 1;
     perform set_config('cbt.detail', case when coalesce((d->>'on')::boolean, false) then 'locks on' else 'locks off' end, true);

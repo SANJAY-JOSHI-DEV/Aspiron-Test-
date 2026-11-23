@@ -60,6 +60,11 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   **Saare DNS records yahan note kar lo, Cloudflare (Phase 7) me copy karne honge.**
   - [ ] Naya email `VAPID_SUBJECT` (1.2) me daalo.
 
+## Plan locks "DELETE requires a WHERE clause" fix (v94)
+- [ ] **W.1 👤 SQL chalao:** Supabase → SQL Editor: `supabase_v94_where_fix.sql` → `supabase_v35_admin_team.sql`.
+  Kuch delete ya add nahi hota. *Check:* `supabase_check_installed.sql` row 34 = "ok"; Admin → Plans → Access & limits →
+  **Turn locks on** dabao: "Locks are on" aata hai aur pill **On** ho jata hai (test karke chaho to wapas Off kar do).
+
 ## PYQ Analyzer upgrade (v93)
 - [ ] **P.1 👤 SQL chalao:** Supabase → SQL Editor: `supabase_v93_pyq_analyzer.sql` → `supabase_v35_admin_team.sql`.
   Kuch delete nahi hota; purane sawal "not verified" se shuru hote hain.

@@ -170,7 +170,7 @@ begin
     if (select count(*) from admin_fail_log where at > now() - interval '1 hour') >= 100 then
       insert into settings values ('admin_locked_until',(t + 900000)::text)
         on conflict (key) do update set value = excluded.value;
-      delete from admin_fail_log;
+      delete from admin_fail_log where true;   -- v94: Supabase refuses a DELETE without WHERE
     end if;
     return 'invalid';
   end if;

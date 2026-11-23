@@ -2289,6 +2289,27 @@ select pg_temp.chk('52f students cannot read or change the new tables directly',
   and not has_table_privilege('authenticated', 'cbt_private.pyq_progress', 'update'));
 update cbt_private.plan_settings set enforce = false;
 
+-- ===== 53. v94: no DELETE / UPDATE without WHERE inside a function =====
+-- Supabase's API (pg-safeupdate) refuses them even inside our functions ("DELETE requires a WHERE clause"): turning the
+-- plan locks on failed that way. A plain PostgreSQL here does not refuse them, so every function body is read instead.
+do $$ declare bad text; begin
+  with f as (select n.nspname || '.' || p.proname fn, p.prosrc src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname in ('public', 'cbt_private') and p.prolang in (select oid from pg_language where lanname in ('plpgsql', 'sql'))),
+       c as (select fn, regexp_replace(s, '--[^\n]*', '', 'g') s from f, regexp_split_to_table(src, ';') s),
+       -- the text from the last DELETE / UPDATE of each statement on: it must have a WHERE (upserts and FOR UPDATE are not updates)
+       st as (select fn, s, substring(s from '(?i).*\m((delete\s+from|update)\s.*)$') tail from c)
+  select string_agg(distinct fn, ' ') into bad from st
+   where tail is not null and tail !~* '\mwhere\M'
+     and not (tail ~* '^update' and s ~* '(on\s+conflict|for\s+(no\s+key\s+)?update)');
+  perform pg_temp.chk('53 no function runs a DELETE or UPDATE without WHERE (Supabase refuses it)', bad is null, coalesce(bad, ''));
+end $$;
+select public.cbt_admin_plan_access(:'ow93', 'enforce', '{"on":true}')->>'ok' as lk94on \gset
+select (select enforce from cbt_private.plan_settings where id = 1) as lk94a, (select count(*) from cbt_private.plan_usage) as lk94n \gset
+select public.cbt_admin_plan_access(:'ow93', 'enforce', '{"on":false}')->>'ok' as lk94off \gset
+select pg_temp.chk('53b turning the plan locks on and off works and clears the use counts',
+  :'lk94on' = 'true' and :'lk94a' = 't' and :'lk94n' = '0' and :'lk94off' = 'true'
+  and not (select enforce from cbt_private.plan_settings where id = 1));
+
 -- ===== report =====
 \t off
 \a
