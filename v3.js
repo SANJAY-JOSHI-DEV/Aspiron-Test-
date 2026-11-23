@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=97;
+const V3VER=98;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -153,13 +153,73 @@ const CHL={light:['#3f72b8','#c4692e'],dark:['#4f86cc','#c97042']}; /* validated
 const MQ=matchMedia('(prefers-color-scheme: dark)');
 const clone=o=>JSON.parse(JSON.stringify(o));
 const oldMode=lsGet('cbt_theme',null);
-const DEF_TH={mode:oldMode==='light'?'light':oldMode==='oled'?'black':oldMode==='dark'?'dark':'system',pal:{light:'A',dark:'A',black:'A'}};
+const DEF_TH={mode:oldMode==='light'?'light':oldMode==='oled'?'black':oldMode==='dark'?'dark':'system',pal:{light:'A',dark:'A',black:'A'},art:'none',hue:null,font:'geist'};
 let TH=clone(DEF_TH),THP=null;
-{const v=lsGet('cbt_v3_theme',null);if(v&&(v.mode==='system'||THEMES[v.mode]))TH={mode:v.mode,pal:Object.assign({},DEF_TH.pal,v.pal)}}
+{const v=lsGet('cbt_v3_theme',null);if(v&&(v.mode==='system'||THEMES[v.mode]))TH={mode:v.mode,pal:Object.assign({},DEF_TH.pal,v.pal),art:'none',hue:null,font:'geist'};
+  if(v){if(typeof v.art==='string')TH.art=v.art;if(v.hue&&isFinite(v.hue.h)&&isFinite(v.hue.s))TH.hue={h:Math.round(v.hue.h)%360,s:Math.max(20,Math.min(100,Math.round(v.hue.s)))};if(typeof v.font==='string')TH.font=v.font}}
 const resolveMode=m=>m==='system'?(MQ.matches?'dark':'light'):m;
 const tokens=(mode,pal)=>Object.assign({},TBASE[mode],(THEMES[mode].pals[pal]||THEMES[mode].pals.A)[1]);
-function applyTheme(t,quick){if(!host)return;const mode=resolveMode(t.mode),pal=THEMES[mode].pals[t.pal[mode]]?t.pal[mode]:'A',tk=tokens(mode,pal);
-  for(const k in TK)host.style.setProperty(TK[k],tk[k]);
+/* ---------- v94 theme extras: picture themes, your own colour (colour wheel), fonts ----------
+   All three sit on top of the chosen palette and are saved with it (cbt_v3_theme). The pictures are drawn here as small
+   SVGs in the palette's own colours: no image files to download, sharp on every screen, and they follow every colour
+   change. They go behind the dark hero cards only (Home top card, hero cards, profile, results), never behind text. */
+const hx=n=>Math.round(Math.max(0,Math.min(255,n))).toString(16).padStart(2,'0');
+function hslHex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));return '#'+hx(f(0)*255)+hx(f(8)*255)+hx(f(4)*255)}
+function hslA(h,s,l,a){const c=hslHex(h,s,l);return `rgba(${parseInt(c.slice(1,3),16)},${parseInt(c.slice(3,5),16)},${parseInt(c.slice(5,7),16)},${a})`}
+/* your own colour: one hue + strength from the wheel, turned into the accent set for the mode (text-safe lightness) */
+function ownTokens(mode,h,s){
+  if(mode==='light')return {acc:hslHex(h,Math.min(s,78),30),a1:hslHex(h,s*.72,80),a2:hslHex(h,s*.66,47),onA:hslHex(h,s*.5,10),as:hslHex(h,s*.5,94),
+    h1:hslHex(h,s*.32,19),h2:hslHex(h,s*.3,8),glow:hslA(h,s*.8,66,.34),logo:hslHex(h,s*.35,17),pill:hslA(h,s*.4,20,.08)};
+  const blk=mode==='black';
+  return {acc:hslHex(h,s*.62,72),a1:hslHex(h,s*.68,82),a2:hslHex(h,s*.52,54),onA:hslHex(h,s*.4,9),as:hslHex(h,s*.26,blk?12:18),
+    h1:hslHex(h,s*.24,blk?12:20),h2:hslHex(h,s*.22,blk?3:10),glow:hslA(h,s*.75,64,blk?.2:.24),pill:hslA(h,s*.5,70,.11)};
+}
+function tkOf(t){const mode=resolveMode(t.mode),pal=THEMES[mode].pals[t.pal[mode]]?t.pal[mode]:'A',tk=tokens(mode,pal);
+  return t.hue?Object.assign(tk,ownTokens(mode,t.hue.h,t.hue.s)):tk}
+const ART={none:['Plain','No picture'],wave:['Abstract Wave','Clean, flowing lines'],aurora:['Aurora Flow','Soft northern lights'],
+  mount:['Mountain Night','Calm, distraction free'],orbit:['Space Orbit','A planet rising'],neon:['Neon Edge','Bold and energetic'],
+  hexa:['Geometric Hexa','Sharp and modern'],dots:['Dot Wave','Fine dots in a wave'],glass:['Liquid Glass','Frosted glass shapes']};
+/* the picture for one palette: c = tokens (a1 light accent, a2 deep accent, acc). Double quotes only (it goes in url('...')) */
+function artSvg(k,c){const A1=c.a1,A2=c.a2,AC=c.acc;let b='';
+  const d=`<defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${A1}" stop-opacity="0"/><stop offset=".55" stop-color="${A1}" stop-opacity=".9"/><stop offset="1" stop-color="${A2}" stop-opacity=".5"/></linearGradient>
+<radialGradient id="rg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${A1}" stop-opacity=".55"/><stop offset="1" stop-color="${A1}" stop-opacity="0"/></radialGradient>
+<filter id="bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter><filter id="bs" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter></defs>`;
+  if(k==='wave'){b=`<ellipse cx="300" cy="130" rx="120" ry="70" fill="url(#rg)"/>`;
+    for(let i=0;i<9;i++){const y=150+i*7,a=(.25+i*.08).toFixed(2);b+=`<path d="M120 ${y+30} C210 ${y-40} 260 ${y+60} 400 ${y-25}" fill="none" stroke="url(#g1)" stroke-width="${i===5?2.2:1}" opacity="${a}"/>`}
+    b+=`<path d="M140 200 C230 120 290 230 400 140" fill="none" stroke="${A1}" stroke-width="5" opacity=".55" filter="url(#bs)"/>`}
+  else if(k==='aurora'){b=`<g filter="url(#bl)" opacity=".9"><path d="M150 40 C230 120 260 20 400 90 L400 140 C280 70 250 170 150 90Z" fill="${A1}" opacity=".55"/><path d="M200 120 C270 170 320 80 400 150 L400 190 C310 130 280 220 200 160Z" fill="${A2}" opacity=".7"/><path d="M240 10 C300 60 330 0 400 30 L400 70 C330 40 300 90 240 40Z" fill="${AC}" opacity=".45"/></g>`;
+    for(let i=0;i<14;i++)b+=`<circle cx="${160+((i*67)%240)}" cy="${12+((i*41)%90)}" r="${i%3?0.8:1.3}" fill="#fff" opacity=".7"/>`}
+  else if(k==='mount'){b=`<rect x="120" width="280" height="240" fill="url(#rg)" opacity=".5"/><circle cx="320" cy="70" r="26" fill="${A1}" opacity=".9"/><circle cx="320" cy="70" r="46" fill="${A1}" opacity=".15" filter="url(#bs)"/>`;
+    for(let i=0;i<12;i++)b+=`<circle cx="${150+((i*53)%250)}" cy="${10+((i*29)%80)}" r="${i%4?0.8:1.4}" fill="#fff" opacity=".65"/>`;
+    b+=`<path d="M110 240 L190 150 L230 185 L290 115 L345 170 L400 130 L400 240Z" fill="${A2}" opacity=".35"/><path d="M90 240 L170 190 L215 210 L265 165 L320 205 L360 180 L400 200 L400 240Z" fill="#000" opacity=".38"/>`}
+  else if(k==='orbit'){b=`<circle cx="360" cy="260" r="150" fill="${A2}" opacity=".18" filter="url(#bl)"/><circle cx="370" cy="270" r="140" fill="#05060a" opacity=".55"/><path d="M230 270 A140 140 0 0 1 400 132" fill="none" stroke="${A1}" stroke-width="3" opacity=".95" filter="url(#bs)"/><path d="M230 270 A140 140 0 0 1 400 132" fill="none" stroke="#fff" stroke-width="1" opacity=".8"/><ellipse cx="320" cy="200" rx="150" ry="26" fill="none" stroke="${A1}" stroke-width="1" opacity=".35" transform="rotate(-18 320 200)"/>`;
+    for(let i=0;i<18;i++)b+=`<circle cx="${130+((i*71)%270)}" cy="${8+((i*37)%130)}" r="${i%5?0.8:1.5}" fill="#fff" opacity=".7"/>`}
+  else if(k==='neon'){b=`<path d="M210 240 L400 40" stroke="${A1}" stroke-width="10" opacity=".35" filter="url(#bs)"/><path d="M210 240 L400 40" stroke="${A1}" stroke-width="2"/><path d="M270 240 L400 100" stroke="${A2}" stroke-width="7" opacity=".4" filter="url(#bs)"/><path d="M270 240 L400 100" stroke="${A2}" stroke-width="1.5"/><path d="M300 0 L400 110 L400 0Z" fill="${A1}" opacity=".08"/>`}
+  else if(k==='hexa'){const hex=(x,y,r)=>{let p='';for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;p+=(i?' L':'M')+(x+r*Math.cos(a)).toFixed(1)+' '+(y+r*Math.sin(a)).toFixed(1)}return p+'Z'};
+    [[350,60,34,1],[320,118,34,0],[380,118,34,.5],[350,176,34,0],[290,60,34,0],[260,176,22,0],[400,10,34,0]].forEach(([x,y,r,f])=>{b+=`<path d="${hex(x,y,r)}" fill="${f?A2:'none'}" fill-opacity="${f?(f===1?.45:.25):0}" stroke="${A1}" stroke-opacity="${f?.7:.35}" stroke-width="1.2"/>`});
+    b=`<ellipse cx="350" cy="110" rx="90" ry="90" fill="url(#rg)" opacity=".7"/>`+b}
+  else if(k==='dots'){for(let x=0;x<26;x++)for(let y=0;y<9;y++){const cx=150+x*10,cy=70+y*12+Math.sin(x/3.2)*26+y*y*.4,o=(.15+.85*(x/26)*(1-y/11)).toFixed(2);b+=`<circle cx="${cx}" cy="${cy.toFixed(1)}" r="${(1+x/26).toFixed(2)}" fill="${y<3?A1:A2}" opacity="${o}"/>`}}
+  else if(k==='glass'){b=`<circle cx="330" cy="60" r="90" fill="${A2}" opacity=".35" filter="url(#bl)"/><circle cx="350" cy="190" r="70" fill="${A1}" opacity=".25" filter="url(#bl)"/>
+<path d="M230 240 C240 150 300 120 400 110 L400 240Z" fill="#fff" fill-opacity=".07" stroke="#fff" stroke-opacity=".25"/><path d="M290 -10 C300 60 350 90 410 80 L410 -10Z" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".22"/><circle cx="285" cy="95" r="38" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".3"/>`}
+  else return '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" preserveAspectRatio="xMaxYMid slice">${d}${b}</svg>`}
+const artUrl=(k,c)=>{const s=artSvg(k,c);return s?`url('data:image/svg+xml,${encodeURIComponent(s)}')`:'none'};
+/* fonts: free Google Fonts (the page's CSP allows them). Only the one in use is downloaded in full; the theme page loads
+   a few letters of each (&text=) for the previews. Poppins and Mukta also draw Hindi in their own style. */
+const FONTS={geist:['Geist','Geist','Clean and modern (default)'],inter:['Inter','Inter','Very clear on small screens'],
+  jakarta:['Plus Jakarta Sans','Plus+Jakarta+Sans','Friendly and premium'],manrope:['Manrope','Manrope','Neat and geometric'],
+  outfit:['Outfit','Outfit','Round and modern'],sora:['Sora','Sora','Wide and techy'],poppins:['Poppins','Poppins','Popular, has Hindi letters'],
+  lexend:['Lexend','Lexend','Made for easy reading'],mukta:['Mukta','Mukta','Hindi + English, very readable'],dmsans:['DM Sans','DM+Sans','Soft and simple']};
+const fontStack=k=>`"${(FONTS[k]||FONTS.geist)[0]}",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
+function fontLoad(k){if(!FONTS[k]||k==='geist')return;const id='v3fn-'+k;if(document.getElementById(id))return;
+  const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=`https://fonts.googleapis.com/css2?family=${FONTS[k][1]}:wght@400;500;600;700&display=swap`;document.head.appendChild(l)}
+function fontPreviews(){if(document.getElementById('v3fn-pv'))return;const l=document.createElement('link');l.id='v3fn-pv';l.rel='stylesheet';
+  l.href='https://fonts.googleapis.com/css2?'+Object.keys(FONTS).filter(k=>k!=='geist').map(k=>'family='+FONTS[k][1]+':wght@600').join('&')+'&text='+encodeURIComponent('Aa NEET 2027 '+Object.values(FONTS).map(f=>f[0]).join(''))+'&display=swap';document.head.appendChild(l)}
+function thExtras(t,tk){const k=ART[t.art]&&t.art!=='none'?t.art:'';
+  if(k){host.style.setProperty('--art',artUrl(k,tk));host.dataset.art=k}else{host.style.removeProperty('--art');delete host.dataset.art}
+  const f=FONTS[t.font]?t.font:'geist';fontLoad(f);host.style.setProperty('--f',fontStack(f));document.body.style.setProperty('--v3f',fontStack(f))}
+function applyTheme(t,quick){if(!host)return;const mode=resolveMode(t.mode),pal=THEMES[mode].pals[t.pal[mode]]?t.pal[mode]:'A',tk=tkOf(t);
+  for(const k in TK)host.style.setProperty(TK[k],tk[k]);thExtras(t,tk);
   CHL[mode==='light'?'light':'dark'].forEach((c,i)=>host.style.setProperty('--c'+(i+1),c));
   host.dataset.mode=mode;host.dataset.pal=pal;document.body.style.setProperty('--v3bg',tk.bg);
   /* the few classic pieces still in use (exam engine, its pop-ups) take the same colours: no old blue anywhere */
@@ -167,7 +227,7 @@ function applyTheme(t,quick){if(!host)return;const mode=resolveMode(t.mode),pal=
   if(!document.body.classList.contains('v3old')){const m=document.querySelector('meta[name="theme-color"]');m&&m.setAttribute('content',tk.bg)}}
 /* the engine's own pages (exam, its pop-ups) read these on <html>; changing them restyles the whole document */
 let docT=0;
-function applyDoc(t){const mode=resolveMode(t.mode),pal=THEMES[mode].pals[t.pal[mode]]?t.pal[mode]:'A',tk=tokens(mode,pal);
+function applyDoc(t){const mode=resolveMode(t.mode),tk=tkOf(t);
   try{const H=document.documentElement,cv={'--bg':tk.bg,'--surface':tk.s,'--surface2':tk.s2,'--bd':tk.ln,'--hair':tk.ln,'--tx':tk.tx,'--mut':tk.mt,'--pri':tk.acc,'--pri2':tk.a2,'--priSoft':tk.as,'--grad':`linear-gradient(180deg,${tk.ink},${tk.ink})`,'--glow':'rgba(0,0,0,.16)','--onpri3':tk.on,'--nav':tk.nav};
     for(const k in cv)H.style.setProperty(k,cv[k]);H.dataset.theme=mode==='light'?'light':'dark';if(mode==='black')H.dataset.oled='1';else delete H.dataset.oled;H.classList.add('v3c')}catch(e){}}
 const saveTheme=()=>lsSet('cbt_v3_theme',TH);
@@ -2323,15 +2383,25 @@ A.m=el=>{const k=el.dataset.k;closeLayer();
   setTimeout(()=>{(M[k]||(()=>{}))()},140)};
 
 /* ---------- theme page: preview live, apply to keep, reset to default ---------- */
-function themeHtml(){const mode=resolveMode(THP.mode),P=THEMES[mode].pals,cur=P[THP.pal[mode]]?THP.pal[mode]:'A';
+function themeHtml(){const mode=resolveMode(THP.mode),P=THEMES[mode].pals,cur=P[THP.pal[mode]]?THP.pal[mode]:'A',tk=tkOf(THP),art=ART[THP.art]?THP.art:'none',fnt=FONTS[THP.font]?THP.font:'geist';
   return `<div class="th-top"><span><b>Appearance</b><small class="th-sv">Saved automatically</small></span><button class="btn sm ghost" data-a="thReset">${ic('hist',15)}Reset</button></div>
   <div class="seg th-seg" role="group" aria-label="Mode">${[['system','System'],['light','Light'],['dark','Dark'],['black','Black']].map(m=>`<button class="${THP.mode===m[0]?'on':''}" data-a="thm" data-v="${m[0]}" aria-pressed="${THP.mode===m[0]}">${m[1]}</button>`).join('')}</div>
   ${THP.mode==='system'?`<p class="hint" style="margin-top:-6px">Follows your phone. It is ${mode} right now.</p>`:''}
-  <div class="sh" style="margin-top:4px"><h2>${THEMES[mode].name} themes</h2><span class="aside">${Object.keys(P).length} to choose</span></div>
+  <section class="th-sec" style="--i:0"><div class="sh"><h2>Picture theme</h2><span class="aside">${Object.keys(ART).length-1} pictures</span></div>
+  <div class="artr" data-noswipe>${Object.entries(ART).map(([k,v])=>`<button class="artc${art===k?' on':''}" data-a="tha" data-v="${k}" aria-pressed="${art===k}"><span class="artv${k==='none'?' plain':''}" data-k="${k}" style="--av:${artUrl(k,tk)}"><i></i><i></i></span><b>${v[0]}</b><small>${v[1]}</small><span class="ck">${ic('check',13)}</span></button>`).join('')}</div>
+  <p class="hint">Shows on the dark cards: the top of Home, results, profile and tools.</p></section>
+  <section class="th-sec" style="--i:1"><div class="sh"><h2>${THEMES[mode].name} themes</h2><span class="aside">${Object.keys(P).length} to choose</span></div>
   <div class="pals">${Object.entries(P).map(([k,v])=>{const t=tokens(mode,k);
-   return `<button class="pal${cur===k?' on':''}" data-a="thp" data-v="${k}" aria-pressed="${cur===k}"><span class="pv" style="background:${t.bg}"><i class="pv-h" style="background:linear-gradient(155deg,${t.h1},${t.h2})"></i><i class="pv-c" style="background:${t.s};border-color:${t.ln}"><b style="background:${t.tx}"></b><b style="background:${t.mt}"></b></i><i class="pv-a" style="background:linear-gradient(135deg,${t.a1},${t.a2})"></i></span><span class="pn"><b>${v[0]}</b><small>${v[2]}</small></span><span class="ck">${ic('check',14)}</span></button>`}).join('')}</div>
-  <p class="hint">Tap a theme to use it. It is used everywhere in the app, the exam screen too.</p>`}
-function openTheme(){THP=clone(TH);push({t:'Theme & colours',s:'Tap a theme to use it',html:themeHtml,leave:()=>{if(thRaf){window.cancelAnimationFrame(thRaf);thRaf=0;if(THP){TH=clone(THP);saveTheme()}}THP=null;clearTimeout(docT);applyTheme(TH)}})}
+   return `<button class="pal${cur===k&&!THP.hue?' on':''}" data-a="thp" data-v="${k}" aria-pressed="${cur===k&&!THP.hue}"><span class="pv" style="background:${t.bg}"><i class="pv-h" style="background:linear-gradient(155deg,${t.h1},${t.h2})"></i><i class="pv-c" style="background:${t.s};border-color:${t.ln}"><b style="background:${t.tx}"></b><b style="background:${t.mt}"></b></i><i class="pv-a" style="background:linear-gradient(135deg,${t.a1},${t.a2})"></i></span><span class="pn"><b>${v[0]}</b><small>${v[2]}</small></span><span class="ck">${ic('check',14)}</span></button>`}).join('')}</div></section>
+  <section class="th-sec" style="--i:2"><div class="sh"><h2>Your own colour</h2><span class="aside">${THP.hue?'On':'Off'}</span></div>
+  <div class="card cwc${THP.hue?' on':''}"><div class="cw" role="slider" tabindex="0" aria-label="Your colour" aria-valuemin="0" aria-valuemax="359" aria-valuenow="${THP.hue?THP.hue.h:0}" aria-valuetext="${THP.hue?'Hue '+THP.hue.h:'Off'}"><i class="cw-k"></i></div>
+   <div class="cw-s"><span class="cw-sw"></span><b>${THP.hue?'Your colour':'Drag on the circle'}</b><small>Buttons, highlights and the dark cards take this colour. Light, Dark and Black all keep it.</small>
+   <button class="btn sm ghost cw-off" data-a="thHueOff"${THP.hue?'':' hidden'}>Use theme colours</button></div></div>
+  <div class="cwq" data-noswipe>${[[214,70],[250,62],[275,58],[330,62],[350,70],[12,72],[28,80],[44,82],[150,52],[172,60],[192,64],[0,20]].map(([h,sat])=>`<button class="cwd" data-a="thHue" data-h="${h}" data-s="${sat}" aria-label="Colour ${h}" style="--c:${hslHex(h,sat*.8,mode==='light'?42:62)}"></button>`).join('')}</div></section>
+  <section class="th-sec" style="--i:3"><div class="sh"><h2>Font</h2><span class="aside">${FONTS[fnt][0]}</span></div>
+  <div class="fnts">${Object.entries(FONTS).map(([k,v])=>`<button class="fnt${fnt===k?' on':''}" data-a="thf" data-v="${k}" aria-pressed="${fnt===k}" style="--ff:${fontStack(k).replace(/"/g,"'")}"><span class="fa">Aa</span><span class="fnm"><b>${v[0]}</b><small>${v[2]}</small></span><span class="ck">${ic('check',13)}</span></button>`).join('')}</div>
+  <p class="hint">Tap a theme to use it. It is used everywhere in the app, the exam screen too.</p></section>`}
+function openTheme(){THP=clone(TH);fontPreviews();cwArm();setTimeout(cwPaint,0);push({t:'Theme & colours',s:'Tap a theme to use it',html:themeHtml,leave:()=>{if(thRaf){window.cancelAnimationFrame(thRaf);thRaf=0;if(THP){TH=clone(THP);saveTheme()}}THP=null;clearTimeout(docT);applyTheme(TH)}})}
 /* Theme page: a tap is the choice. It is applied and saved at once (no Apply button); Reset sits in the page header.
    Light <-> Dark is a big jump, so a soft veil in the new background colour covers the swap for a moment (opacity
    only). A palette change inside the same mode is small and simply changes, with no redraw of the page. */
@@ -2339,12 +2409,44 @@ function thKeep(){TH=clone(THP);saveTheme()}
 let thRaf=0;
 /* the tap is answered at once (tick, pressed state, a short buzz); the colours follow on the next frame. Many quick
    taps are merged into one colour change, so the page never queues up work and never stops answering */
-function thSoon(redrawPage){if(thRaf)window.cancelAnimationFrame(thRaf);thRaf=requestAnimationFrame(()=>{thRaf=0;if(!THP)return;applyTheme(THP,true);thKeep();if(redrawPage)redraw()})}
+function thSoon(redrawPage){if(thRaf)window.cancelAnimationFrame(thRaf);thRaf=requestAnimationFrame(()=>{thRaf=0;if(!THP)return;applyTheme(THP,true);thKeep();if(redrawPage){redraw();cwPaint()}})}
 function thBuzz(){try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
 A.thm=el=>{if(!THP||THP.mode===el.dataset.v)return;THP.mode=el.dataset.v;$$('[data-a="thm"]').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});thBuzz();thSoon(true)};
-A.thp=el=>{if(!THP)return;const m=resolveMode(THP.mode);if(THP.pal[m]===el.dataset.v)return;THP.pal[m]=el.dataset.v;
-  $$('.pal').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});thBuzz();thSoon(false)};
-A.thReset=()=>{if(!THP)return;THP=clone(DEF_TH);thSoon(true);toast3('Default theme is back.')};
+A.thp=el=>{if(!THP)return;const m=resolveMode(THP.mode),own=!!THP.hue;if(THP.pal[m]===el.dataset.v&&!own)return;THP.pal[m]=el.dataset.v;THP.hue=null;
+  $$('.pal').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});thBuzz();if(own)thVT(()=>thSoon(true));else{thSoon(false);setTimeout(artPv,40)}};
+A.thReset=()=>{if(!THP)return;THP=clone(DEF_TH);thVT(()=>thSoon(true));toast3('Default theme is back.')};
+/* picture themes, fonts and the colour wheel (v94). A picture or font change cross-fades the whole screen (View
+   Transitions where the phone has them, else it simply changes); dragging on the wheel recolours live, frame by frame. */
+function thVT(fn){if(!RM&&document.startViewTransition){try{document.startViewTransition(fn);return}catch(e){}}fn()}
+function artPv(){if(!THP)return;const tk=tkOf(THP);$$('.artv').forEach(e=>{e.style.setProperty('--av',artUrl(e.dataset.k,tk))})}
+A.tha=el=>{if(!THP||THP.art===el.dataset.v)return;THP.art=el.dataset.v;$$('.artc').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+  thBuzz();thVT(()=>{applyTheme(THP,true);thKeep()})};
+A.thf=el=>{if(!THP||THP.font===el.dataset.v)return;THP.font=el.dataset.v;$$('.fnt').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+  const sec=el.closest('.th-sec'),a=sec&&sec.querySelector('.aside');if(a)a.textContent=FONTS[THP.font][0];thBuzz();thVT(()=>{applyTheme(THP,true);thKeep()})};
+function cwSet(h,s,fin){if(!THP)return;const was=!!THP.hue;THP.hue={h:Math.round((h%360+360)%360),s:Math.round(Math.max(20,Math.min(100,s)))};cwPaint();
+  if(!was)$$('.pal').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed',false)});thSoon(false);if(fin)setTimeout(artPv,60)}
+A.thHue=el=>{thBuzz();cwSet(+el.dataset.h,+el.dataset.s,true)};
+A.thHueOff=()=>{if(!THP||!THP.hue)return;THP.hue=null;thBuzz();thVT(()=>thSoon(true))};
+/* paint the wheel's knob, the sample dot and the on / off texts from THP.hue (no redraw of the page) */
+function cwPaint(){const w=$('.cw');if(!w||!THP)return;const c=w.closest('.cwc'),h=THP.hue,k=w.querySelector('.cw-k'),R=w.clientWidth/2||90,sw=c.querySelector('.cw-sw');
+  c.classList.toggle('on',!!h);const off=c.querySelector('.cw-off');if(off)off.hidden=!h;const t=c.querySelector('.cw-s b');if(t)t.textContent=h?'Your colour':'Drag on the circle';
+  const sec=c.closest('.th-sec'),as=sec&&sec.querySelector('.aside');if(as)as.textContent=h?'On':'Off';
+  if(!h){k.style.opacity='0';sw.style.background='conic-gradient(from 0deg,#e5484d,#f5a524,#30a46c,#0091ff,#8e4ec6,#e5484d)';w.setAttribute('aria-valuetext','Off');$$('.cwd').forEach(d=>d.classList.remove('on'));return}
+  const r=(h.s-20)/80*(R-14),a=h.h*Math.PI/180;k.style.opacity='1';k.style.transform=`translate(${(Math.sin(a)*r).toFixed(1)}px,${(-Math.cos(a)*r).toFixed(1)}px)`;
+  const col=hslHex(h.h,h.s*.8,resolveMode(THP.mode)==='light'?42:62);k.style.background=col;sw.style.background=col;
+  w.setAttribute('aria-valuenow',h.h);w.setAttribute('aria-valuetext','Hue '+h.h+', strength '+h.s+' percent');
+  $$('.cwd').forEach(d=>d.classList.toggle('on',+d.dataset.h===h.h&&+d.dataset.s===h.s))}
+let cwArmed=false;
+function cwArm(){if(cwArmed||!root)return;cwArmed=true;
+  const at=(w,e)=>{const r=w.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,R=r.width/2-14;
+    return [Math.atan2(dx,-dy)*180/Math.PI,20+80*Math.min(1,Math.hypot(dx,dy)/R)]};
+  root.addEventListener('pointerdown',e=>{const w=e.target.closest&&e.target.closest('.cw');if(!w)return;e.preventDefault();try{w.setPointerCapture(e.pointerId)}catch(x){}
+    w.classList.add('drag');cwSet(...at(w,e));thBuzz();
+    const mv=ev=>cwSet(...at(w,ev)),up=()=>{w.classList.remove('drag');w.removeEventListener('pointermove',mv);w.removeEventListener('pointerup',up);w.removeEventListener('pointercancel',up);artPv()};
+    w.addEventListener('pointermove',mv);w.addEventListener('pointerup',up);w.addEventListener('pointercancel',up)});
+  root.addEventListener('keydown',e=>{const w=e.target.closest&&e.target.closest('.cw');if(!w||!THP)return;const h=THP.hue||{h:214,s:70},d={ArrowRight:[5,0],ArrowLeft:[-5,0],ArrowUp:[0,5],ArrowDown:[0,-5]}[e.key];
+    if(!d)return;e.preventDefault();cwSet(h.h+d[0],h.s+d[1],true)})}
+
 
 
 /* ================= SWIPE BETWEEN TABS, and SLIDE ALONG THE DOCK =================
