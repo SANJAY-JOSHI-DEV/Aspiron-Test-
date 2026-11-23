@@ -92,5 +92,9 @@ select 33, 'supabase_v92_error_hardening.sql', case when to_regprocedure('public
   and pg_get_functiondef(to_regprocedure('public.cbt_mistakes(text,text,text,integer,integer,text,text)')) like '%100000%'
   and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_reviews__core(text,text,jsonb)')) like '%v92: the id is read only after%'
   and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_suspects__core(text,text,jsonb)')) like '%v92: read only after the admin check%' then 'ok' else 'MISSING — run this file' end
+union all
+select 34, 'supabase_v93_qotd_sources.sql', case when to_regprocedure('cbt_private.cbt_admin_qotd_add__core(text,text,jsonb)') is not null then 'ok'
+  when to_regprocedure('public.cbt_admin_qotd_add(text,text,jsonb)') is not null then 'run supabase_v35_admin_team.sql again'
+  else 'MISSING — run this file' end
 ) x
 order by n;

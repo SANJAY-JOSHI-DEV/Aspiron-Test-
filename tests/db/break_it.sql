@@ -2160,6 +2160,41 @@ select pg_temp.chk('48f admin cheat: flag (twice = one row, the note is updated)
   and (:'cf3'::jsonb->'flags'->0->>'mobile') = '9000000002' and :'cf4' = 'true'
   and not exists (select 1 from public.cbt_cheat_flags where test_id = 'aaaaaaaa-0000-0000-0000-000000000004'));
 
+-- ===== 49. v93: Question of the Day — write a question, or take one from a test (not before its result) =====
+select public.cbt_admin_login('','OwnerPass2026x','Owner')->>'token' as ow93 \gset
+select public.cbt_admin_login('viewer1','Tr7k-9mQz-pLx2','V')->>'token' as vt93 \gset
+select (cbt_private.qotd_day() + 2)::text as d93 \gset
+update cbt_private.tests set result_at = (extract(epoch from now()) * 1000)::bigint + 3600000 where id = 'aaaaaaaa-0000-0000-0000-000000000001';   -- its result is not out
+set role anon;
+select public.cbt_admin_qotd_add(:'ow93','write',jsonb_build_object('date',:'d93','subject','phy','q','<b>Owner</b> wrote this?','options',jsonb_build_array('1 J','2 J','3 J','4 J'),'answer','2','explanation','Because.')) as w93 \gset
+select public.cbt_admin_qotd_add(:'ow93','add_test',jsonb_build_object('date',:'d93','subject','chem','test_id','aaaaaaaa-0000-0000-0000-000000000004','idx',jsonb_build_array(0, 0, 7))) as t93 \gset
+select public.cbt_admin_qotd_add(:'ow93','add_test',jsonb_build_object('date',:'d93','subject','chem','test_id','aaaaaaaa-0000-0000-0000-000000000004','idx',jsonb_build_array(0))) as t93b \gset
+select pg_temp.chk('49a the admin writes a question (kept as text) and takes one from a test with its result out; a repeat is skipped',
+  (:'w93'::jsonb)->>'ok' = 'true' and (:'w93'::jsonb)->>'added' = '1'
+  and (:'t93'::jsonb)->>'added' = '1' and (:'t93'::jsonb)->>'bad' = '1'
+  and (:'t93b'::jsonb)->>'added' = '0' and (:'t93b'::jsonb)->>'skipped' = '1'
+  and jsonb_array_length(public.cbt_admin_qotd(:'ow93','list',jsonb_build_object('from',:'d93','to',:'d93'))->'items') = 2
+  and exists (select 1 from jsonb_array_elements(public.cbt_admin_qotd(:'ow93','list',jsonb_build_object('from',:'d93','to',:'d93'))->'items') i where i->>'q' = '<b>Owner</b> wrote this?' and i->>'a' = '2'));
+select pg_temp.chk('49b a test whose result is not out is refused (no early answers); bad input is refused',
+  public.cbt_admin_qotd_add(:'ow93','add_test',jsonb_build_object('date',:'d93','subject','phy','test_id','aaaaaaaa-0000-0000-0000-000000000001','idx',jsonb_build_array(0)))->>'error' = 'held'
+  and public.cbt_admin_qotd_add(:'ow93','test',jsonb_build_object('test_id','aaaaaaaa-0000-0000-0000-000000000001'))->>'held' = 'true'
+  and public.cbt_admin_qotd_add(:'ow93','write',jsonb_build_object('date',:'d93','subject','phy','q','Two options only?','options',jsonb_build_array('a','b'),'answer','0'))->>'error' = 'options'
+  and public.cbt_admin_qotd_add(:'ow93','write',jsonb_build_object('date',:'d93','subject','phy','q','Bad answer here','options',jsonb_build_array('a','b','c','d'),'answer','4'))->>'error' = 'answer'
+  and public.cbt_admin_qotd_add(:'ow93','write',jsonb_build_object('date',:'d93','subject','<x>','q','Bad subject here','options',jsonb_build_array('a','b','c','d'),'answer','1'))->>'error' = 'subject'
+  and public.cbt_admin_qotd_add(:'ow93','write',jsonb_build_object('date','2001-01-01','subject','phy','q','Old day here','options',jsonb_build_array('a','b','c','d'),'answer','1'))->>'error' = 'date'
+  and public.cbt_admin_qotd_add(:'ow93','test',jsonb_build_object('test_id','nope'))->>'error' = 'test');
+select pg_temp.chk('49c the picker lists series and tests; a viewer may look but not add; a wrong password gets nothing',
+  jsonb_array_length(public.cbt_admin_qotd_add(:'ow93','series','{}')->'series') >= 2
+  and public.cbt_admin_qotd_add(:'ow93','test',jsonb_build_object('test_id','aaaaaaaa-0000-0000-0000-000000000004'))->'items'->0->>'use' = 'true'
+  and public.cbt_admin_qotd_add(:'vt93','write',jsonb_build_object('date',:'d93','subject','phy','q','Viewer writes?','options',jsonb_build_array('a','b','c','d'),'answer','1'))->>'error' = 'forbidden'
+  and public.cbt_admin_qotd_add('wrong','series','{}')->>'ok' = 'false');
+reset role;
+select pg_temp.chk('49d the test question is linked to its test in the bank; the helpers are private; the change is in the activity log',
+  exists (select 1 from cbt_private.qbank where src = 'test:aaaaaaaa-0000-0000-0000-000000000004:0')
+  and not has_function_privilege('anon', 'cbt_private.qotd_put(uuid,date)', 'execute')
+  and exists (select 1 from cbt_private.admin_audit where fn = 'cbt_admin_qotd_add' and act = 'write' and who = 'Owner'));
+delete from cbt_private.qotd where show_on = cbt_private.qotd_day() + 2;
+
 -- ===== report =====
 \t off
 \a
