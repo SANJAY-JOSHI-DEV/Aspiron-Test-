@@ -295,6 +295,13 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   so v35 does not need to run again. If `supabase_v30_promotions.sql` is ever run again, run `v35_admin_team` and then
   v95 again. `supabase_check_installed.sql` row 35 then says "ok".
 - **Tests:** `tests/db/break_it.sql` section 54.
+- **Commission in ₹ or % (`supabase_v96_promo_percent.sql`):** every commission (normal and per series) is ₹ per paid
+  student or a % of what the student paid (10% → ₹30 on ₹299, ₹80 on ₹799; rounded to the rupee, saved on the order when
+  it is paid). Commission tab: *Same for every series* (Fill all / Clear all), a live "= ₹30 on ₹299", and *Save + use
+  for every influencer* (copies the per-series list and the normal commission to every other influencer). Promotions page:
+  **Commission for everyone** sets the normal commission of every active influencer (optionally paused ones too) and, with
+  *Same for every test series*, removes their per-series commissions. Setup: run v96 once after v95 (v35 not needed);
+  `supabase_check_installed.sql` row 36 says "ok". Tests: `break_it.sql` section 55.
 
 ## "DELETE requires a WHERE clause" fix (`supabase_v94_where_fix.sql`)
 - Supabase refuses a DELETE or UPDATE without WHERE that comes through the app's API, even inside our functions. Three

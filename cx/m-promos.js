@@ -14,8 +14,8 @@ const ERR = { name: 'Enter a name (at least 2 letters).', code: 'Code: 3–30 le
   commission: 'Commission must be a whole number, for example 25.', claimed: 'Claimed must be a whole number, or empty.', amount: 'Enter an amount above 0.', date: 'Check the date.',
   link: 'Link not found. Refresh the page.', payout: 'Payout not found. Refresh the page.', order: 'Order not found. Refresh the page.',
   ucode: 'Code: 3–20 letters or numbers, for example RAHUL10.', ucode_empty: 'Type the code first, or switch the code off.', ucode_exists: 'Another influencer already has this code. Choose another.',
-  rates: 'Check the commissions: whole numbers only.', action: 'Run supabase_v95_promo_board.sql in Supabase first.', missing: 'Run supabase_v30_promotions.sql in Supabase first.', network: 'No internet. Try again.' };
-const FIELD = { name: 'name', code: 'code', exists: 'code', commission: 'commission', claimed: 'claimed', amount: 'amount', date: 'paid_on', ucode: 'ucode', ucode_empty: 'ucode', ucode_exists: 'ucode' };
+  rates: 'Check the commissions: whole numbers only, and a % from 0 to 100.', pct: 'A % must be from 0 to 100.', action: 'Run the newest promotions SQL (supabase_v96_promo_percent.sql) in Supabase first.', missing: 'Run supabase_v30_promotions.sql in Supabase first.', network: 'No internet. Try again.' };
+const FIELD = { pct: 'commission', name: 'name', code: 'code', exists: 'code', commission: 'commission', claimed: 'claimed', amount: 'amount', date: 'paid_on', ucode: 'ucode', ucode_empty: 'ucode', ucode_exists: 'ucode' };
 const errText = r => ERR[r && r.error] || (r && r.error === 'forbidden' ? AX.errText(r) : 'Could not save. Try again.');
 const can = () => AX.can('promotions', 'manage');
 const base = () => (AX.sto && AX.sto.siteBase ? AX.sto.siteBase() : location.href.replace(/[#?].*$/, '').replace(/[^/]*\.html$/, ''));
@@ -26,9 +26,14 @@ const suggest = n => String(n || '').toLowerCase().normalize('NFKD').replace(/[^
 const calc = l => { const earned = Number(l.earned) || 0, paid = Number(l.paid_out) || 0, rev = Number(l.revenue) || 0;
   return { owed: Math.max(0, earned - paid), conv: l.clicks ? Math.round((l.paid_n || 0) / l.clicks * 1000) / 10 : null, cpl: l.leads ? Math.round(earned / l.leads) : null, profit: rev - earned, earned, paid, rev }; };
 const full = l => Object.assign({ id: l.id, name: l.name, contact: l.contact || '', note: l.note || '', commission: String(l.commission == null ? 0 : l.commission), claimed: l.claimed == null || l.claimed === '' ? '' : String(l.claimed), active: !!l.active },
-  'ucode' in l ? { ucode: l.ucode || '', ucode_on: !!l.ucode_on } : {});
+  'ucode' in l ? { ucode: l.ucode || '', ucode_on: !!l.ucode_on } : {}, 'commission_pct' in l ? { pct: !!l.commission_pct } : {});
 const people = l => l.people == null ? Number(l.leads) || 0 : Number(l.people) || 0;   // v95: leads + buyers (before v95: orders)
-const rateOf = (l, item) => { const r = P.rates.find(x => x.link_id === l.id && x.item_id === item); return r ? Number(r.commission) : Number(l.commission) || 0; };
+// v96: a commission is ₹ per paid student or a % of what the student paid
+const rateOf = (l, item) => { const r = P.rates.find(x => x.link_id === l.id && x.item_id === item); return r ? { c: Number(r.commission) || 0, pct: !!r.pct } : { c: Number(l.commission) || 0, pct: !!l.commission_pct }; };
+const rateTxt = (c, pct) => pct ? (Number(c) || 0) + '%' : fmt.inr(c);
+const normTxt = l => rateTxt(l.commission, l.commission_pct);
+const rateOn = (rt, amount) => rt.pct ? Math.round((Number(amount) || 0) * Math.min(rt.c, 100) / 100) : rt.c;
+const typeSel = (name, pct, dis) => h`<select class="inp pr-ty" name="${name}" aria-label="₹ or %" ${dis ? raw('disabled') : ''}><option value="inr" ${pct ? '' : raw('selected')}>₹</option><option value="pct" ${pct ? raw('selected') : ''}>%</option></select>`;
 const m10 = m => AX.sto ? AX.sto.m10(m) : String(m || '').replace(/\D/g, '').slice(-10);
 const ukey = m => /•/.test(m || '') ? String(m) : String(m || '').replace(/\D/g, '').slice(-10);
 const ucodePill = l => l.ucode ? (l.ucode_on && l.active ? h`<span class="pill gold mono" title="Influencer code is on">${icon('tag', 12)} ${l.ucode}</span>` : h`<span class="pill mono pr-uoff" title="Influencer code is off">${icon('tag', 12)} ${l.ucode} · off</span>`) : '';
@@ -49,8 +54,8 @@ AX.mod({
   sub: 'One link per influencer or campaign — clicks, paid students, commission owed and profit.',
   async render(ctx) {
     ctx.head({ title: 'Promotions', sub: 'One link per influencer or campaign. See clicks, real paid students, commission owed and profit. Tap an influencer to see every lead, order and test series.',
-      actions: can() ? h`<button class="btn pri" data-act="new">${icon('plus', 17)} New link</button>` : '' });
-    const ph = document.getElementById('ax-ph'); if (ph) AX.act(ph, { new: () => edit(null) });
+      actions: can() ? h`<button class="btn" data-act="bulk">${icon('rupee', 17)} Commission for everyone</button><button class="btn pri" data-act="new">${icon('plus', 17)} New link</button>` : '' });
+    const ph = document.getElementById('ax-ph'); if (ph) AX.act(ph, { new: () => edit(null), bulk: () => bulkComm() });
     const r = await load(true);
     if (!ctx.alive()) return;
     if (!r.ok) {
@@ -107,7 +112,7 @@ function card(l) {
   const k = (t, v, tone) => h`<div class="pr-k ${tone || ''}"><span>${t}</span><b>${v}</b></div>`;
   return h`<article class="card pr-card ${l.active ? '' : 'off'}" data-act="open" data-id="${l.id}" tabindex="0" aria-label="Open ${l.name || l.code}">
     <header class="row top"><span class="av" style="--c:${AX.u.hue(l.code)}">${icon('megaphone', 18)}</span><div class="grow"><div class="row gap6 wrap"><b class="lg ell">${l.name || l.code}</b>${l.active ? h`<span class="pill ok"><span class="d"></span>Active</span>` : UI.pill('Paused', 'warn', true)}</div>
-      <div class="xs mut">${l.contact || 'No contact saved'} · ${fmt.inr(l.commission)} per paid student · created ${fmt.date(l.created_at)}</div></div>
+      <div class="xs mut">${l.contact || 'No contact saved'} · ${normTxt(l)} per paid student · created ${fmt.date(l.created_at)}</div></div>
       ${m ? h`<button class="ibtn sm line" data-act="edit" data-id="${l.id}" aria-label="Edit ${l.name}" title="Edit">${icon('edit', 15)}</button>` : ''}</header>
     <div class="pr-url"><span class="pill pri mono">${l.code}</span>${ucodePill(l)}<span class="mono xs ell grow">${url(l.code)}</span><button class="btn xs" data-act="share" data-id="${l.id}">${icon('send', 13)} Share</button></div>
     <div class="pr-ks">${k('Clicks', fmt.num(l.clicks))}${k('Leads', fmt.num(l.leads))}${k('Paid', fmt.num(l.paid_n), 'ok')}${k('Conversion', c.conv == null ? '–' : c.conv + '%')}${k('Revenue', fmt.inr(c.rev))}${k('Commission', fmt.inr(c.earned))}${k('Paid out', fmt.inr(c.paid))}${k('Profit', fmt.inr(c.profit), c.profit >= 0 ? 'ok' : 'bad')}${k('Cost / lead', c.cpl == null ? '–' : fmt.inr(c.cpl))}</div>
@@ -181,7 +186,7 @@ function dash(l) {
       const cur = () => P.links.find(z => z.id === l.id) || l;
       const head = () => { const x = cur(); api.head(h`<div class="row gap6 top"><span class="av" style="--c:${AX.u.hue(x.code)}">${icon('megaphone', 18)}</span><div class="grow" style="min-width:0">
         <div class="row gap6 wrap"><h2 class="ell">${x.name || x.code}</h2>${x.active ? h`<span class="pill ok"><span class="d"></span>Active</span>` : UI.pill('Paused', 'warn', true)}</div>
-        <div class="row gap6 wrap mt4"><span class="pill pri mono">${x.code}</span>${ucodePill(x)}<span class="xs mut">${x.contact || 'No contact saved'} · ${fmt.inr(x.commission)} normal commission</span></div></div></div>`); };
+        <div class="row gap6 wrap mt4"><span class="pill pri mono">${x.code}</span>${ucodePill(x)}<span class="xs mut">${x.contact || 'No contact saved'} · ${normTxt(x)} normal commission</span></div></div></div>`); };
       const paint = () => {
         head();
         if (ERRR) return api.set(h`<div class="callout bad">${icon('alert')}<div>${errText(ERRR)}</div></div>`);
@@ -220,23 +225,27 @@ function dash(l) {
         const L = D.orders;
         return L.length ? h`<div class="card pad0 list">${join(L, o => h`<div class="li pr-or ${o.valid === false ? 'off' : ''}">${UI.avatar(o.name || 'Student', o.mobile, 'sm')}<div class="grow" style="min-width:0"><div class="row gap6 wrap"><b class="ell">${o.name || 'Student'}</b>${UI.pill(o.status === 'paid' ? 'Paid' : o.status === 'rejected' ? 'Rejected' : 'Pending', o.status === 'paid' ? 'ok' : o.status === 'rejected' ? 'bad' : '')}${o.valid === false ? UI.pill('Not counted', 'warn') : ''}${o.via === 'code' ? UI.pill('By code', 'gold') : ''}${self(o) ? UI.pill('Promoter\'s own number', 'bad') : ''}</div>
             <div class="xs mut"><span class="mono">${fmt.mobile(m10(o.mobile))}</span> · ${fmt.dt(o.at)}${o.code ? ' · ' + o.code : ''}</div>
-            <div class="xs tx2">${o.item_title} · ${fmt.inr(o.amount)}${o.status === 'paid' && o.rate != null ? h` · commission <b>${fmt.inr(o.rate)}</b>` : o.status === 'pending' && o.item_id ? h` · commission if paid ${fmt.inr(rateOf(x, o.item_id))}` : ''}</div>${o.note ? h`<div class="xs mut">Note: ${o.note}</div>` : ''}</div>
+            <div class="xs tx2">${o.item_title} · ${fmt.inr(o.amount)}${o.status === 'paid' && o.rate != null ? h` · commission <b>${fmt.inr(o.rate)}</b>` : o.status === 'pending' && o.item_id ? h` · commission if paid ${fmt.inr(rateOn(rateOf(x, o.item_id), o.amount))}` : ''}</div>${o.note ? h`<div class="xs mut">Note: ${o.note}</div>` : ''}</div>
           ${m ? h`<button class="btn xs ${o.valid === false ? 'soft' : 'ghost'}" data-act="valid" data-code="${o.code}">${o.valid === false ? h`${icon('check', 13)} Count again` : h`${icon('ban', 13)} Not counted`}</button>` : ''}</div>`)}</div>`
           : UI.empty({ icon: 'cart', title: 'No orders yet', text: 'No student has ordered through this link yet.' });
       };
       const seriesTab = (x, S) => S.length ? h`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Test series</th><th class="r">Commission / student</th><th class="r">Orders</th><th class="r">Paid</th><th class="r">Revenue</th><th class="r">Commission earned</th></tr></thead><tbody>
-          ${join(S, r => h`<tr><td><b>${r.title}</b></td><td class="num r">${r.id ? fmt.inr(rateOf(x, r.id)) : '—'}</td><td class="num r">${fmt.num(r.orders)}</td><td class="num pr-ok">${fmt.num(r.paid)}</td><td class="num r">${fmt.inr(r.rev)}</td><td class="num r"><b>${fmt.inr(r.comm)}</b></td></tr>`)}</tbody>
+          ${join(S, r => h`<tr><td><b>${r.title}</b></td><td class="num r">${r.id ? (rt => rateTxt(rt.c, rt.pct))(rateOf(x, r.id)) : '—'}</td><td class="num r">${fmt.num(r.orders)}</td><td class="num pr-ok">${fmt.num(r.paid)}</td><td class="num r">${fmt.inr(r.rev)}</td><td class="num r"><b>${fmt.inr(r.comm)}</b></td></tr>`)}</tbody>
           <tfoot><tr><td><b>Total</b></td><td></td><td class="num r"><b>${fmt.num(S.reduce((s, r) => s + r.orders, 0))}</b></td><td class="num r"><b>${fmt.num(S.reduce((s, r) => s + r.paid, 0))}</b></td><td class="num r"><b>${fmt.inr(S.reduce((s, r) => s + r.rev, 0))}</b></td><td class="num r"><b>${fmt.inr(S.reduce((s, r) => s + r.comm, 0))}</b></td></tr></tfoot></table></div>
           <p class="xs mut mt8">Commission earned is what was saved on each order when it was paid. “Commission / student” is the rate for new paid orders.</p>`
         : UI.empty({ icon: 'layers', title: 'No sales yet', text: 'Each test series bought through this link shows here with its count and commission.' });
       const ratesTab = x => {
         if (!P.items) return h`<div class="callout warn">${icon('db', 16)}<div>To set a commission for each test series, run <b>supabase_v95_promo_board.sql</b> in Supabase → SQL Editor once, then refresh.</div></div>`;
         const m = can();
-        return h`<p class="sm tx2 pr-mb">Normal commission: <b>${fmt.inr(x.commission)}</b> per paid student (change it with Edit). Set a different amount for any test series below; leave it empty to use the normal one. A change counts only for students who pay from now on.</p>
-          ${P.items.length ? h`<form id="pd-r" autocomplete="off"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Test series</th><th class="r">Price</th><th>Commission (₹)</th></tr></thead><tbody>
-            ${join(P.items, it => { const r = P.rates.find(z => z.link_id === x.id && z.item_id === it.id); return h`<tr><td><b>${it.title || 'Test series'}</b>${it.active === false ? h` ${UI.pill('Hidden', '')}` : ''}</td><td class="num r">${fmt.inr(it.price)}</td>
-              <td><input class="inp pr-ri" name="r_${it.id}" type="number" min="0" max="100000" inputmode="numeric" value="${r ? r.commission : ''}" placeholder="${x.commission} (normal)" aria-label="Commission for ${it.title || 'this series'}" ${m ? '' : raw('disabled')}></td></tr>`; })}</tbody></table></div>
-            ${m ? h`<div class="row end mt12"><button type="button" class="btn pri" data-act="rsave" data-busy="Saving…">${icon('check', 16)} Save commissions</button></div>` : ''}</form>`
+        const ex = (it, c, pct) => c === '' || c == null ? '' : pct ? '= ' + fmt.inr(Math.round((Number(it.price) || 0) * Math.min(+c, 100) / 100)) + ' on ' + fmt.inr(it.price) : '';
+        return h`<p class="sm tx2 pr-mb">Normal commission: <b>${normTxt(x)}</b> per paid student (change it with Edit). Set a different one for any test series below, in ₹ or as a % of what the student pays; leave it empty to use the normal one. A change counts only for students who pay from now on.</p>
+          ${P.items.length ? h`<form id="pd-r" autocomplete="off">
+            ${m ? h`<div class="pr-all"><b class="sm">Same for every series:</b><input class="inp pr-ri" id="pd-av" type="number" min="0" inputmode="numeric" placeholder="e.g. 10" aria-label="Commission for every series">${typeSel('pd_at', true)}
+              <button type="button" class="btn sm" data-act="rfill">${icon('check', 14)} Fill all</button><button type="button" class="btn sm ghost" data-act="rclear">Clear all</button></div>` : ''}
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Test series</th><th class="r">Price</th><th>Commission</th></tr></thead><tbody>
+            ${join(P.items, it => { const r = P.rates.find(z => z.link_id === x.id && z.item_id === it.id); return h`<tr data-price="${it.price}"><td><b>${it.title || 'Test series'}</b>${it.active === false ? h` ${UI.pill('Hidden', '')}` : ''}</td><td class="num r">${fmt.inr(it.price)}</td>
+              <td><div class="row gap6 pr-rc"><input class="inp pr-ri" name="r_${it.id}" type="number" min="0" max="100000" inputmode="numeric" value="${r ? r.commission : ''}" placeholder="${normTxt(x)} (normal)" aria-label="Commission for ${it.title || 'this series'}" ${m ? '' : raw('disabled')}>${typeSel('t_' + it.id, r ? !!r.pct : !!x.commission_pct, !m)}<span class="xs mut pr-ex">${ex(it, r ? r.commission : '', r ? r.pct : false)}</span></div></td></tr>`; })}</tbody></table></div>
+            ${m ? h`<div class="row end wrap gap6 mt12"><button type="button" class="btn ghost" data-act="rsave" data-all="1" data-busy="Copying…">${icon('users', 16)} Save + use for every influencer</button><button type="button" class="btn pri" data-act="rsave" data-busy="Saving…">${icon('check', 16)} Save commissions</button></div>` : ''}</form>`
           : UI.empty({ icon: 'layers', title: 'No test series in the store', text: 'Add test series in Store first.' })}`;
       };
       const get = async () => {
@@ -265,15 +274,30 @@ function dash(l) {
         },
         async rsave(btn) {
           const f = el.querySelector('#pd-r'), x = cur(), rates = []; let bad = null;
-          f.querySelectorAll('.pr-ri').forEach(i => { const v = i.value.trim(); i.classList.remove('bad'); if (v === '') return; if (!/^[0-9]{1,6}$/.test(v) || +v > 100000) { bad = bad || i; i.classList.add('bad'); return; } rates.push({ item: i.name.slice(2), commission: v }); });
+          f.querySelectorAll('input.pr-ri[name^="r_"]').forEach(i => { const v = i.value.trim(), id = i.name.slice(2), pct = f.querySelector('[name="t_' + id + '"]').value === 'pct'; i.classList.remove('bad'); if (v === '') return; if (!/^[0-9]{1,6}$/.test(v) || +v > (pct ? 100 : 100000)) { bad = bad || i; i.classList.add('bad'); return; } rates.push({ item: id, commission: v, pct }); });
           if (bad) { bad.focus(); return UI.toast(ERR.rates, { tone: 'bad' }); }
+          const all = btn.dataset.all === '1';
+          if (all && !(await UI.confirm({ title: 'Use these for every influencer?', text: 'Every other influencer gets these per-series commissions and the same normal commission (' + normTxt(x) + '). Their own per-series commissions are replaced. Past paid orders do not change.', yes: 'Use for everyone' }))) return;
           await UI.busy(btn, async () => {
             const r = await AX.api.call('cbt_admin_promos', 'rates', { id: x.id, rates });
             if (!r.ok) return UI.toast(errText(r), { tone: 'bad' });
-            UI.toast('Commissions saved'); repaint();
+            if (all) { const r2 = await AX.api.call('cbt_admin_promos', 'rates_all', { id: x.id, normal: true }); if (!r2.ok) return UI.toast(errText(r2), { tone: 'bad' }); UI.toast('Saved for ' + fmt.plural((r2.n || 0) + 1, 'influencer')); }
+            else UI.toast('Commissions saved');
+            repaint();
           });
-        }
+        },
+        rfill() { const f = el.querySelector('#pd-r'), v = f.querySelector('#pd-av').value.trim(), t = f.querySelector('[name=pd_at]').value;
+          if (!/^[0-9]{1,6}$/.test(v) || (t === 'pct' && +v > 100)) { f.querySelector('#pd-av').classList.add('bad'); return UI.toast(t === 'pct' ? ERR.pct : ERR.rates, { tone: 'bad' }); }
+          f.querySelector('#pd-av').classList.remove('bad');
+          f.querySelectorAll('input.pr-ri[name^="r_"]').forEach(i => { i.value = v; f.querySelector('[name="t_' + i.name.slice(2) + '"]').value = t; exUp(i); });
+          UI.toast('Filled — press Save to keep it'); },
+        rclear() { const f = el.querySelector('#pd-r'); f.querySelectorAll('input.pr-ri[name^="r_"]').forEach(i => { i.value = ''; exUp(i); }); UI.toast('Cleared — press Save to keep it'); }
       });
+      // "= ₹30 on ₹299" next to a % while typing
+      const exUp = i => { const tr = i.closest('tr'), id = i.name.slice(2), t = el.querySelector('[name="t_' + id + '"]'), e = tr && tr.querySelector('.pr-ex'); if (!e) return; const v = i.value.trim(), p = Number(tr.dataset.price) || 0;
+        e.textContent = v !== '' && t.value === 'pct' && /^[0-9]+$/.test(v) ? '= ' + fmt.inr(Math.round(p * Math.min(+v, 100) / 100)) + ' on ' + fmt.inr(p) : ''; };
+      const exAny = ev => { const t = ev.target; if (t.matches && t.matches('input.pr-ri[name^="r_"]')) exUp(t); else if (t.matches && t.matches('select[name^="t_"]')) { const i = el.querySelector('[name="r_' + t.name.slice(2) + '"]'); if (i) exUp(i); } };
+      api.el.addEventListener('input', exAny); api.el.addEventListener('change', exAny);
       api.el.addEventListener('input', AX.u.debounce(e => { if (e.target.id !== 'pd-q') return; T.q = e.target.value; const b = el.querySelector('#pd-b'); if (b && D) { AX.set(b, leadsTab(folks(D))); const i = el.querySelector('#pd-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } } }, 200));
       get();
     } });
@@ -296,6 +320,30 @@ function report(l, D) {
     } });
 }
 
+/* ---------- v96: one commission for every influencer at once ---------- */
+function bulkComm() {
+  if (!can()) return UI.toast('You can view promotions but not change them.', { tone: 'warn' });
+  UI.modal({ title: 'Commission for everyone', sub: 'Sets the normal commission of every influencer at once. It counts only for students who pay from now on; past paid orders do not change.',
+    body: h`<form id="pb" class="form-grid" autocomplete="off">
+      <div class="fld full"><label for="f-bc">Commission per paid student</label><div class="row gap6"><input class="inp grow" id="f-bc" name="commission" type="number" min="0" inputmode="numeric" placeholder="e.g. 10" autofocus>${typeSel('ctype', true)}</div>
+        <div class="hint">% = of what each student pays: 10% → ₹30 on a ₹299 series, ₹80 on a ₹799 series.</div><div class="err" data-err="commission"></div></div>
+      <div class="full">${AX.f.switch({ name: 'clear', value: true, label: 'Same for every test series', hint: 'Removes the per-series commissions of every influencer, so this one counts everywhere. Off = per-series commissions you set stay.' })}</div>
+      <div class="full">${AX.f.switch({ name: 'paused', value: false, label: 'Also paused influencers' })}</div></form>`,
+    foot: h`<span class="sp"></span><button class="btn ghost" data-close>Cancel</button><button class="btn pri" data-act="go" data-busy="Saving…">${icon('check', 16)} Apply to everyone</button>`,
+    onOpen(el, close) {
+      AX.act(el, { async go(btn) {
+        const f = el.querySelector('#pb'); AX.f.clearErrors(f); const v = AX.f.read(f), c = String(v.commission).trim(), pct = v.ctype === 'pct';
+        if (!/^[0-9]{1,6}$/.test(c) || +c > 100000) return AX.f.error(f, 'commission', ERR.commission);
+        if (pct && +c > 100) return AX.f.error(f, 'commission', ERR.pct);
+        if (!(await UI.confirm({ title: 'Apply ' + rateTxt(c, pct) + ' to every influencer?', text: v.clear ? 'Their own per-series commissions are removed too.' : 'Per-series commissions you set stay.', yes: 'Apply' }))) return;
+        await UI.busy(btn, async () => {
+          const r = await AX.api.call('cbt_admin_promos', 'bulk', { commission: c, pct, clear: !!v.clear, paused: !!v.paused });
+          if (!r.ok) return r.error === 'pct' || r.error === 'commission' ? AX.f.error(f, 'commission', errText(r)) : UI.toast(errText(r), { tone: 'bad' });
+          close(); UI.toast(rateTxt(c, pct) + ' set for ' + fmt.plural(r.n || 0, 'influencer')); repaint();
+        });
+      } });
+    } });
+}
 async function toggle(l) {
   if (l.active && !(await UI.confirm({ title: 'Pause ' + (l.name || l.code) + '?', text: 'Students who open this link from now on are not counted. Orders already counted stay.', yes: 'Pause link' }))) return;
   const r = await AX.api.call('cbt_admin_promos', 'update', Object.assign(full(l), { active: !l.active }));
@@ -310,7 +358,8 @@ function edit(l) {
     body: h`<form id="pf" class="form-grid" autocomplete="off">
       ${AX.f.input({ name: 'name', label: 'Influencer or campaign name', value: l.name, max: 80, placeholder: 'e.g. Rahul (YouTube)' })}
       ${isNew ? AX.f.input({ name: 'code', label: 'Link code', value: '', max: 30, placeholder: 'rahul-yt', hint: 'Letters, numbers, dash · cannot be changed later', auto: 'off' }) : h`<div class="fld"><label>Link code</label><div class="inp row" style="background:var(--hover)"><span class="mono">${l.code}</span></div><div class="hint">The code cannot be changed.</div></div>`}
-      ${AX.f.input({ name: 'commission', label: 'Normal commission per paid student (₹)', hint: 'A different amount per test series: open the influencer → Commission tab.', type: 'number', value: l.commission, min: 0, inputmode: 'numeric' })}
+      <div class="fld"><label for="f-commission">Normal commission per paid student</label><div class="row gap6"><input class="inp grow" id="f-commission" name="commission" type="number" min="0" inputmode="numeric" value="${l.commission}">${typeSel('ctype', !!l.commission_pct)}</div>
+        <div class="hint">₹ per paid student, or % of what the student pays (10% of ₹299 = ₹30). A different one per test series: open the influencer → Commission tab.</div><div class="err" data-err="commission"></div></div>
       ${AX.f.input({ name: 'claimed', label: 'Claimed by influencer (optional)', type: 'number', value: l.claimed == null ? '' : l.claimed, min: 0, placeholder: 'e.g. 100', inputmode: 'numeric', hint: 'How many paid students they say they sent' })}
       ${AX.f.input({ name: 'ucode', label: 'Influencer code (optional)', value: l.ucode || '', max: 20, placeholder: 'e.g. RAHUL10', auto: 'off', hint: 'Students can type it in the coupon box of the store instead of opening the link. 3–20 letters or numbers.' })}
       <div class="fld pr-uon">${AX.f.switch({ name: 'ucode_on', value: isNew ? true : !!l.ucode_on, label: 'Code is on', hint: 'Off = the code is kept but does nothing in the store. A coupon (Coupons & Refer) with the same code also gives its discount.' })}</div>
@@ -330,11 +379,12 @@ function edit(l) {
       }
       AX.act(el, { async save(btn) {
         AX.f.clearErrors(f); const v = AX.f.read(f);
-        const d = { name: v.name.trim(), contact: v.contact.trim(), note: v.note.trim(), commission: String(v.commission).trim(), claimed: String(v.claimed).trim(), ucode: String(v.ucode || '').trim().toUpperCase(), ucode_on: !!v.ucode_on };
+        const d = { name: v.name.trim(), contact: v.contact.trim(), note: v.note.trim(), commission: String(v.commission).trim(), claimed: String(v.claimed).trim(), ucode: String(v.ucode || '').trim().toUpperCase(), ucode_on: !!v.ucode_on, pct: v.ctype === 'pct' };
         if (d.ucode && !/^[A-Z0-9]{3,20}$/.test(d.ucode)) return AX.f.error(f, 'ucode', ERR.ucode);
         if (!d.ucode) d.ucode_on = false;
         if (d.name.length < 2) return AX.f.error(f, 'name', ERR.name);
         if (!/^[0-9]{1,6}$/.test(d.commission) || +d.commission > 100000) return AX.f.error(f, 'commission', ERR.commission);
+        if (d.pct && +d.commission > 100) return AX.f.error(f, 'commission', ERR.pct);
         if (d.claimed && !/^[0-9]{1,8}$/.test(d.claimed)) return AX.f.error(f, 'claimed', ERR.claimed);
         if (isNew) { d.code = v.code.trim().toLowerCase(); if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(d.code)) return AX.f.error(f, 'code', ERR.code); }
         else { d.id = l.id; d.active = !!v.active; }
@@ -462,6 +512,12 @@ td.pr-ok{color:var(--ok);font-weight:700}td.pr-warn{color:var(--warn);font-weigh
 .pr-ld .pr-call{flex:none}
 .pr-ri{max-width:200px;height:38px}
 .pr-ri.bad{border-color:var(--bad)}
+.pr-ty{width:64px;height:38px;flex:none;padding:0 8px}
+.pr-rc{flex-wrap:nowrap;align-items:center}
+.pr-rc .pr-ri{width:110px}
+.pr-ex{white-space:nowrap}
+.pr-all{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;margin-bottom:12px;border-radius:var(--r-md);background:var(--solid-2);border:1px solid var(--line)}
+.pr-all .pr-ri{width:110px}
 .pr-rep{border-radius:var(--r-lg);border:1px solid var(--line);overflow:hidden;background:var(--solid)}
 .pr-rh{display:flex;flex-direction:column;gap:2px;padding:18px 18px 14px;background:linear-gradient(135deg,color-mix(in srgb,var(--pri) 14%,var(--solid)),var(--solid))}
 .pr-rh b{font-family:var(--font-display);font-size:20px}
