@@ -2338,3 +2338,17 @@ button.row:active{background:var(--surface2)}
 .cpf .btn{margin-left:auto}
 .cpall{margin-top:8px;width:100%}
 @media (prefers-reduced-motion: reduce){.cpe{animation:none}}
+/* v95: Home top card. On phones it is square at the bottom too (edge to edge, like the top). The line under
+   "Questions of the day" fades away while the questions are open; the whole header row opens and closes them; a
+   small dot on the button means questions are still left today. */
+.band.hcd{border-radius:0;box-shadow:0 14px 30px -26px rgba(0,0,0,.55)}
+.hcd .band-in{padding:14px 18px 22px}
+.hb-h{cursor:pointer;-webkit-user-select:none;user-select:none;min-height:40px}
+.hb-tg{position:relative;width:36px;height:36px;border-radius:12px}
+.hb-tg.new::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:color-mix(in srgb,var(--acc1) 65%,var(--heroTx));box-shadow:0 0 0 2px var(--hero2);animation:hbDot 2.4s var(--ease) infinite}
+@keyframes hbDot{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+.hb-h:active .hb-tg{transform:scale(.92)}
+.hb-ln{transform-origin:left center;transition:opacity .3s var(--ease),transform .42s var(--out),margin .42s var(--out)}
+.hb-q.open .hb-ln{opacity:0;transform:scaleX(.6);margin-top:4px}
+.hb-row{padding:14px 2px 8px}
+@media (prefers-reduced-motion:reduce){.hb-tg.new::after{animation:none}.hb-ln{transition:none}}
