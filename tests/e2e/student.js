@@ -530,6 +530,20 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     const t = await qdOpen(cfg);
     const row = await t.sr(r => { const b = r.querySelector('#qdBox'); if (!b) return null; const C = [...b.querySelectorAll('.qd-c')]; return { labels: C.map(x => x.querySelector('.qd-l').textContent + ' ' + x.querySelector('small').textContent).join('|'), head: b.querySelector('.aside').textContent, over: document.documentElement.scrollWidth > innerWidth, above: !!(b.compareDocumentPosition(r.querySelector('#qkBox')) & 4) }; });
     ok(row && row.labels === 'Physics 0/2|Biology 0/1' && row.head === '0 of 3 done' && !row.over && row.above, `${cfg.n}: Home shows a circle per subject with its count, above the shortcut tiles ` + JSON.stringify(row));
+    { // v93: the questions sit in the top card behind a small button; both labels look the same; the choice is remembered
+      const st0 = await t.sr(r => { const k = [...r.querySelectorAll('#serBox .hb-k')].map(e => { const c = getComputedStyle(e); return [e.textContent, c.fontSize, c.fontWeight, c.color, c.letterSpacing].join('|'); }); const s = r.querySelector('#hbS'); return { k, open: s.classList.contains('on'), h: Math.round(s.getBoundingClientRect().height), inBand: !!r.querySelector('#serBox #qdBox'), meta: !!r.querySelector('#serBox .band-meta'), ser: getComputedStyle(r.querySelector('#serBox')).borderRadius }; });
+      ok(st0.k.length === 2 && st0.k[0].split('|').slice(1).join() === st0.k[1].split('|').slice(1).join() && /QUESTIONS OF THE DAY/.test(st0.k[0]) && !st0.open && st0.h === 0 && st0.inBand && !st0.meta, `${cfg.n}: the questions are in the top card, closed, and both labels share one style ` + JSON.stringify(st0));
+      await t.sr(r => r.querySelector('[data-a="qdTg"]').click()); await t.pg.waitForTimeout(900);
+      const st1 = await t.sr(r => { const s = r.querySelector('#hbS'), b = r.querySelector('[data-a="qdTg"]'); return { open: s.classList.contains('on'), h: Math.round(s.getBoundingClientRect().height), ex: b.getAttribute('aria-expanded'), op: getComputedStyle(r.querySelector('#hbS .qd-c')).opacity }; });
+      ok(st1.open && st1.h > 60 && st1.ex === 'true' && st1.op === '1', `${cfg.n}: the small button opens the circles inside the card ` + JSON.stringify(st1));
+      if (cfg.flow) {
+        await t.pg.reload(); await t.pg.waitForTimeout(3500);
+        ok(await t.sr(r => r.querySelector('#hbS').classList.contains('on')), 'stories: the open card is remembered after a reload');
+        await t.sr(r => r.querySelector('[data-a="qdTg"]').click()); await t.pg.waitForTimeout(900);
+        ok(await t.sr(r => { const s = r.querySelector('#hbS'); return !s.classList.contains('on') && Math.round(s.getBoundingClientRect().height) === 0 && r.querySelector('[data-a="qdTg"]').getAttribute('aria-expanded') === 'false'; }), 'stories: a second tap closes it again');
+        await t.sr(r => r.querySelector('[data-a="qdTg"]').click()); await t.pg.waitForTimeout(900);
+      }
+    }
     await t.pg.screenshot({ path: path.join(__dirname, 'shots', `student_qd_${cfg.n}.png`) });
     if (cfg.flow) {
       await t.sr(r => r.querySelector('[data-s="phy"]').click()); await t.pg.waitForTimeout(1200);
