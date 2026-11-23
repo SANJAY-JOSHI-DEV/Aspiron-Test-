@@ -273,6 +273,29 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Tests:** `tests/db/break_it.sql` section 52; by hand `tests/e2e/pyq.js` (student walk-through on phone + computer, plan lock)
   then `tests/e2e/pyq_admin.js`.
 
+## Promotions board (`supabase_v95_promo_board.sql`, `cx/m-promos.js`, `store.js`)
+- **Board:** Admin → Sales & billing → Promotions opens as a table, one line per influencer: code, clicks, leads, orders,
+  paid, conversion, revenue, commission, owed (tap a column title to sort; totals at the bottom). *Cards* shows the old cards,
+  unchanged (the view is remembered on the computer).
+- **Influencer dashboard:** tap a line or a card. Actions (Edit, Share, Payouts, Report for influencer, Pause), 10 numbers,
+  and four tabs: **Leads** (every student the link brought: name, mobile, course, when, bought / order waiting / not bought,
+  what they bought and the commission; Call / WhatsApp; CSV), **Orders** (as before: count / do not count), **By test series**
+  (orders, paid, revenue, commission per series) and **Commission** (a different ₹ per test series; empty = the normal
+  commission). The rate is saved on the order when it is marked paid, as before, so a change never alters past orders.
+- **Report for influencer:** clicks, students joined, paid students, commission per series, earned / paid / balance due.
+  No student name or number. Screenshot it, *Copy text* or *WhatsApp*.
+- **Influencer code (optional):** Edit → *Influencer code* (3–20 letters or numbers, e.g. RAHUL10) and *Code is on*. A student
+  who types it in the store's coupon box is counted for that influencer (the box shows even when coupons are off). It gives no
+  discount by itself; a coupon in Coupons & Refer with the same code gives its discount too. A typed code wins over a link
+  opened earlier. Wrong codes count toward the store's "too many tries" limit.
+- **Leads:** a student who opens `store?ref=CODE` and enters name + mobile is saved for that link (`cbt_promo_leads`), even
+  before buying (at most 10 new leads per connection per hour). Only the admin panel sees them; team members without
+  *Contact details* get the numbers cut, as everywhere.
+- **Setup:** run `supabase_v95_promo_board.sql` once (after v94). It replaces only the real function behind the v35 wrapper,
+  so v35 does not need to run again. If `supabase_v30_promotions.sql` is ever run again, run `v35_admin_team` and then
+  v95 again. `supabase_check_installed.sql` row 35 then says "ok".
+- **Tests:** `tests/db/break_it.sql` section 54.
+
 ## "DELETE requires a WHERE clause" fix (`supabase_v94_where_fix.sql`)
 - Supabase refuses a DELETE or UPDATE without WHERE that comes through the app's API, even inside our functions. Three
   places cleared a whole table that way: **Turn locks on** (Admin → Plans → Access & limits) always failed with

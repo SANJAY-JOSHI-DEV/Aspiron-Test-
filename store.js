@@ -78,7 +78,7 @@ function meSave(n,m,c){
   // "You will be notified" belongs to a number: redraw those buttons for the new one
   $$('[data-soon]').forEach(e=>{const x=ST.items.find(i=>i.id===e.dataset.soon);if(x)e.outerHTML=buyBtn(x,e.dataset.k)});
   if(MEM.course!==was)courseGo();
-  WAL=null;rfJoin();
+  WAL=null;rfJoin();leadRef();
 }
 // the name everywhere: menu, menu bar, greeting, Profile
 function meUi(){
@@ -189,7 +189,8 @@ function under(st,hash){try{history.replaceState(null,'',location.pathname+locat
 
 async function load(){
   const nm=CFG.SITE_NAME||'Aspiron Education';$$('[data-sname]').forEach(e=>e.textContent=nm);
-  const [r,lg,of,cp]=await Promise.all([rpc('cbt_store'),rpc('cbt_store_langs'),rpc('cbt_store_offers'),rpc('cbt_store_coupons_public')]);
+  const [r,lg,of,cp,pc]=await Promise.all([rpc('cbt_store'),rpc('cbt_store_langs'),rpc('cbt_store_offers'),rpc('cbt_store_coupons_public'),rpc('cbt_promo_codes_on')]);
+  PCN=!!(pc&&pc.ok&&pc.on);
   CPUB={};if(cp&&cp.ok)(cp.items||[]).forEach(c=>(CPUB[c.item_id]=CPUB[c.item_id]||[]).push(c));
   if(of&&of.ok)CPN=of.coupons!==false;
   if(lg&&lg.ok)LANGS=new Set((lg.items||[]).map(String));
@@ -552,6 +553,16 @@ function captureRef(){
   if(!REF_OK.test(c))return;
   LSs('store_ref',{c,at:Date.now()});
   try{if(!sessionStorage.getItem('ref_'+c)){sessionStorage.setItem('ref_'+c,'1');rpc('cbt_promo_click',{p_code:c})}}catch(_){}
+  leadRef();
+}
+// v95: a student who came through a link and gave their name + number is a lead of that link (Admin → Promotions).
+// Sent once per visit per number; the server keeps the first time and ignores unknown or paused links.
+function leadRef(){
+  const r=LSg('store_ref',null),m=ME();
+  if(!m||!r||!REF_OK.test(r.c)||Date.now()-r.at>30*864e5)return;
+  const k='lead_'+r.c+'_'+m.mobile;
+  try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(_){}
+  rpc('cbt_promo_lead',{p_code:r.c,p_name:m.name,p_mobile:m.mobile,p_course:m.course||''});
 }
 function attachRef(order,mobile){
   const r=LSg('store_ref',null);
@@ -685,7 +696,8 @@ function payStep(){
     <button class="btn ${mob?'line':'pri'} lg block" data-step="paid">${I('check')}I have already paid ${I('next')}</button>`);
 }
 /* ---------- coupon code + wallet (supabase_v52): applied on the server to this order; the page never sets a price ---------- */
-let OFFER=null,WAL=null,CPN=true,CPUB={};   // CPUB = the live coupons per series, without the codes (for "37 of 50 left")
+let OFFER=null,WAL=null,CPN=true,CPUB={},PCN=false;   // PCN = an influencer code is on (Admin → Promotions): the box takes it too
+   // CPUB = the live coupons per series, without the codes (for "37 of 50 left")
    // CPN = the coupon box is on (Admin → Coupons & Refer → Coupons)
    // OFFER false = the server has no coupons yet (v52 not run) · WAL = {balance, code, …} of this number
 async function walLoad(make){
@@ -705,10 +717,12 @@ function priceSplit(){
 function offerHtml(){
   if(OFFER===false||ORD.payer)return '';
   const bal=WAL?(+WAL.balance||0):0,used=+ORD.wallet_used||0,can=bal+used;
-  if(!CPN&&!ORD.coupon_code&&can<=0)return '';
+  const box=CPN||PCN;
+  if(!box&&!ORD.coupon_code&&!ORD.promo_uc&&can<=0)return '';
   return `<div class="offer">
-   ${!CPN&&!ORD.coupon_code?'':ORD.coupon_code?`<div class="cpok">${I('gift')}<span class="grow"><b class="code">${esc(ORD.coupon_code)}</b> applied · you save ${inr(ORD.coupon_off)}</span><button class="btn xs line" data-cpx>Remove</button></div>`
-    :`<div class="cpn"><div class="inp-wrap grow">${I('gift')}<input class="inp" id="cpi" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Have a coupon code?" aria-label="Coupon code"></div><button class="btn line" data-cpgo>Apply</button></div>`}
+   ${ORD.promo_uc&&ORD.promo_uc!==ORD.coupon_code?`<div class="cpok">${I('check')}<span class="grow">Code <b class="code">${esc(ORD.promo_uc)}</b> added</span></div>`:''}
+   ${!box&&!ORD.coupon_code?'':ORD.coupon_code?`<div class="cpok">${I('gift')}<span class="grow"><b class="code">${esc(ORD.coupon_code)}</b> applied · you save ${inr(ORD.coupon_off)}</span><button class="btn xs line" data-cpx>Remove</button></div>`
+    :`<div class="cpn"><div class="inp-wrap grow">${I('gift')}<input class="inp" id="cpi" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="${CPN?'Have a coupon code?':'Have a code?'}" aria-label="Coupon code"></div><button class="btn line" data-cpgo>Apply</button></div>`}
    ${can>0?`<button type="button" class="walb${used?' on':''}" role="switch" aria-checked="${!!used}" data-wal><span class="hic ok">${I('card')}</span><span class="grow"><b>Use wallet balance</b><small>${used?`${inr(used)} used · ${inr(Math.max(0,can-used))} left`:`${inr(can)} available from Refer &amp; earn`}</small></span><span class="tgl" aria-hidden="true"></span></button>`:''}
    <div class="err" id="cper" role="alert"></div></div>`;
 }
@@ -723,6 +737,11 @@ async function offerGo(coupon,wallet,btn){
   const r=await rpc('cbt_store_order_apply',Object.assign({p_code:ORD.code,p_mobile:ORD.mobile,p_coupon:coupon||'',p_wallet:!!wallet},wallet?appAuth(ORD.mobile)||{}:{}));
   if(btn&&btn.isConnected){btn.disabled=false;btn.innerHTML=btn.dataset.t}
   if(!r.ok){
+    if(coupon&&PCN&&['coupon','coupon_off','missing'].includes(r.error)){
+      if(r.error==='coupon_off')CPN=false;
+      if(await promoGo(coupon))return;
+      if(r.error!=='coupon'){offerUi();const e=$('#cper');if(e)e.textContent=OFERR.coupon;shake($('#cpi'));return}
+    }
     if(r.error==='missing'){OFFER=false;offerUi();return}
     if(r.error==='coupon_off'){CPN=false;offerUi();toast(OFERR.coupon_off,'alert','bad');return}
     const e=$('#cper');if(e)e.textContent=OFERR[r.error]||'Something went wrong. Please try again.';shake($('#cpi')||$('.walb'));
@@ -733,10 +752,28 @@ async function offerGo(coupon,wallet,btn){
   if(WAL)WAL.balance=r.wallet_left;
   LSs('store_ord',ORD);
   if(coupon&&r.coupon_off)confetti();
+  if(coupon&&PCN&&r.coupon_code)promoGo(r.coupon_code,true);   // a coupon with the same name as an influencer code counts for them too
   toast(coupon&&r.coupon_off?`Coupon applied · you save ${inr(r.coupon_off)}`:wallet?`Wallet used · ${inr(r.wallet_used)}`:'Updated',coupon?'gift':'card');
   payStep();
 }
-function cpGo(btn){const i=$('#cpi'),v=i?i.value.trim().toUpperCase():'';if(!v){const e=$('#cper');if(e)e.textContent='Type the coupon code first.';shake(i);return}offerGo(v,+ORD.wallet_used>0,btn)}
+function cpGo(btn){const i=$('#cpi'),v=i?i.value.trim().toUpperCase():'';if(!v){const e=$('#cper');if(e)e.textContent='Type the coupon code first.';shake(i);return}
+  if(!CPN&&PCN)return promoBtn(v,btn);   // coupons are off: the box takes only influencer codes
+  offerGo(v,+ORD.wallet_used>0,btn)}
+// v95: an influencer's code (Admin → Promotions) ties this order to them. No discount by itself.
+async function promoGo(code,quiet){
+  const r=await rpc('cbt_promo_use',{p_order:ORD.code,p_mobile:ORD.mobile,p_code:code});
+  if(!r.ok||!r.applied)return false;
+  ORD.promo_uc=code;LSs('store_ord',ORD);
+  if(!quiet){toast(`Code ${code} added`,'check');payStep()}
+  return true;
+}
+async function promoBtn(v,btn){
+  const er=$('#cper');if(er)er.textContent='';
+  if(btn){btn.disabled=true;btn.dataset.t=btn.innerHTML;btn.innerHTML='<span class="spin"></span>'}
+  const ok=await promoGo(v);
+  if(btn&&btn.isConnected){btn.disabled=false;btn.innerHTML=btn.dataset.t}
+  if(!ok){const e=$('#cper');if(e)e.textContent=OFERR.coupon.replace('coupon code','code');shake($('#cpi'))}
+}
 /* the wallet pays the whole price: no UPI — the order goes to the admin for approval as it is */
 function walletPaidStep(){
   sheet(1,`${bigI('card','ok')}<h3 class="center">Paid from your wallet</h3><p class="sm mut center mt4">${inr(listP())} ${ORD.coupon_off?`− coupon ${inr(ORD.coupon_off)} `:''}− wallet ${inr(ORD.wallet_used)} = <b>₹0 to pay</b></p>
@@ -911,6 +948,7 @@ async function editSave(){
     // so the amount here, in the summary and in Admin → Orders stays what the student paid
     const cc=ORD.coupon_code||'',wl=+ORD.wallet_used>0,was=+ORD.amount;
     Object.assign(ORD,{code:r.code,amount:r.amount,title:r.title,name:n,mobile:m,at:Date.now(),list_price:0,coupon_code:'',coupon_off:0,wallet_used:0});attachRef(r.code,m);
+    if(ORD.promo_uc)rpc('cbt_promo_use',{p_order:r.code,p_mobile:m,p_code:ORD.promo_uc});
     if(cc||wl){
       let x=await rpc('cbt_store_order_apply',Object.assign({p_code:r.code,p_mobile:m,p_coupon:cc,p_wallet:wl},wl?appAuth(m)||{}:{}));
       if(!x.ok&&wl&&cc)x=await rpc('cbt_store_order_apply',{p_code:r.code,p_mobile:m,p_coupon:cc,p_wallet:false});
