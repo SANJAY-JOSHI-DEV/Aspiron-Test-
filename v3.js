@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=100;
+const V3VER=101;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -1183,13 +1183,13 @@ const pdfCount=()=>{try{return PDFS?Object.keys(PDFS).length:null}catch(e){retur
 const LMOD=[
  {k:'gen',f:'gen',h:'#/gen',ic:'spark',t:'Test generator',d:'Build your own test from the chapters and topics you choose, then take it like a real test.',tags:['NEET or JEE','Chapters and topics','Your own timing'],cta:'Create a test',grp:'practice'},
  {k:'qb',f:'qb',h:'#/qb',ic:'qb',t:'Question bank',d:'Practice by subject, chapter and topic. Questions you have already done are skipped.',tags:['Subject, chapter, topic','Instant check','Solutions'],cta:'Start practising',grp:'practice'},
- {k:'pyq',f:'pyq',h:'#/pyq',ic:'pyq',t:'Previous year papers',d:'NEET and JEE previous year questions, chapter-wise.',tags:['Chapter-wise','Year-wise','Answer key'],cta:'Open PYQ',grp:'practice'},
+ {k:'pyq',f:'pyq',h:'#/pyq',ic:'pyq',t:'PYQ Analyzer',d:'Real NEET previous year questions: which chapters come most, year-wise trends, and practice with solutions.',tags:['Chapter weightage','Year-wise trends','Practice + solutions'],cta:'Open PYQ Analyzer',grp:'practice'},
  {k:'m',h:'#/m',ic:'pen',t:'Mistake notebook',d:'Every question you got wrong, ready to practise again.',grp:'revise'},
  {k:'b',h:'#/b',ic:'bookmark',t:'Saved questions',d:'Questions you bookmarked during tests.',grp:'revise',n:bmCount},
  {k:'dbt',h:'#/doubts',ic:'doubt',t:'My doubts',d:'Your doubts on test questions and the answers.',grp:'revise'},
  {k:'notes',h:'#/notes',ic:'file',t:'Notes & PDFs',d:'Notes and PDFs added to your test series.',grp:'material',n:pdfCount},
  {k:'trk',h:'#/trk',ic:'cal',t:'Study tracker',d:'Your weekly plan, tasks and study hours.',grp:'material'}];
-const LULTRA=[['pyq','PYQ analyzer','Chapter weightage, repeats and trends'],['target','Question practice','Topic-wise sets by level'],['cards','Flash cards','Quick revision with flip cards'],['atom','3D models','Molecules, cells and the periodic table in 3D']];
+const LULTRA=[['target','Question practice','Topic-wise sets by level'],['cards','Flash cards','Quick revision with flip cards'],['atom','3D models','Molecules, cells and the periodic table in 3D']];
 const LSOON=[['book','Books and NCERT reader','Read NCERT and reference books inside the app'],['pen','Handwritten notes and DPPs','Chapter-wise notes and daily practice problems'],['dl','Download manager','Save permitted material for offline reading']];
 /* v91: the student's plan and what is left of each feature. The server decides (supabase_v91_plan_access.sql);
    while the owner keeps the locks off, everything stays open and the Library only shows the plan of each feature. */
@@ -2082,75 +2082,359 @@ A.genRes=el=>openGenRes(el.dataset.id);A.grF=el=>{GRF=el.dataset.v;qbKeep()};
 /* classic addresses that open these pages in the new design */
 const V3H=[[/^#\/qb(\/go)?$/,()=>openQB()],[/^#\/gen$/,()=>openGen()],[/^#\/gen\/new$/,()=>openGenNew()],[/^#\/gen\/r\/([0-9a-f-]{36})$/,m=>openGenRes(m[1])]];
 
-/* ================= PYQ ANALYZER in the new design =================
-   Same data as the classic page (app11.js): cbt_pyq_summary for the exam, cbt_pyq_chapter for one chapter,
-   the PQ state, the syllabus (PYQ_SYL) and the classic helpers pqSummary, pqAgg, pqYears, pqChap. */
-const PQS={hi:0,lo:0};
-const pqWt=n=>!n?'':n>=PQS.hi?'<span class="pqw3 h">High</span>':n>PQS.lo?'<span class="pqw3 m">Medium</span>':'<span class="pqw3 l">Low</span>';
-function pqMini3(o,Y){const mx=Math.max(1,...Y.map(y=>o&&o.y[y]||0));return `<span class="pqm3" aria-hidden="true">${Y.map(y=>{const n=o&&o.y[y]||0;return `<i class="${n?'':'z'}" style="--h:${n?Math.max(.18,n/mx).toFixed(2):.08}"></i>`}).join('')}</span>`}
-function pyqView(){return {t:'PYQ Analyzer',get s(){try{return PYQ_SYL[PQ.exam].name}catch(e){return ''}},key:'pyq',html:()=>{
-  const E=PYQ_SYL,ex=E[PQ.exam];if(!ex||ex.soon)return '';
-  if(!PQ.sum)return '<div class="card sk" style="height:200px"></div><div class="card sk" style="height:320px"></div>';
-  const A=pqAgg(),S=pqSubj(),Y=pqYears(),chs=S.chapters.map(c=>({c,o:A.ch[c.id]})),total=(PQ.sum||[]).reduce((a,r)=>a+r[5],0);
-  const tots=chs.map(x=>x.o?x.o.n:0).filter(Boolean).sort((a,b)=>b-a);PQS.hi=tots[Math.floor(tots.length*.25)]||1;PQS.lo=tots[Math.floor(tots.length*.7)]||0;
-  const top=chs.filter(x=>x.o).sort((a,b)=>b.o.n-a.o.n).slice(0,6),tmx=Math.max(1,...top.map(x=>x.o.n));
-  const row=({c,o})=>`<button class="pqr3" data-a="pqCh" data-id="${esc3(c.id)}"><span class="pqr3-t"><b>${esc3(c.name)}</b><small>${o?`${o.n} Qs · ${Object.keys(o.y).length} yr${Object.keys(o.y).length>1?'s':''} · ${o.p.size} paper${o.p.size>1?'s':''}`:'No questions yet'}${c.old?' · <em>not in current syllabus</em>':''}</small></span>${pqWt(o&&o.n)}${pqMini3(o,Y.slice(-8))}${ic('right',16)}</button>`;
-  const grp=cls=>{let l=chs.filter(x=>x.c.cls===cls);if(!l.length)return '';if(PQ.sort==='most')l=[...l].sort((a,b)=>(b.o?b.o.n:0)-(a.o?a.o.n:0));return `<div class="stack" style="gap:10px"><p class="gh">Class ${cls} <span>${l.length} chapters</span></p><div class="card pql3">${l.map(row).join('')}</div></div>`};
-  return `<section class="mkh"><div class="mkh-top"><div><small>${esc3(ex.name)} PYQ</small><b>${fmtN(total)}</b><span>questions from ${A.papers.size} paper${A.papers.size===1?'':'s'}, chapter-wise</span></div><span class="ti qbic">${ic('pyq',30)}</span></div>
-    <div class="pqx3">${Object.keys(E).map(k=>`<button class="${k===PQ.exam?'on':''}${E[k].soon?' soon':''}" ${E[k].soon?'disabled':`data-a="pqEx" data-v="${k}"`}>${esc3(E[k].name)}${E[k].soon?'<small>Soon</small>':''}</button>`).join('')}</div></section>
-   <div class="seg">${ex.subjects.map(s=>`<button class="${s.id===S.id?'on':''}" data-a="pqSub" data-v="${s.id}">${esc3(s.name)}<small>${fmtN(A.sub[s.id]||0)}</small></button>`).join('')}</div>
+/* ================= PYQ ANALYZER (v93) =================
+   Exam → subject → chapter analysis → practice. Data: cbt_pyq_summary (counts for every chapter, open to every
+   student), cbt_pyq_chapter (one chapter's questions; plan-checked, free chapters always open), cbt_pyq_attempt /
+   cbt_pyq_mark / cbt_pyq_progress (the student's own answers, bookmarks and "to revise", synced to the account),
+   cbt_pyq_questions (revision lists), cbt_pyq_practice (smart practice, real PYQs only), cbt_pyq_report.
+   Uses the classic state PQ and helpers pqAgg, pqChap, pqSubj (app11.js). With an older server (before
+   supabase_v93_pyq_analyzer.sql) it still works: progress then stays on this phone. */
+const PX={ch:{},free:[],acc:null,v93:false,at:0,busy:null,fail:false};
+const PG={m:null,at:0,busy:null,local:false,who:''};
+const PQV={q:'',help:lsGet('cbt_pq3_help',1)};
+const PQCOL=['#6d5bd0','#0f8fd1','#14966b','#d08a12','#d14848','#9b5bd0','#0f9d93'];
+const SUBIC={phy:'atom',chem:'flask',bio:'leaf'};
+const pqWho=()=>(typeof AUTH!=='undefined'&&AUTH&&AUTH.mobile)||'';
+const pqPl=(n,w)=>`${fmtN(n)} ${w}${n===1?'':'s'}`;
+const pqInfo=m=>`<button class="pq4-i" data-a="toast" data-m="${esc3(m)}" aria-label="What does this mean?">${ic('info',14)}</button>`;
+/* readable maths: x^2, x^{-1}, H_2O, v_{max} → superscript / subscript (after escaping, so no HTML gets in) */
+const pqTx=s=>esc3(s||'').replace(/\^\{([^}<]{1,12})\}/g,'<sup>$1</sup>').replace(/\^(-?[0-9]{1,3}|[a-zA-Z+\-])(?![a-zA-Z0-9])/g,'<sup>$1</sup>')
+  .replace(/_\{([^}<]{1,12})\}/g,'<sub>$1</sub>').replace(/([A-Za-z)\]])_([0-9]{1,3})(?![0-9])/g,'$1<sub>$2</sub>').replace(/-&gt;/g,'→').replace(/&lt;-/g,'←').replace(/\bsqrt\(/g,'√(');
+
+/* ---------- data ---------- */
+function pqLoad3(force){
+  if(PX.busy)return PX.busy;
+  if(PQ.sum&&!force&&Date.now()-PX.at<300000)return Promise.resolve();
+  if(!PQ.sum){const c=lsGet('cbt_pq_sum_'+PQ.exam+'_3',null);if(c&&Array.isArray(c.rows)){PQ.sum=c.rows;PX.ch=c.ch||{};PX.free=c.free||[]}}
+  PX.busy=rpc('cbt_pyq_summary',{p_exam:PQ.exam}).then(r=>{
+    if(r&&r.ok){PQ.sum=r.rows||[];PQ.sumT=Date.now();PX.ch=r.ch||{};PX.free=r.free||[];PX.acc=r.acc||null;PX.v93=!!r.v93;PX.at=Date.now();PX.fail=false;PQ.err=false;lsSet('cbt_pq_sum_'+PQ.exam+'_3',{rows:PQ.sum,ch:PX.ch,free:PX.free})}
+    else{if(!PQ.sum)PQ.sum=[];PQ.err=!!(r&&r.status===404);PX.fail=!PQ.err}
+  }).catch(()=>{if(!PQ.sum)PQ.sum=[];PX.fail=true}).finally(()=>{PX.busy=null});
+  return PX.busy}
+const pgKey=()=>'cbt_pq_prog_'+pqWho();
+function pgLoad(force){const who=pqWho();if(PG.who!==who){PG.m=null;PG.who=who;force=true}
+  if(PG.busy)return PG.busy;if(PG.m&&!force&&Date.now()-PG.at<120000)return Promise.resolve();
+  PG.busy=rpc('cbt_pyq_progress',{p_exam:PQ.exam}).then(r=>{
+    if(r&&r.ok){const m={};(r.items||[]).forEach(a=>{m[a[0]]={s:a[1],ch:a[2],c:a[3],ok:a[4],t:a[5],bm:!!a[6],rev:!!a[7],at:+a[8]||0}});PG.m=m;PG.local=false;PG.at=Date.now()}
+    else if(r&&r.status===404){PG.local=true;PG.m=lsGet(pgKey(),{});PG.at=Date.now()}
+    else if(!PG.m)PG.m={};
+  }).catch(()=>{if(!PG.m)PG.m={}}).finally(()=>{PG.busy=null});
+  return PG.busy}
+const pgSave=()=>{if(PG.local)lsSet(pgKey(),PG.m)};
+const pgGet=id=>(PG.m&&PG.m[id])||null;
+const pgSet=(q,o)=>{if(!PG.m)PG.m={};const X=pqChap(q.c||PQ.cid);const p=PG.m[q.id]||(PG.m[q.id]={s:q.s||(X?X.s.id:''),ch:q.c||PQ.cid||'',c:null,ok:null,t:0,bm:false,rev:false,at:0});Object.assign(p,o);pgSave();return p};
+function pgStats(){const S={at:0,ok:0,wr:0,bm:0,rev:0,sub:{},ch:{}};const M=PG.m||{};
+  for(const id in M){const p=M[id];if(p.bm)S.bm++;if(p.rev)S.rev++;if(p.c==null)continue;S.at++;if(p.ok)S.ok++;else S.wr++;
+    const s=S.sub[p.s]||(S.sub[p.s]={a:0,o:0});s.a++;if(p.ok)s.o++;
+    const c=S.ch[p.ch]||(S.ch[p.ch]={a:0,o:0,at:0});c.a++;if(p.ok)c.o++;c.at=Math.max(c.at,p.at||0)}
+  return S}
+const pqAcc=(o,a)=>a?Math.round(o*100/a):0;
+/* Strong 75%+ right, Improving 50–74%, Needs practice below 50% (at least 3 answered) */
+const pqLvl=c=>!c||c.a<3?null:pqAcc(c.o,c.a)>=75?['ok','Strong']:pqAcc(c.o,c.a)>=50?['mid','Improving']:['bad','Needs practice'];
+const pqLvlTag=c=>{const l=pqLvl(c);return l?`<span class="pq4-lv ${l[0]}">${l[1]}</span>`:''};
+
+/* ---------- access (plans) ---------- */
+const pqLocked=cid=>!!(PX.acc&&PX.acc.open===false&&!PX.free.includes(cid));
+const pqNeed=()=>{const f=plFeat('pyq');return (f&&f.need)||'ultra'};
+function pqPlanCard(){if(!PX.acc||PX.acc.open!==false)return '';const n=PX.free.length,nd=plName(pqNeed());
+  return `<section class="card pq4-pl"><span class="lk3i" style="width:44px;height:44px;border-radius:14px;margin:0">${ic('crown',20)}</span><div><b>${n?`${n} chapter${n===1?' is':'s are'} free to practise`:'Analysis is free for you'}</b><small>All chapter analysis, trends and weightage are open. ${esc3(nd)} unlocks every chapter's questions.</small></div><button class="btn gold sm" data-a="lbrUp" data-k="${esc3(pqNeed())}">${ic('crown',14)}${esc3(nd)}</button></section>`}
+
+/* ---------- numbers ---------- */
+function pqYearSpan(){const have=new Set((PQ.sum||[]).map(r=>+r[3]).filter(Boolean));const pl=((PYQ_SYL[PQ.exam]||{}).papers||[]).map(pqYear).filter(Boolean);
+  const lo=Math.min(2002,...have),hi=Math.max(...pl,...have,2002);const Y=[];for(let y=lo;y<=hi;y++)Y.push(y);return {Y,have}}
+function pqSubPapers(sid){const s=new Set();(PQ.sum||[]).forEach(r=>{if(!sid||r[0]===sid)s.add(r[4])});return s.size}
+const pqDiff=cid=>{const x=PX.ch[cid];if(!x)return null;const e=+x[0],m=+x[1],h=+x[2];
+  if(e+m+h>=3)return h>=m&&h>=e?'hard':m>=e?'medium':'easy';const t=+x[7],r=+x[8];if(t>=30){const a=r/t;return a>=.7?'easy':a>=.45?'medium':'hard'}return null};
+const DIFN={easy:'Easy',medium:'Medium',hard:'Hard'};
+const pqDiffTag=cid=>{const d=pqDiff(cid);return d?`<span class="pq4-df d-${d}">${DIFN[d]}</span>`:''};
+function pqWts(chs){const t=chs.map(x=>x.o?x.o.n:0).filter(Boolean).sort((a,b)=>b-a);return {hi:t[Math.floor(t.length*.25)]||1,lo:t[Math.floor(t.length*.7)]||0}}
+const pqWtTag=(n,W)=>!n?'':n>=W.hi?'<span class="pq4-wt h">High weightage</span>':n>W.lo?'<span class="pq4-wt m">Medium</span>':'<span class="pq4-wt l">Low</span>';
+const pqSyl=(c,q)=>{const s=q&&q.sy;if(s)return s;return c&&c.old?'removed':'current'};
+const SYLN={current:'In current syllabus',partial:'Partly in syllabus',removed:'Not in current syllabus'};
+/* numerical or conceptual: the admin's tag when there is one, else a careful guess from the text */
+const pqIsNum=q=>q.ty?q.ty==='numerical':/\b(calculate|find the value|how much|how many|what is the (value|magnitude)|ratio of)\b/i.test(q.q||'')||((q.o||[]).filter(o=>/^\s*[-+]?[0-9.]+\s*(×|x)?\s*10?/.test(String(o||''))).length>=3);
+
+/* ================= 1. HOME ================= */
+function pqChRow(c,o,W,showSub){const lk=pqLocked(c.id),ys=o?Object.keys(o.y).length:0;
+  return `<button class="pq4-r" data-a="pqCh" data-id="${esc3(c.id)}"><span class="pq4-rt"><b>${esc3(c.name)}</b><small>${showSub?`${esc3(pqChap(c.id).s.name)} · `:''}${o?`${pqPl(o.n,'question')} · ${pqPl(ys,'year')}`:'No questions added yet'}</small>
+    <span class="pq4-tg">${pqWtTag(o&&o.n,W)}${pqDiffTag(c.id)}${c.old?'<span class="pq4-old">Not in current syllabus</span>':''}</span></span>${lk?`<span class="pq4-lk" aria-label="Locked">${ic('lock',15)}</span>`:''}${ic('right',16)}</button>`}
+function pqHomeList(){const E=PYQ_SYL[PQ.exam],A=pqAgg(),S=pqSubj(),q=PQV.q.trim().toLowerCase();
+  if(q){const hits=[];E.subjects.forEach(s=>s.chapters.forEach(c=>{const tp=c.topics.filter(t=>t.name.toLowerCase().includes(q));if(c.name.toLowerCase().includes(q)||tp.length)hits.push({c,o:A.ch[c.id],tp})}));
+    const W=pqWts(hits);
+    return hits.length?`<p class="gh">${hits.length} chapter${hits.length===1?'':'s'} found</p><div class="card pq4-l">${hits.map(x=>pqChRow(x.c,x.o,W,1)).join('')}</div>`
+      :`<div class="card empty"><span class="ti">${ic('search',22)}</span><b>No chapter found</b><p>Try a shorter word, like “motion”, “cell” or “bond”.</p></div>`}
+  const chs=S.chapters.map(c=>({c,o:A.ch[c.id]})),W=pqWts(chs);
+  const grp=cls=>{let l=chs.filter(x=>x.c.cls===cls);if(!l.length)return '';if(PQ.sort==='most')l=[...l].sort((a,b)=>(b.o?b.o.n:0)-(a.o?a.o.n:0));
+    return `<p class="gh">Class ${cls} <span>${l.length} chapters</span></p><div class="card pq4-l">${l.map(x=>pqChRow(x.c,x.o,W)).join('')}</div>`};
+  return grp(11)+grp(12)}
+function pyqView(){return {t:'PYQ Analyzer',get s(){try{return PYQ_SYL[PQ.exam].name+' · previous year questions'}catch(e){return ''}},key:'pyq',
+ after:()=>{const i=$('#pq4q');if(i)i.addEventListener('input',()=>{PQV.q=i.value;const b=$('#pq4L');if(b)b.innerHTML=pqHomeList();const x=$('#pq4qx');if(x)x.hidden=!PQV.q})},
+ html:()=>{const E=PYQ_SYL,ex=E[PQ.exam];if(!ex||ex.soon)return '';
+  if(!PQ.sum)return '<div class="card sk" style="height:210px"></div><div class="card sk" style="height:90px"></div><div class="card sk" style="height:320px"></div>';
+  const A=pqAgg(),S=pqSubj(),total=(PQ.sum||[]).reduce((a,r)=>a+r[5],0),{Y,have}=pqYearSpan(),hv=[...have].sort((a,b)=>a-b);
+  const chs=S.chapters.map(c=>({c,o:A.ch[c.id]})),W=pqWts(chs),top=chs.filter(x=>x.o).sort((a,b)=>b.o.n-a.o.n).slice(0,5),tmx=Math.max(1,...top.map(x=>x.o.n));
+  const st=pgStats(),miss=Y.filter(y=>!have.has(y));
+  const last=Object.entries(st.ch).sort((a,b)=>b[1].at-a[1].at)[0],lastC=last&&pqChap(last[0]);
+  return `<section class="mkh pq4-hero"><div class="mkh-top"><div><small>${esc3(ex.name)} · PYQ ANALYZER</small><b>${fmtN(total)}</b><span>real questions from ${pqPl(A.papers.size,'paper')}${hv.length?` · ${hv[0]}–${hv[hv.length-1]}`:''}</span></div><span class="ti qbic">${ic('pyq',30)}</span></div>
+     <div class="pqx3">${Object.keys(E).map(k=>`<button class="${k===PQ.exam?'on':''}${E[k].soon?' soon':''}" ${E[k].soon?'disabled':`data-a="pqEx" data-v="${k}"`}>${esc3(E[k].name)}${E[k].soon?'<small>Soon</small>':''}</button>`).join('')}</div></section>
    ${PQ.err?'<div class="card empty"><b>Being set up</b><p>PYQ data is being added. Please check back soon.</p></div>':''}
-   ${top.length?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Most asked chapters</h2><span class="aside">${esc3(S.name)}</span></div>
-     <div class="card p pqt3">${top.map((x,i)=>`<button data-a="pqCh" data-id="${esc3(x.c.id)}"><span class="pqt3-n">${i+1}</span><span class="pqt3-b"><b>${esc3(x.c.name)}</b><span class="bar"><i style="--p:${(x.o.n/tmx).toFixed(3)}"></i></span></span><em>${x.o.n}</em></button>`).join('')}</div></section>`
+   ${PX.fail&&!total?`<div class="card empty"><span class="ti">${ic('wifiOff',22)}</span><b>Could not load</b><p>Check your internet and try again.</p><button class="btn sm" data-a="pqRe">Try again</button></div>`:''}
+   ${PQV.help?`<section class="card p pq4-help"><div class="sh" style="margin:0"><h2>How to use</h2><button class="lnk" data-a="pqHelpX">Got it</button></div>
+     <ol><li><b>Pick a subject</b> and see which chapters are asked the most.</li><li><b>Open a chapter</b> to see year-wise trends and its important topics.</li><li><b>Practise</b> the real questions and check your answer with the solution.</li></ol></section>`:''}
+   ${lastC?`<button class="card pq4-cont" data-a="pqCh" data-id="${esc3(lastC.c.id)}"><span class="ti g">${ic('play',18)}</span><span><small>Continue where you left off</small><b>${esc3(lastC.c.name)}</b></span>${ic('right',18)}</button>`:''}
+   <div class="pq4-qa">
+    <button class="card" data-a="pqGen"><span class="ti g">${ic('target',20)}</span><b>Smart practice</b><small>Make your own set</small></button>
+    <button class="card" data-a="pqMe"><span class="ti g">${ic('chart',20)}</span><b>My performance</b><small>${st.at?`${pqAcc(st.ok,st.at)}% right · ${fmtN(st.at)} done`:'Start practising'}</small></button>
+    <button class="card" data-a="pqRev" data-k="wrong"><span class="ti g">${ic('redo',20)}</span><b>Wrong answers</b><small>${st.wr?`${fmtN(st.wr)} to fix`:'None yet'}</small></button>
+    <button class="card" data-a="pqRev" data-k="bm"><span class="ti g">${ic('bookmark',20)}</span><b>Saved questions</b><small>${st.bm?`${fmtN(st.bm)} saved`:'None yet'}</small></button></div>
+   ${pqPlanCard()}
+   <div class="seg pq4-sub">${ex.subjects.map(s=>`<button class="${s.id===S.id?'on':''}" data-a="pqSub" data-v="${s.id}">${esc3(s.name)}<small>${fmtN(A.sub[s.id]||0)}</small></button>`).join('')}</div>
+   ${top.length?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Most asked chapters</h2>${pqInfo('Chapters with the most questions in all the papers we have. High weightage = asked a lot.')}</div>
+     <div class="card p pq4-top">${top.map((x,i)=>{const ys=Object.keys(x.o.y).length;return `<button data-a="pqCh" data-id="${esc3(x.c.id)}"><span class="pqt3-n">${i+1}</span><span class="pqt3-b"><b>${esc3(x.c.name)}</b><small>${pqPl(x.o.n,'question')} · ${pqPl(ys,'year')}</small><span class="bar"><i style="--p:${(x.o.n/tmx).toFixed(3)}"></i></span></span><span class="pq4-tg col">${pqWtTag(x.o.n,W)}${pqDiffTag(x.c.id)}</span></button>`}).join('')}</div></section>`
     :`<div class="card empty"><span class="ti">${ic('pyq',22)}</span><b>Questions are being added</b><p>${esc3(S.name)} questions are added paper by paper. The chapter list is ready below.</p></div>`}
-   <div class="sh" style="margin:0;align-items:center"><h2>All chapters</h2><div class="seg pqs3"><button class="${PQ.sort!=='most'?'on':''}" data-a="pqSort" data-v="ncert">NCERT order</button><button class="${PQ.sort==='most'?'on':''}" data-a="pqSort" data-v="most">Most asked</button></div></div>
-   ${grp(11)}${grp(12)}`}}}
+   <section class="stack" style="gap:10px"><div class="sh" style="margin:0;align-items:center"><h2>All chapters</h2><div class="seg pqs3"><button class="${PQ.sort!=='most'?'on':''}" data-a="pqSort" data-v="ncert">NCERT order</button><button class="${PQ.sort==='most'?'on':''}" data-a="pqSort" data-v="most">Most asked</button></div></div>
+    <label class="sbox pq4-s">${ic('search',18)}<input id="pq4q" type="search" autocomplete="off" placeholder="Search any chapter or topic" value="${esc3(PQV.q)}" aria-label="Search chapters"><button class="clr" id="pq4qx" data-a="pqQx" aria-label="Clear search"${PQV.q?'':' hidden'}>${ic('x',16)}</button></label>
+    <div id="pq4L" class="stack" style="gap:10px">${pqHomeList()}</div></section>
+   ${miss.length&&total?`<details class="card p pq4-gap"><summary>${ic('info',15)} Data coverage: ${hv.length} of ${Y.length} years added</summary><p>We only show real papers. Years not added yet: <b>${pqRanges(miss)}</b>. Their numbers will appear when the papers are added.</p></details>`:''}`}}}
+function pqRanges(L){const o=[];let a=null,b=null;L.forEach(y=>{if(a===null){a=b=y}else if(y===b+1)b=y;else{o.push(a===b?a:a+'–'+b);a=b=y}});if(a!==null)o.push(a===b?a:a+'–'+b);return o.join(', ')}
 async function openPyq(exam){closeLayer();if(exam&&PYQ_SYL[exam]&&!PYQ_SYL[exam].soon)PQ.exam=exam;if(!(top()&&top().key==='pyq'))push(pyqView());else redraw();
-  await pqSummary().catch(()=>{});if(top()&&top().key==='pyq')redraw()}
+  planMine().catch(()=>{});pgLoad().then(()=>{if(top()&&top().key==='pyq')qbKeep()}).catch(()=>{});
+  await pqLoad3().catch(()=>{});if(top()&&top().key==='pyq')qbKeep()}
 A.pyqOpen=()=>openPyq();
-A.pqEx=async el=>{if(PQ.exam===el.dataset.v)return;PQ.exam=el.dataset.v;PQ.sum=null;PQ.ch={};redraw();await pqSummary(true).catch(()=>{});redraw()};
-A.pqSub=el=>{PQ.sub=el.dataset.v;lsSet('cbt_pq_sub',PQ.sub);qbKeep()};
+A.pqRe=()=>{pqLoad3(true).then(()=>{if(top())qbKeep()});};
+A.pqEx=async el=>{if(PQ.exam===el.dataset.v)return;PQ.exam=el.dataset.v;PQ.sum=null;PQ.ch={};PX.at=0;redraw();await pqLoad3(true).catch(()=>{});redraw()};
+A.pqSub=el=>{PQ.sub=el.dataset.v;lsSet('cbt_pq_sub',PQ.sub);PQV.q='';qbKeep()};
 A.pqSort=el=>{PQ.sort=el.dataset.v;qbKeep()};
+A.pqQx=()=>{PQV.q='';const i=$('#pq4q');if(i){i.value='';i.focus()}const b=$('#pq4L');if(b)b.innerHTML=pqHomeList();const x=$('#pq4qx');if(x)x.hidden=true};
+A.pqHelpX=()=>{PQV.help=0;lsSet('cbt_pq3_help',0);qbKeep()};
 A.pqCh=el=>openPyqCh(el.dataset.id);
 
-/* ---------- one chapter ---------- */
+/* ================= 2. CHAPTER ANALYSIS ================= */
 let PQC=null;
-const PQCOL=['#6d5bd0','#0f8fd1','#14966b','#d08a12','#d14848','#9b5bd0','#0f9d93'];
-function pqCard3(q){const op=PQ.open[q.id],reps=(q.rep||[]).filter(Boolean),r=reps.length>1;
-  return `<article class="card qc3${r?' pqrep3':''}"><div class="qc3-h"><span class="tag">${esc3(q.p)}${q.n?' · Q'+q.n:''}</span>${q.t?`<span class="tag mutd">${esc3(q.t)}</span>`:''}${r?`<span class="st gold">${ic('swap',13)}Asked ${reps.length}×</span>`:''}</div>
-   ${r?`<p class="pqal3">Also asked in ${reps.filter(p=>p!==q.p).map(p=>`<b>${esc3(p)}</b>`).join(', ')}</p>`:''}
-   <div class="qc3-q">${esc3(q.q||'')}</div>${q.img?'<p class="hint">This question has a diagram. See the original paper.</p>':''}
-   <div class="qc3-o">${(q.o||[]).map((o,j)=>o?`<div class="opt3${op&&j===q.a?' c':''}"><span class="k">${LT[j]}</span><span class="ot">${esc3(o)}</span>${op&&j===q.a?ic('check',16):''}</div>`:'').join('')}</div>
-   ${op?(q.e?`<div class="exp3"><b>Explanation</b><p>${esc3(q.e)}</p></div>`:''):`<button class="btn ghost sm" data-a="pqAns" data-id="${esc3(q.id)}">Show answer</button>`}</article>`}
-function pyqChView(){return {get t(){return PQC?PQC.c.name:'Chapter'},get s(){return PQC?`Class ${PQC.c.cls} · ${PQC.s.name}`:''},key:'pyqc',html:()=>{const X=PQC;if(!X)return '';const L=PQ.ch[X.c.id];
-  if(!L)return '<div class="card sk" style="height:150px"></div><div class="card sk" style="height:220px"></div>';
-  const c=X.c;if(!L.length)return `<div class="card empty"><span class="ti">${ic('pyq',22)}</span><b>No questions added yet</b><p>Questions of this chapter are being added. Its topics:</p></div><div class="card p chips wrap">${c.topics.map(t=>`<span class="tag mutd">${esc3(t.name)}</span>`).join('')}</div>`;
-  const by={};L.forEach(q=>{by[q.y]=(by[q.y]||0)+1});const Y0=pqYears(),dy=Object.keys(by).map(Number),yMax=Math.max(...Y0,...dy),yMin=Math.min(...dy,yMax-9),Y=Y0.concat(dy).filter((y,i,a)=>y>=yMin&&a.indexOf(y)===i).sort((a,b)=>a-b);const ymx=Math.max(1,...Object.values(by));
-  const tp={};c.topics.forEach(t=>{tp[t.name]=0});L.forEach(q=>{tp[q.t||'Other']=(tp[q.t||'Other']||0)+1});
-  const tl=Object.entries(tp).sort((a,b)=>b[1]-a[1]),tmx=Math.max(1,...tl.map(x=>x[1]));
-  const rep=L.filter(q=>q.rep&&q.rep.length>1),repN=new Set(rep.map(q=>q.k)).size,yrs=Object.keys(by).map(Number),last=yrs.length?Math.max(...yrs):null,papers=new Set(L.map(q=>q.p)).size;
-  const f=PQ.f,shown=L.filter(q=>(!f.t||(q.t||'Other')===f.t)&&(!f.y||q.y==f.y)&&(!f.rep||(q.rep&&q.rep.length>1))),lim=PQ.lim||20;
-  return `<section class="mkh"><div class="mkh-top"><div><small>CHAPTER ANALYSIS</small><b style="font-size:24px;line-height:1.25">${esc3(c.name)}</b><span>${last?`Last asked in ${last}`:''}${c.old?' · not in current syllabus':''}</span></div></div>
-    <div class="mkh-st pqk3"><div><b>${L.length}</b><small>Questions</small></div><div><b>${papers?(L.length/papers).toFixed(1):0}</b><small>Per paper</small></div><div><b>${yrs.length}</b><small>Years</small></div><div><b>${repN}</b><small>Repeated</small></div></div></section>
-   <section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Year-wise</h2><span class="aside">Tap a year</span></div>
-    <div class="card p"><div class="pqy3">${Y.map(y=>`<button class="${f.y==y?'on':''}${by[y]?'':' z'}" data-a="pqYr" data-v="${y}" aria-label="${y}: ${by[y]||0} questions"><b>${by[y]||''}</b><i style="--h:${by[y]?Math.max(.08,by[y]/ymx).toFixed(2):.03}"></i><span>'${String(y).slice(2)}</span></button>`).join('')}</div></div></section>
-   <section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Topic weightage</h2><span class="aside">Tap a topic</span></div>
-    <div class="card p pqtp3">${tl.map(([n,v],i)=>`<button class="${f.t===n?'on':''}" data-a="pqTp" data-v="${esc3(n)}"><span><b>${esc3(n)}</b><em>${v}<small> · ${Math.round(v*100/L.length)}%</small></em></span><span class="bar"><i style="--p:${(v/tmx).toFixed(3)};background:${PQCOL[i%PQCOL.length]}"></i></span></button>`).join('')}</div></section>
-   <div class="sh" style="margin:0"><h2>Questions</h2><span class="aside">${shown.length}</span></div>
-   <div class="chips">${[['','All topics'],...tl.filter(x=>x[1]).map(x=>[x[0],x[0]])].map(([k,t])=>`<button class="${f.t===k?'on':''}" data-a="pqTp" data-v="${esc3(k)}" data-set="1">${esc3(t)}</button>`).join('')}</div>
-   <div class="chips"><button class="${f.y?'':'on'}" data-a="pqYr" data-v="">All years</button>${[...yrs].sort((a,b)=>b-a).map(y=>`<button class="${f.y==y?'on':''}" data-a="pqYr" data-v="${y}">${y}</button>`).join('')}<button class="${f.rep?'on':''}" data-a="pqRep">Repeated only<small>${rep.length}</small></button></div>
-   ${shown.length?shown.slice(0,lim).map(pqCard3).join('')+(shown.length>lim?`<button class="btn ghost" data-a="pqMore">Load more (${shown.length-lim} left)</button>`:''):'<div class="card empty"><b>Nothing here</b><p>No questions match this filter.</p></div>'}`}}}
+const PQF0=()=>({t:'',y:'',rep:0,st:'',q:''});
+function pqChStats(X){const A=pqAgg(),o=A.ch[X.c.id]||{n:0,y:{},t:{},p:new Set()},L=PQ.ch[X.c.id];
+  const papers=pqSubPapers(X.s.id),ys=Object.keys(o.y).map(Number).sort((a,b)=>a-b);
+  const rep=L?new Set(L.filter(q=>q.rep&&q.rep.length>1).map(q=>q.k)).size:(PX.ch[X.c.id]?+PX.ch[X.c.id][6]||0:null);
+  return {o,L,papers,ys,rep,avg:papers?(o.n/papers):0}}
+function pqYearChart(X,o){const {Y,have}=pqYearSpan(),span=PQ.span||'10',hi=Y[Y.length-1],Yv=span==='all'?Y:Y.filter(y=>y>hi-(+span)),mx=Math.max(1,...Yv.map(y=>o.y[y]||0)),f=PQ.f;
+  const sel=f.y?`<b>${f.y}</b>: ${have.has(+f.y)?pqPl(o.y[f.y]||0,'question'):'paper not added yet'}`:'Tap a bar to see that year';
+  return `<section class="stack" style="gap:10px"><div class="sh" style="margin:0;align-items:center"><h2>Year-wise questions</h2><div class="seg pqs3">${[['5','5 yrs'],['10','10 yrs'],['all','All']].map(([k,t])=>`<button class="${span===k?'on':''}" data-a="pqSpan" data-v="${k}">${t}</button>`).join('')}</div></div>
+   <div class="card p"><div class="pq4-y${Yv.length>14?' many':''}" role="group" aria-label="Questions asked each year">${Yv.map(y=>{const n=o.y[y]||0,g=!have.has(y);
+     return `<button class="${f.y==y?'on':''}${n?'':' z'}${g?' gap':''}" data-a="pqYr" data-v="${y}" aria-label="${y}: ${g?'paper not added':pqPl(n,'question')}"><b>${g?'':n||'0'}</b><i style="--h:${n?Math.max(.08,n/mx).toFixed(2):g?.22:.03}"></i><span>${Yv.length>14?"'"+String(y).slice(2):y}</span></button>`}).join('')}</div>
+    <p class="pq4-yt">${sel}</p><div class="pq4-lg"><span><i></i>Questions asked</span><span><i class="z"></i>None that year</span><span><i class="g"></i>Paper not added</span></div></div></section>`}
+function pqInsights(X,st){const c=X.c,o=st.o,L=st.L,tl=Object.entries(o.t).sort((a,b)=>b[1]-a[1]),rows=[];
+  if(tl.length)rows.push(['target',`Most asked topic: <b>${esc3(tl[0][0])}</b>`,`${pqPl(tl[0][1],'question')}, ${pqAcc(tl[0][1],o.n)}% of this chapter`]);
+  const ys=st.ys,rec=ys.slice(-3);
+  if(rec.length){const rt=new Set();(PQ.sum||[]).forEach(r=>{if(r[1]===c.id&&rec.includes(+r[3]))rt.add(r[2]||'Other')});rows.push(['cal',`Asked recently in <b>${rec.join(', ')}</b>`,`Topics: ${esc3([...rt].slice(0,4).join(', '))}`])}
+  if(ys.length){const {have}=pqYearSpan(),cnt=[...have].length;rows.push(['chart',`Came in <b>${ys.length} of ${cnt}</b> papers' years`,ys.length>=cnt*.7?'Almost every year — very important':ys.length>=cnt*.4?'Comes often':'Comes now and then'])}
+  if(st.rep)rows.push(['swap',`<b>${st.rep}</b> question${st.rep===1?' was':'s were'} asked again`,'Same question in more than one paper']);
+  if(L&&L.length){const nu=L.filter(pqIsNum).length,co=L.length-nu,tagged=L.some(q=>q.ty);
+    rows.push(['calc',`Numerical <b>${pqAcc(nu,L.length)}%</b> · Theory <b>${pqAcc(co,L.length)}%</b>`,`${nu} numerical, ${co} theory questions${tagged?'':' (estimated from the question text)'}`]);
+    const fm=[...new Set(L.map(q=>q.fm).filter(Boolean))].slice(0,4);
+    if(fm.length)rows.push(['sigma','Important formulas',fm.map(f=>`<span class="pq4-fm">${pqTx(f)}</span>`).join('')]);
+    const cn={};L.forEach(q=>{if(q.cn)cn[q.cn]=(cn[q.cn]||0)+1});const cl=Object.entries(cn).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    if(cl.length)rows.push(['mind','Most asked concepts',esc3(cl.map(x=>x[0]+(x[1]>1?` (${x[1]})`:'')).join(', '))])}
+  if(!rows.length)return '';
+  return `<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Key insights</h2></div><div class="card pq4-in">${rows.map(r=>`<div><span class="ti g">${ic(r[0],17)}</span><span><b>${r[1]}</b><small>${r[2]}</small></span></div>`).join('')}</div></section>`}
+function pqQRow(q,i){const p=pgGet(q.id),stt=p&&p.c!=null?(p.ok?'ok':'bad'):'';
+  return `<button class="card pq4-qr" data-a="pqPlayAt" data-i="${i}"><span class="pq4-qh"><span class="tag">${esc3(q.p)}${q.n?' · Q'+q.n:''}</span>${q.rep&&q.rep.length>1?`<span class="st gold">Asked ${q.rep.length}×</span>`:''}${p&&p.bm?`<span class="pq4-bmi">${ic('bookmark',13)}</span>`:''}<span class="pq4-dot ${stt}" aria-label="${stt==='ok'?'Answered right':stt==='bad'?'Answered wrong':'Not tried'}"></span></span>
+    <span class="pq4-qt">${pqTx(q.q)}</span><small>${esc3(q.t||'Other')}</small></button>`}
+function pqShown(L){const f=PQ.f,w=(f.q||'').trim().toLowerCase();
+  return L.filter(q=>{const p=pgGet(q.id);return (!f.t||(q.t||'Other')===f.t)&&(!f.y||q.y==f.y)&&(!f.rep||(q.rep&&q.rep.length>1))
+    &&(!f.st||(f.st==='new'?!(p&&p.c!=null):f.st==='wrong'?p&&p.c!=null&&!p.ok:f.st==='right'?p&&p.ok:f.st==='bm'?p&&p.bm:true))&&(!w||String(q.q||'').toLowerCase().includes(w))})}
+function pqChQs(X,st){const L=st.L,f=PQ.f;
+  if(pqLocked(X.c.id))return `<section class="card pq4-lock"><span class="lk3i">${ic('lock',24)}</span><b>Questions of this chapter are locked</b><p>You can see the full analysis above. ${esc3(plName(pqNeed()))} unlocks the ${pqPl(st.o.n,'question')} of this chapter for practice.</p>
+    <button class="btn gold blk" data-a="lbrUp" data-k="${esc3(pqNeed())}">${ic('crown',16)}Unlock with ${esc3(plName(pqNeed()))}</button>${PX.free.length?`<button class="btn ghost blk" data-a="pqFree">See the free chapters</button>`:''}</section>`;
+  if(!L)return st.o.n?'<div class="card sk" style="height:220px"></div>':'';
+  if(!L.length)return '';
+  const shown=pqShown(L),lim=PQ.lim||20,tl=[...new Set(L.map(q=>q.t||'Other'))],ys=[...new Set(L.map(q=>q.y))].sort((a,b)=>b-a),act=[];
+  if(f.t)act.push(['t',f.t]);if(f.y)act.push(['y',String(f.y)]);if(f.rep)act.push(['rep','Repeated']);if(f.st)act.push(['st',{new:'Not tried',wrong:'Wrong',right:'Right',bm:'Saved'}[f.st]]);if(f.q)act.push(['q','“'+f.q+'”']);
+  return `<section class="stack" id="pq4qs" style="gap:10px"><div class="sh" style="margin:0"><h2>Questions</h2><span class="aside">${shown.length} of ${L.length}</span></div>
+   <label class="sbox pq4-s">${ic('search',18)}<input id="pq4qq" type="search" autocomplete="off" placeholder="Search questions in this chapter" value="${esc3(f.q)}" aria-label="Search questions"></label>
+   <div class="pq4-fl"><select data-k="t" aria-label="Topic"><option value="">All topics</option>${tl.map(t=>`<option ${f.t===t?'selected':''} value="${esc3(t)}">${esc3(t)}</option>`).join('')}</select>
+    <select data-k="y" aria-label="Year"><option value="">All years</option>${ys.map(y=>`<option ${f.y==y?'selected':''}>${y}</option>`).join('')}</select>
+    <select data-k="st" aria-label="Status"><option value="">All questions</option>${[['new','Not tried'],['wrong','Got wrong'],['right','Got right'],['bm','Saved']].map(([k,t])=>`<option value="${k}" ${f.st===k?'selected':''}>${t}</option>`).join('')}</select>
+    <button class="chip4${f.rep?' on':''}" data-a="pqRep">Repeated</button></div>
+   ${act.length?`<div class="pq4-act"><span>Filters:</span>${act.map(([k,t])=>`<button data-a="pqFx" data-k="${k}">${esc3(t)}${ic('x',12)}</button>`).join('')}<button class="lnk" data-a="pqFx" data-k="all">Clear all</button></div>`:''}
+   ${shown.length?`<button class="btn gold blk" data-a="pqPlayAt" data-i="0">${ic('play',16)}Practise ${shown.length===L.length?'all':'these'} ${shown.length}</button>`+shown.slice(0,lim).map(pqQRow).join('')+(shown.length>lim?`<button class="btn ghost" data-a="pqMore">Show more (${shown.length-lim} left)</button>`:'')
+     :'<div class="card empty"><b>No questions here</b><p>No question matches these filters.</p><button class="btn sm ghost" data-a="pqFx" data-k="all">Clear filters</button></div>'}</section>`}
+function pyqChView(){return {get t(){return PQC?PQC.c.name:'Chapter'},get s(){return PQC?`Class ${PQC.c.cls} · ${PQC.s.name}`:''},key:'pyqc',
+ after:()=>{const yc=$('.pq4-y');if(yc)yc.scrollLeft=yc.scrollWidth;const i=$('#pq4qq');if(i){let tm=0;i.addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{PQ.f.q=i.value;PQ.lim=20;const p=i.selectionStart;qbKeep();const j=$('#pq4qq');if(j){j.focus();try{j.setSelectionRange(p,p)}catch(e){}}},250)})}
+   root.querySelectorAll('.pq4-fl select').forEach(s=>s.addEventListener('change',()=>{PQ.f[s.dataset.k]=s.value;PQ.lim=20;qbKeep()}))},
+ html:()=>{const X=PQC;if(!X)return '';if(!PQ.sum)return '<div class="card sk" style="height:200px"></div><div class="card sk" style="height:220px"></div>';
+  const c=X.c,st=pqChStats(X),o=st.o,lk=pqLocked(c.id),sy=pqSyl(c),me=pgStats().ch[c.id];
+  const tl=Object.entries(o.t).sort((a,b)=>b[1]-a[1]),tmx=Math.max(1,...tl.map(x=>x[1])),allT=c.topics.map(t=>t.name).filter(n=>!o.t[n]);
+  const yl=st.ys.length?st.ys[st.ys.length-1]:null;
+  return `<section class="mkh pq4-hero"><div class="mkh-top"><div><small>CHAPTER ANALYSIS</small><b class="pq4-cn">${esc3(c.name)}</b><span>${yl?`Last asked in ${yl}`:'Not asked in the papers added so far'}</span></div></div>
+    <div class="pq4-hb"><span class="pq4-sy s-${sy}">${SYLN[sy]}</span>${pqDiffTag(c.id)}${me&&me.a?`<span class="pq4-me">You: ${pqAcc(me.o,me.a)}% right of ${me.a}</span>`:''}</div>
+    <div class="mkh-st pq4-k"><div><b>${o.n}</b><small>Questions</small></div><div><b>${st.avg?st.avg.toFixed(1):'0'}</b><small>Per paper</small></div><div><b>${st.ys.length}</b><small>Years</small></div><div><b>${o.p.size}</b><small>Papers</small></div><div><b>${st.rep==null?'–':st.rep}</b><small>Repeated</small></div></div>
+    ${o.n?(lk?`<button class="btn onhero lg" data-a="lbrUp" data-k="${esc3(pqNeed())}">${ic('lock',17)}Unlock practice</button>`:`<button class="btn gold lg" data-a="pqPlayAt" data-i="0" data-all="1"${st.L?'':' disabled'}>${ic('play',17)}Practice chapter PYQs</button>`):''}</section>
+   ${o.n?pqYearChart(X,o):`<div class="card empty"><span class="ti">${ic('pyq',22)}</span><b>No questions yet</b><p>No question from this chapter is in the papers added so far.</p></div>`}
+   <section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Topic weightage</h2>${pqInfo('How the questions of this chapter are spread over its topics. Tap a topic to see its questions.')}</div>
+    <div class="card p pq4-tp">${tl.map(([n,v],i)=>`<button class="${PQ.f.t===n?'on':''}" data-a="pqTp" data-v="${esc3(n)}"><span><b>${esc3(n)}</b><em>${pqPl(v,'question')} · ${pqAcc(v,o.n)}%</em></span><span class="bar"><i style="--p:${(v/tmx).toFixed(3)};background:${PQCOL[i%PQCOL.length]}"></i></span></button>`).join('')}
+     ${allT.length?`<p class="pq4-nt">Not asked yet: ${esc3(allT.join(', '))}</p>`:''}</div></section>
+   ${pqInsights(X,st)}
+   ${pqChQs(X,st)}`}}}
 async function openPyqCh(cid){const X=pqChap(cid);if(!X){toast3('Chapter not found');return}
-  PQ.sub=X.s.id;if(PQ.cid!==cid){PQ.cid=cid;PQ.f={t:'',y:'',rep:0};PQ.open={};PQ.lim=20}PQC=X;push(pyqChView());
-  if(!PQ.sum)pqSummary().catch(()=>{});
-  if(!PQ.ch[cid]){let r=null;try{r=await rpc('cbt_pyq_chapter',{p_exam:PQ.exam,p_chapter:cid})}catch(e){}if(!r||!r.ok){if(top()&&top().key==='pyqc'){back();toast3('Could not load this chapter. Please try again.')}return}PQ.ch[cid]=r.items||[]}
-  if(top()&&top().key==='pyqc'&&PQC===X)redraw()}
+  PQ.sub=X.s.id;if(PQ.cid!==cid){PQ.cid=cid;PQ.f=PQF0();PQ.open={};PQ.lim=20}PQC=X;push(pyqChView());
+  const p=[];if(!PQ.sum)p.push(pqLoad3());if(!PG.m)p.push(pgLoad());await Promise.all(p).catch(()=>{});if(top()&&top().key==='pyqc'&&PQC===X)qbKeep();
+  if(pqLocked(cid))return;
+  if(!PQ.ch[cid]){let r=null;try{r=await rpc('cbt_pyq_chapter',{p_exam:PQ.exam,p_chapter:cid})}catch(e){}
+    if(!r||!r.ok){if(r&&r.error==='plan'){PX.acc=Object.assign({},PX.acc||{},{open:false});}else toast3(r&&r.error==='busy'?'Too many chapters opened. Please wait a little.':'Could not load the questions. Please try again.');if(top()&&top().key==='pyqc')qbKeep();return}
+    PQ.ch[cid]=r.items||[]}
+  if(top()&&top().key==='pyqc'&&PQC===X)qbKeep()}
 A.pqYr=el=>{const v=el.dataset.v;PQ.lim=20;PQ.f.y=(v===''||PQ.f.y==v)?'':+v;qbKeep()};
-A.pqTp=el=>{const v=el.dataset.v;PQ.lim=20;PQ.f.t=el.dataset.set?v:(PQ.f.t===v?'':v);qbKeep()};
+A.pqSpan=el=>{PQ.span=el.dataset.v;qbKeep()};
+A.pqTp=el=>{const v=el.dataset.v;PQ.lim=20;PQ.f.t=PQ.f.t===v?'':v;qbKeep();if(PQ.f.t){const s=$('#pq4qs');if(s)s.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})}};
 A.pqRep=()=>{PQ.lim=20;PQ.f.rep=PQ.f.rep?0:1;qbKeep()};
+A.pqFx=el=>{const k=el.dataset.k;if(k==='all')PQ.f=PQF0();else PQ.f[k]=k==='rep'?0:'';PQ.lim=20;qbKeep()};
 A.pqMore=()=>{PQ.lim=(PQ.lim||20)+20;qbKeep()};
-A.pqAns=el=>{PQ.open[el.dataset.id]=1;qbKeep()};
-V3H.push([/^#\/pyq(\/([A-Z0-9]+))?$/,m=>openPyq(m[2])],[/^#\/pyq\/([A-Z0-9]+)\/([\w-]+)$/,m=>{if(PYQ_SYL[m[1]]&&!PYQ_SYL[m[1]].soon)PQ.exam=m[1];openPyqCh(m[2])}]);
+A.pqFree=()=>{const n=PX.free.map(id=>pqChap(id)).filter(Boolean);openSheet(`<h2 id="sheetT">Free chapters</h2><p class="sub">You can practise these chapters on your plan.</p><div class="card rows">${n.map(x=>`<button class="row" data-a="pqFreeGo" data-id="${esc3(x.c.id)}"><span class="ti g">${ic(SUBIC[x.s.id]||'book',18)}</span><span><b>${esc3(x.c.name)}</b><small>${esc3(x.s.name)} · Class ${x.c.cls}</small></span>${ic('right',16)}</button>`).join('')}</div>`)};
+A.pqFreeGo=el=>{closeLayer();setTimeout(()=>openPyqCh(el.dataset.id),60)};
+
+/* ================= 3. PRACTICE (one question at a time) ================= */
+let PP=null;
+function pqPlay(list,title,o){if(!list||!list.length){toast3('No questions to practise');return}
+  PP=Object.assign({list,title,i:0,pick:{},res:{},sol:{},done:false},o||{});push(pqPlayView())}
+const ppCur=()=>PP&&PP.list[PP.i];
+function ppCard(q){const r=PP.res[q.id],pk=PP.pick[q.id],p=pgGet(q.id),reps=(q.rep||[]).filter(Boolean),X=pqChap(q.c||PQ.cid);
+  const opts=(q.o||[]).map((o,j)=>{if(o==null||o==='')return '';const cls=r?(j===q.a?' c':j===r.pick?' w':''):(pk===j?' sel3':'');
+    return r?`<div class="opt3${cls}"><span class="k">${LT[j]}</span><span class="ot">${pqTx(o)}</span>${j===q.a?ic('check',16):''}</div>`
+      :`<button class="opt3${cls}" data-a="ppPick" data-j="${j}" aria-pressed="${pk===j}"><span class="k">${LT[j]}</span><span class="ot">${pqTx(o)}</span></button>`}).join('');
+  const sec=(k,t,b)=>b?`<details class="pq4-sol"${PP.sol[q.id+k]!=null?(PP.sol[q.id+k]?' open':''):(k==='a'||k==='e')?' open':''} data-k="${k}"><summary>${t}</summary><div>${b}</div></details>`:'';
+  return `<article class="card qc3 pq4-pc"><div class="qc3-h"><span class="tag">${esc3(q.p)}${q.n?' · Q'+q.n:''}</span>${q.t?`<span class="tag mutd">${esc3(q.t)}</span>`:''}${q.v?`<span class="st ok">Verified</span>`:''}${reps.length>1?`<span class="st gold">Asked ${reps.length}×</span>`:''}</div>
+   ${PP.mix&&X?`<p class="hint">${esc3(X.s.name)} · ${esc3(X.c.name)}</p>`:''}
+   <div class="qc3-q">${pqTx(q.q)}</div>${q.img?'<p class="hint">This question has a diagram. See the original paper.</p>':''}
+   <div class="qc3-o">${opts}</div>
+   ${r?`<p class="qc3-r ${r.right?'ok':'bad'}">${r.right?'Correct! Well done.':q.a==null?'The answer key for this question is not available.':`Not quite. The correct answer is ${LT[q.a]}.`}</p>
+     <div class="pq4-sols">${q.a!=null?sec('a','Correct answer',`<b>${LT[q.a]}.</b> ${pqTx((q.o||[])[q.a])}`):''}${sec('e','Step-by-step solution',q.e?`<p>${pqTx(q.e)}</p>`:'')}${sec('f','Formula',q.fm?`<p class="pq4-fm">${pqTx(q.fm)}</p>`:'')}
+      ${sec('c','Concept',q.cn||q.t?`<p>${esc3(q.cn||q.t)}${X?` · ${esc3(X.c.name)}`:''}</p>`:'')}${sec('n','NCERT reference',q.nr?`<p>${esc3(q.nr)}</p>`:'')}
+      ${sec('r','Related PYQs',reps.length>1?`<p>Also asked in ${reps.filter(x=>x!==q.p).map(x=>`<b>${esc3(x)}</b>`).join(', ')}</p>`:'')}</div>
+     ${q.e?'':'<p class="hint">A written solution for this question is being added.</p>'}
+     <button class="btn ghost blk" data-a="ppSim">${ic('target',16)}Practice similar questions</button>`:''}
+   <div class="pq4-tools"><button data-a="ppBm" aria-pressed="${!!(p&&p.bm)}" class="${p&&p.bm?'on':''}">${ic('bookmark',16)}${p&&p.bm?'Saved':'Save'}</button><button data-a="ppRv" aria-pressed="${!!(p&&p.rev)}" class="${p&&p.rev?'on':''}">${ic('redo',16)}${p&&p.rev?'To revise':'Revise later'}</button><button data-a="ppRep">${ic('info',16)}Report error</button></div></article>`}
+function pqPlayView(){return {get t(){return PP?PP.title:'Practice'},get s(){if(!PP)return '';const n=Object.keys(PP.res).length,ok=Object.values(PP.res).filter(r=>r.right).length;return `${n} done · ${ok} right`},key:'pyqp',
+ right:()=>PP&&!PP.done?`<button class="ib" data-a="ppNav" aria-label="All questions">${ic('list',20)}</button>`:'',
+ after:()=>{const q=ppCur();if(!q)return;root.querySelectorAll('.pq4-sol').forEach(d=>d.addEventListener('toggle',()=>{PP.sol[q.id+d.dataset.k]=d.open}))},
+ html:()=>{const R=PP;if(!R)return '';if(R.done)return ppSum();
+  const q=ppCur(),n=R.list.length,r=R.res[q.id],pk=R.pick[q.id],dn=Object.keys(R.res).length;
+  return `<div class="pq4-pt"><span>Question <b>${R.i+1}</b> of ${n}</span><span>${dn} answered</span></div><span class="bar pq4-pb"><i style="--p:${(dn/n).toFixed(3)}"></i></span>
+   ${R.limited?`<p class="hint">Only free chapters are included on your plan.</p>`:''}
+   ${ppCard(q)}
+   <div class="pr-ft pq4-ft"><button class="btn ghost" data-a="ppGo" data-d="-1"${R.i?'':' disabled'}>${ic('back',16)}Previous</button>
+    ${r?`<button class="btn" data-a="ppGo" data-d="1">${R.i===n-1?'Finish':'Next'}${ic('right',16)}</button>`:pk!=null?`<button class="btn gold" data-a="ppCheck">Submit answer</button>`:`<button class="btn ghost" data-a="ppGo" data-d="1">${R.i===n-1?'Finish':'Skip'}${ic('right',16)}</button>`}</div>`}}}
+function ppSum(){const R=PP,dn=Object.values(R.res),ok=dn.filter(r=>r.right).length,p=pqAcc(ok,dn.length),wr=R.list.filter(q=>R.res[q.id]&&!R.res[q.id].right);
+  return `<section class="mkh pr-end"><div class="mkh-ring" style="margin:0 auto">${rsRing(p,120)}<span><b>${p}%</b><small>right</small></span></div><h2>Practice finished</h2>
+   <p><b>${dn.length}</b> answered, <b>${ok}</b> right, <b>${dn.length-ok}</b> wrong${R.list.length-dn.length?`, <b>${R.list.length-dn.length}</b> skipped`:''}.</p>
+   <div class="g2" style="grid-template-columns:1fr 1fr;width:100%">${wr.length?`<button class="btn gold" data-a="ppWrong">Practise the ${wr.length} wrong</button>`:`<button class="btn gold" data-a="ppAgain">Practise again</button>`}<button class="btn ghost on-dark" data-a="back">Done</button></div></section>
+   ${wr.length?`<div class="sh" style="margin:0"><h2>Revise these</h2><span class="aside">${wr.length}</span></div>${wr.map(q=>`<button class="card pq4-qr" data-a="ppJump" data-i="${R.list.indexOf(q)}"><span class="pq4-qh"><span class="tag">${esc3(q.p)}${q.n?' · Q'+q.n:''}</span><span class="pq4-dot bad"></span></span><span class="pq4-qt">${pqTx(q.q)}</span><small>Correct answer: ${q.a!=null?LT[q.a]:'–'}</small></button>`).join('')}`:''}`}
+A.ppPick=el=>{const q=ppCur();if(!q||PP.res[q.id])return;PP.pick[q.id]=+el.dataset.j;qbKeep()};
+A.ppCheck=()=>{const R=PP,q=ppCur();if(!q||R.res[q.id]||R.pick[q.id]==null)return;const j=R.pick[q.id],right=q.a!=null&&j===q.a;
+  R.res[q.id]={right,pick:j};if(navigator.vibrate)navigator.vibrate(right?8:[10,40,10]);
+  if(q.a!=null){const p=pgGet(q.id)||{};pgSet(q,{c:j,ok:right,t:(p.t||0)+1,at:Date.now()})}
+  $('#scrS').textContent=pqPlayView().s;qbKeep();
+  if(q.a!=null&&!PG.local)rpc('cbt_pyq_attempt',{p_q:q.id,p_choice:j}).then(r=>{if(r&&r.status===404){PG.local=true;pgSave()}}).catch(()=>{})};
+A.ppGo=el=>{const R=PP,d=+el.dataset.d,n=R.list.length;if(d>0&&R.i>=n-1){R.done=true;redraw();$('#scrB').scrollTop=0;return}
+  R.i=Math.max(0,Math.min(n-1,R.i+d));redraw();$('#scrB').scrollTop=0};
+A.ppJump=el=>{PP.done=false;PP.i=+el.dataset.i;drawScr('');$('#scrB').scrollTop=0};
+A.ppNav=()=>{const R=PP;openSheet(`<h2 id="sheetT">All questions</h2><p class="sub">${Object.keys(R.res).length} of ${R.list.length} answered</p>
+  <div class="pq4-nav">${R.list.map((q,i)=>{const r=R.res[q.id];return `<button class="${r?(r.right?'ok':'bad'):''}${i===R.i?' cur':''}" data-a="ppNavGo" data-i="${i}" aria-label="Question ${i+1}${r?(r.right?', right':', wrong'):', not answered'}">${i+1}</button>`}).join('')}</div>
+  <div class="pq4-lg"><span><i class="ok"></i>Right</span><span><i class="bad"></i>Wrong</span><span><i></i>Not answered</span></div>`)};
+A.ppNavGo=el=>{closeLayer();PP.i=+el.dataset.i;setTimeout(()=>{redraw();$('#scrB').scrollTop=0},40)};
+A.ppWrong=()=>{const R=PP,wr=R.list.filter(q=>R.res[q.id]&&!R.res[q.id].right);PP=Object.assign({},R,{list:wr,i:0,pick:{},res:{},sol:{},done:false,title:'Wrong answers'});$('#scrT').textContent=PP.title;drawScr('');$('#scrB').scrollTop=0};
+A.ppAgain=()=>{const R=PP;PP=Object.assign({},R,{i:0,pick:{},res:{},sol:{},done:false});drawScr('');$('#scrB').scrollTop=0};
+async function ppMark(k){const q=ppCur();if(!q)return;const p=pgGet(q.id)||{},v=!p[k];pgSet(q,{[k]:v});qbKeep();
+  toast3(k==='bm'?(v?'Saved to your questions':'Removed from saved'):(v?'Added to Revise later':'Removed from Revise later'));
+  if(PG.local)return;let r=null;try{r=await rpc('cbt_pyq_mark',k==='bm'?{p_q:q.id,p_bm:v,p_rev:null}:{p_q:q.id,p_bm:null,p_rev:v})}catch(e){}
+  if(r&&r.status===404){PG.local=true;pgSave()}else if(!r||!r.ok){pgSet(q,{[k]:!v});qbKeep();toast3('Could not save. Please try again.')}}
+A.ppBm=()=>ppMark('bm');A.ppRv=()=>ppMark('rev');
+const REPR=[['answer','The answer is wrong'],['question','The question has a mistake'],['options','An option is wrong or missing'],['solution','The solution is wrong or unclear'],['chapter','Wrong chapter or topic'],['other','Something else']];
+A.ppRep=()=>{openSheet(`<h2 id="sheetT">Report an error</h2><p class="sub">Tell us what is wrong. Our team checks every report.</p>
+  <div class="pq4-rr">${REPR.map(([k,t],i)=>`<label><input type="radio" name="pqrr" value="${k}"${i?'':' checked'}><span>${t}</span></label>`).join('')}</div>
+  <textarea id="pqrn" class="inp" maxlength="500" rows="3" placeholder="Add details (optional)"></textarea>
+  <div class="sheet-ft"><button class="btn ghost" data-a="close">Cancel</button><button class="btn gold" data-a="ppRepGo">Send report</button></div>`)};
+A.ppRepGo=async el=>{const q=ppCur();if(!q)return;const s=sheet.querySelector('input[name="pqrr"]:checked'),n=sheet.querySelector('#pqrn');el.disabled=true;
+  let r=null;try{r=await rpc('cbt_pyq_report',{p_q:q.id,p_reason:s?s.value:'other',p_note:n?n.value:''})}catch(e){}
+  el.disabled=false;if(r&&r.ok){closeLayer();toast3(r.already?'You already reported this question. We are checking it.':'Thank you! We will check it.')}
+  else toast3(r&&r.status===404?'Reports open soon.':r&&r.error==='busy'?'Too many reports today. Please try tomorrow.':'Could not send. Please try again.')};
+A.ppSim=async()=>{const q=ppCur();if(!q)return;const cid=q.c||PQ.cid,L=PQ.ch[cid];
+  if(L&&L.length){const same=L.filter(x=>x.id!==q.id&&(x.t||'Other')===(q.t||'Other'));if(same.length){pqPlay(same,q.t||'Similar questions');return}}
+  const r=await pqFetchSet({exam:PQ.exam,chapters:[cid],topics:q.t?[q.t]:[],n:20});if(r)pqPlay(r.items.filter(x=>x.id!==q.id),q.t||'Similar questions',{limited:r.limited})};
+A.pqPlayAt=el=>{const L=PQ.ch[PQ.cid];if(!L)return;const list=el.dataset.all?L:pqShown(L);pqPlay(list,PQC?PQC.c.name:'Practice');PP.i=Math.min(+el.dataset.i||0,list.length-1);redraw()};
+
+/* ================= 4. SMART PRACTICE ================= */
+const GEN0=()=>({mode:'mix',s:PQ.sub||'',ch:'',tp:'',n:20,d:'',yr:'all',y:'',cur:true});
+let PGEN=GEN0();
+const GMODES=[['ch','book','Chapter-wise','One chapter'],['tp','target','Topic-wise','One topic'],['yr','cal','Year-wise','One year\'s paper'],['rep','swap','Repeated','Asked more than once'],
+  ['weak','chart','Weak chapters','Where you score low'],['wrong','redo','Wrong answers','Fix your mistakes'],['mix','layers','Mixed','From everywhere']];
+async function pqFetchSet(f){let r=null;try{r=await rpc('cbt_pyq_practice',{p_f:f})}catch(e){}
+  if(!r||!r.ok){if(!(r&&r.error==='plan'))toast3(r&&r.status===404?'Smart practice opens soon.':r&&r.error==='busy'?'Too many sets made. Please wait a little.':'Could not make the set. Please try again.');return null}
+  return {items:r.items||[],limited:!!r.limited}}
+function pyqGenView(){return {t:'Smart practice',s:'Real previous-year questions only',key:'pyqg',
+ after:()=>{root.querySelectorAll('.pq4-g select').forEach(s=>s.addEventListener('change',()=>{const k=s.dataset.k;PGEN[k]=s.value;if(k==='s'){PGEN.ch='';PGEN.tp=''}if(k==='ch')PGEN.tp='';qbKeep()}));
+   const c=$('#pgCur');if(c)c.addEventListener('change',()=>{PGEN.cur=c.checked})},
+ html:()=>{const G=PGEN,E=PYQ_SYL[PQ.exam],{have}=pqYearSpan(),yrs=[...have].sort((a,b)=>b-a),subs=E.subjects,S=subs.find(s=>s.id===G.s),X=G.ch?pqChap(G.ch):null;
+  const needCh=G.mode==='ch'||G.mode==='tp',needTp=G.mode==='tp',needYr=G.mode==='yr',hasD=Object.values(PX.ch).some(x=>+x[0]+ +x[1]+ +x[2]>0);
+  const chSel=`<label><span>Chapter</span><select data-k="ch"><option value="">${needCh?'Choose a chapter':'All chapters'}</option>${(S?[S]:subs).map(s=>`<optgroup label="${esc3(s.name)}">${s.chapters.map(c=>`<option value="${esc3(c.id)}"${G.ch===c.id?' selected':''}>${esc3(c.name)}${pqLocked(c.id)?' 🔒':''}</option>`).join('')}</optgroup>`).join('')}</select></label>`;
+  const ok=(!needCh||G.ch)&&(!needTp||G.tp)&&(!needYr||G.y);
+  return `<section class="card p pq4-g"><div class="sh" style="margin:0 0 10px"><h2>1. What do you want to practise?</h2></div>
+    <div class="pq4-gm">${GMODES.map(([k,i,t,d])=>`<button class="${G.mode===k?'on':''}" data-a="pgMode" data-v="${k}" aria-pressed="${G.mode===k}"><span class="ti g">${ic(i,18)}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div></section>
+   <section class="card p pq4-g"><div class="sh" style="margin:0 0 10px"><h2>2. Choose</h2></div><div class="pq4-gf">
+    <label><span>Subject</span><select data-k="s"><option value="">All subjects</option>${subs.map(s=>`<option value="${s.id}"${G.s===s.id?' selected':''}>${esc3(s.name)}</option>`).join('')}</select></label>
+    ${G.mode!=='yr'?chSel:''}
+    ${needTp||(X&&G.mode!=='yr')?`<label><span>Topic</span><select data-k="tp"><option value="">${needTp?'Choose a topic':'All topics'}</option>${X?X.c.topics.map(t=>`<option${G.tp===t.name?' selected':''}>${esc3(t.name)}</option>`).join(''):''}</select></label>`:''}
+    ${needYr?`<label><span>Year</span><select data-k="y"><option value="">Choose a year</option>${yrs.map(y=>`<option${G.y==y?' selected':''}>${y}</option>`).join('')}</select></label>`
+      :`<label><span>Years</span><select data-k="yr">${[['all','All years'],['5','Last 5 years'],['10','Last 10 years']].map(([k,t])=>`<option value="${k}"${G.yr===k?' selected':''}>${t}</option>`).join('')}</select></label>`}
+    ${hasD?`<label><span>Difficulty</span><select data-k="d"><option value="">Any</option>${['easy','medium','hard'].map(d=>`<option value="${d}"${G.d===d?' selected':''}>${DIFN[d]}</option>`).join('')}</select></label>`:''}
+   </div>
+   <p class="pq4-gl">How many questions?</p><div class="chips wrap">${[10,20,30,45].map(n=>`<button class="${G.n===n?'on':''}" data-a="pgN" data-v="${n}">${n}</button>`).join('')}</div>
+   <label class="pq4-sw"><input type="checkbox" id="pgCur"${G.cur?' checked':''}><span><b>Only current NEET syllabus</b><small>Skip chapters that were removed</small></span></label></section>
+   <button class="btn gold lg blk" data-a="pgGo"${ok?'':' disabled'}>${ic('play',17)}Start practice</button>
+   <p class="hint" style="text-align:center">${ok?'Every question is a real past paper question with its year.':needYr?'Choose a year to start.':needTp?'Choose a chapter and a topic to start.':'Choose a chapter to start.'}</p>`}}}
+function openPyqGen(pre){PGEN=Object.assign(GEN0(),pre||{});if(!PQ.sum)pqLoad3().then(()=>{if(top()&&top().key==='pyqg')qbKeep()});push(pyqGenView())}
+A.pqGen=()=>openPyqGen();
+A.pgMode=el=>{PGEN.mode=el.dataset.v;qbKeep()};A.pgN=el=>{PGEN.n=+el.dataset.v;qbKeep()};
+A.pgGo=async el=>{const G=PGEN,E=PYQ_SYL[PQ.exam],{Y}=pqYearSpan(),hi=Y[Y.length-1];
+  const f={exam:PQ.exam,subject:G.s,n:G.n,diff:G.d,mode:{weak:'weak',wrong:'wrong'}[G.mode]||'all',rep:G.mode==='rep'};
+  if(G.ch&&G.mode!=='yr')f.chapters=[G.ch];else if(G.cur){f.chapters=[];E.subjects.forEach(s=>{if(!G.s||s.id===G.s)s.chapters.forEach(c=>{if(!c.old)f.chapters.push(c.id)})})}
+  if(G.tp&&G.mode!=='yr')f.topics=[G.tp];
+  if(G.mode==='yr'){f.y0=f.y1=+G.y}else if(G.yr!=='all'){f.y0=hi-(+G.yr)+1}
+  el.disabled=true;const r=await pqFetchSet(f);el.disabled=false;if(!r)return;
+  let L=r.items;if(G.cur)L=L.filter(q=>q.sy!=='removed');
+  if(!L.length){toast3(G.mode==='wrong'?'No wrong answers yet. Great job!':G.mode==='weak'?'No weak chapters yet. Answer more questions first.':'No questions match. Try fewer choices.');return}
+  if(G.mode==='yr')L.sort((a,b)=>(a.n||0)-(b.n||0));
+  const t=G.mode==='yr'?`${E.name.replace(/ \(.*/,'')} ${G.y}`:G.tp||(G.ch?(pqChap(G.ch)||{c:{}}).c.name:GMODES.find(m=>m[0]===G.mode)[2]+' practice');
+  pqPlay(L,t,{limited:r.limited,mix:!G.ch})};
+
+/* ================= 5. MY PERFORMANCE + REVISION ================= */
+function pyqMeView(){return {t:'My performance',s:'Only you can see this',key:'pyqm',html:()=>{
+  if(!PG.m)return '<div class="card sk" style="height:200px"></div><div class="card sk" style="height:240px"></div>';
+  const S=pgStats(),E=PYQ_SYL[PQ.exam],total=(PQ.sum||[]).reduce((a,r)=>a+r[5],0),A=pqAgg();
+  const weak=Object.entries(S.ch).filter(([,c])=>c.a>=3).map(([id,c])=>({id,c,X:pqChap(id)})).filter(x=>x.X).sort((a,b)=>pqAcc(a.c.o,a.c.a)-pqAcc(b.c.o,b.c.a));
+  const p=pqAcc(S.ok,S.at),col=[['wrong','redo','Wrong answers',S.wr],['bm','bookmark','Saved questions',S.bm],['rev','pen','Revise later',S.rev],['all','hist','All attempted',S.at]];
+  return `<section class="mkh"><div class="mkh-top"><div><small>YOUR PYQ PROGRESS</small><b>${fmtN(S.at)}</b><span>questions answered${total?` of ${fmtN(total)}`:''}</span></div><div class="mkh-ring">${rsRing(p,104)}<span><b>${p}%</b><small>right</small></span></div></div>
+    <div class="mkh-st"><div><i class="dm"></i><b>${fmtN(S.ok)}</b><small>Right</small></div><div><i class="dw"></i><b>${fmtN(S.wr)}</b><small>Wrong</small></div><div><i class="ds"></i><b>${fmtN(Math.max(0,total-S.at))}</b><small>Left</small></div></div>
+    ${PG.local?'<p class="pq4-loc">Saved on this phone only for now.</p>':''}</section>
+   ${S.at?'':`<div class="card empty"><span class="ti">${ic('target',22)}</span><b>No answers yet</b><p>Open any chapter and practise. Your progress shows here.</p><button class="btn sm" data-a="back">Choose a chapter</button></div>`}
+   ${S.at?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Subjects</h2></div><div class="card pq4-sb">${E.subjects.map(s=>{const x=S.sub[s.id]||{a:0,o:0},tot=A.sub[s.id]||0;
+     return `<div><span class="ti g">${ic(SUBIC[s.id]||'book',18)}</span><span class="grow"><b>${esc3(s.name)}</b><small>${x.a?`${pqAcc(x.o,x.a)}% right · ${fmtN(x.a)} of ${fmtN(tot)} done`:'Not started'}</small><span class="bar"><i style="--p:${tot?(x.a/tot).toFixed(3):0}"></i></span></span>${pqLvlTag(x)}</div>`}).join('')}</div></section>`:''}
+   ${weak.length?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Chapter strength</h2>${pqInfo('Strong: 75% or more right. Improving: 50–74%. Needs practice: below 50%. Shown after 3 answers in a chapter.')}</div>
+     <div class="card pq4-l">${weak.slice(0,12).map(x=>`<button class="pq4-r" data-a="pqCh" data-id="${esc3(x.id)}"><span class="pq4-rt"><b>${esc3(x.X.c.name)}</b><small>${esc3(x.X.s.name)} · ${pqAcc(x.c.o,x.c.a)}% right of ${x.c.a}</small></span>${pqLvlTag(x.c)}${ic('right',16)}</button>`).join('')}</div></section>`:''}
+   <section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Revision</h2></div>
+    <div class="card rows">${col.map(([k,i,t,n])=>`<button class="row" data-a="pqRev" data-k="${k}"${n?'':' disabled'}><span class="ti g">${ic(i,18)}</span><span><b>${t}</b><small>${n?`${fmtN(n)} question${n===1?'':'s'}`:'None yet'}</small></span>${n?`<span class="pq4-pa">Practice again${ic('right',14)}</span>`:''}</button>`).join('')}</div></section>`}}}
+function openPyqMe(){push(pyqMeView());const p=[pgLoad(true)];if(!PQ.sum)p.push(pqLoad3());Promise.all(p).then(()=>{if(top()&&top().key==='pyqm')qbKeep()}).catch(()=>{})}
+A.pqMe=()=>openPyqMe();
+A.pqRev=async el=>{const k=el.dataset.k;if(!PG.m)await pgLoad().catch(()=>{});const M=PG.m||{};
+  const ids=Object.keys(M).filter(id=>{const p=M[id];return k==='wrong'?p.c!=null&&!p.ok:k==='bm'?p.bm:k==='rev'?p.rev:p.c!=null}).sort((a,b)=>(M[b].at||0)-(M[a].at||0)).slice(0,100);
+  if(!ids.length){toast3(k==='wrong'?'No wrong answers yet':k==='bm'?'No saved questions yet':k==='rev'?'Nothing marked to revise':'Nothing practised yet');return}
+  el.disabled=true;let r=null;try{r=await rpc('cbt_pyq_questions',{p_ids:ids})}catch(e){}el.disabled=false;
+  let L=r&&r.ok?r.items||[]:null;
+  if(!L){const all=[].concat(...Object.values(PQ.ch||{}));L=all.filter(q=>ids.includes(q.id));if(!L.length){toast3('Could not load the questions. Please try again.');return}}
+  const ord={};ids.forEach((id,i)=>{ord[id]=i});L.sort((a,b)=>ord[a.id]-ord[b.id]);
+  pqPlay(L,{wrong:'Wrong answers',bm:'Saved questions',rev:'Revise later',all:'Attempted questions'}[k],{mix:true})};
+
+V3H.push([/^#\/pyq\/practice$/,()=>openPyqGen()],[/^#\/pyq\/me$/,()=>openPyqMe()],
+  [/^#\/pyq(\/([A-Z0-9]+))?$/,m=>openPyq(m[2])],[/^#\/pyq\/([A-Z0-9]+)\/([\w-]+)$/,m=>{if(PYQ_SYL[m[1]]&&!PYQ_SYL[m[1]].soon)PQ.exam=m[1];openPyqCh(m[2])}]);
 
 /* ================= STUDY TRACKER in the new design =================
    The same tracker data as the classic page (app6.js / app9.js): weeks, subjects and tasks in cbt_trk_<mobile>,
