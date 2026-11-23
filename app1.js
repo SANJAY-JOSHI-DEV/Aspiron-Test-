@@ -102,7 +102,7 @@ async function upgradeAuth(){
 const AUTHERR=['invalid','blocked','pending','device_limit','device'];
 function errText(r){
   switch(r&&r.error){
-    case 'invalid':return 'Mobile number or access code is incorrect.';
+    case 'invalid':return 'Mobile number or access code is incorrect. Just asked to join? Your access code comes after the admin approves your request.';
     case 'pending':return 'Your request is waiting for approval. You will receive your access code once the admin approves it.';
     case 'blocked':return 'Your access has been blocked. Please contact the admin.';
     case 'locked':return `Too many wrong attempts. Please try again in ${r.wait||15} minutes.`;

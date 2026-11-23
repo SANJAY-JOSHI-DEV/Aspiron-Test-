@@ -1,7 +1,7 @@
 # Daily encrypted backup of the Supabase database (free: GitHub Actions).
 # Needs 2 repository secrets (Settings → Secrets and variables → Actions): SUPABASE_DB_URL, BACKUP_PASSWORD.
 # The backup is locked with BACKUP_PASSWORD (AES-256) before it leaves the runner and is kept here as a workflow
-# artifact for 90 days (Actions → Database backup → a run → Artifacts). Optional 3rd secret RCLONE_CONFIG: also copy it
+# artifact for 30 days (Actions → Database backup → a run → Artifacts). Optional 3rd secret RCLONE_CONFIG: also copy it
 # to Google Drive. Setup (phone is enough) and restore: BACKUP.md. The backup is never committed to this repository.
 name: Database backup
 on:
@@ -45,15 +45,26 @@ jobs:
           printf '%s' "$PASS" > "$W/p"
           # only the locked copy leaves this step; the plain dump and the password file are deleted with $W
           gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-file "$W/p" --symmetric --cipher-algo AES256 -o "$OUT/$F.gpg" "$W/$F"
-          echo "FILE=$OUT/$F.gpg" >> "$GITHUB_ENV"
+          # audit 2026-11-23 (A26-09): also the Supabase Auth users (email / Google logins), as a separate locked file.
+          # Optional: if this login cannot read the auth schema the main backup still succeeds (warning only).
+          A="aspiron-auth-$(date -u +%Y-%m-%d_%H%M).authdump"
+          if /usr/lib/postgresql/17/bin/pg_dump "$DB" --data-only -t auth.users -t auth.identities -Fc -f "$W/$A" 2>/dev/null; then
+            gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-file "$W/p" --symmetric --cipher-algo AES256 -o "$OUT/$A.gpg" "$W/$A"
+            echo "Locked Supabase Auth users $A.gpg"
+          else
+            echo "::warning::Supabase Auth users (email/Google logins) are not in this backup: this database login cannot read the auth schema (BACKUP.md)"
+          fi
+          echo "FILE=$OUT" >> "$GITHUB_ENV"
           echo "NAME=$F.gpg" >> "$GITHUB_ENV"
           echo "Locked backup $F.gpg ($(stat -c%s "$OUT/$F.gpg") bytes)"
-      - name: Keep the locked backup here (90 days)
+      # audit 2026-11-23 (A26-02): the repository is public, so any signed-in GitHub user can download artifacts.
+      # Keep them 30 days only (the newest is all the restore drill needs); the optional Google Drive copy keeps 90 days.
+      - name: Keep the locked backup here (30 days)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.NAME }}
           path: ${{ env.FILE }}
-          retention-days: 90
+          retention-days: 30
           compression-level: 0
           if-no-files-found: error
       - name: Copy to Google Drive (optional)

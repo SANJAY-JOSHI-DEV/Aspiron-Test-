@@ -2,7 +2,7 @@
 
 Every night at 3 AM (India) GitHub copies the whole Supabase database (students, codes, series, tests, results,
 orders, payments, team), **locks it with your backup password (AES-256)** and keeps the locked file here in GitHub:
-**Actions → Database backup → a run → Artifacts**. Each day's file is kept for 90 days.
+**Actions → Database backup → a run → Artifacts**. Each day's file is kept for 30 days here (90 days in the optional Google Drive copy). Since 23 Nov 2026 a second locked file `aspiron-auth-….authdump.gpg` holds the email / Google login accounts (Supabase Auth), when the backup login can read them.
 Without the backup password the file is useless to anyone. The repository is public, so anyone signed in to GitHub
 can download these locked files; that is why the backup password must be long and kept only on paper.
 Nothing is committed to the repository. Workflow: `.github/workflows/db-backup.yml`.

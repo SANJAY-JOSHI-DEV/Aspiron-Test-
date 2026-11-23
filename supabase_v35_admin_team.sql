@@ -400,6 +400,18 @@ $$;
 revoke all on function cbt_private.admin_need(text, text) from public, anon, authenticated;
 
 -- ---------- a session token: "as1.<session id>.<secret>" ----------
+-- audit 2026-11-23 (A26-03): admin actions that need a recent sign-in (see admin_session_ok)
+create or replace function cbt_private.admin_high_risk(p_fn text, p_act text, p_need text) returns boolean
+language sql immutable set search_path = cbt_private, pg_temp as $$
+  select coalesce(p_need, '') in ('owner', 'payments:manage')
+      or (p_fn = 'cbt_admin' and p_act in ('student_delete', 'grant', 'student_code', 'result_delete', 'series_delete', 'test_delete'))
+      or (p_fn = 'cbt_admin_store' and p_act in ('order_status', 'delete_item'))
+      or (p_fn = 'cbt_admin_edit' and p_act in ('order_delete', 'order_edit', 'student_save'))
+      or (p_fn = 'cbt_admin_plan_access' and p_act = 'grant')
+      or (p_fn = 'cbt_admin_team' and p_act = 'self_password')
+$$;
+revoke all on function cbt_private.admin_high_risk(text, text, text) from public, anon, authenticated;
+
 create or replace function cbt_private.admin_session_ok(p_tok text)
 returns text language plpgsql security definer set search_path = cbt_private, pg_temp as $$
 declare
@@ -415,12 +427,22 @@ begin
   if not found or r.token_hash <> adm_sha(v_sec) then return 'invalid'; end if;
   if r.revoked_at is not null then return 'signed_out'; end if;
   if r.expires_at < now() then return 'expired'; end if;
+  -- audit 2026-11-23 (A26-03): shorter sessions. Team: 12 hours unused / 7 days in total. Owner: 24 hours / 14 days.
+  -- (The open panel checks in every minute, so "unused" means the panel was closed that long.)
+  if r.last_seen < now() - (case when r.user_id is null then interval '24 hours' else interval '12 hours' end)
+     or r.created_at < now() - (case when r.user_id is null then interval '14 days' else interval '7 days' end) then
+    update admin_sessions set expires_at = least(expires_at, now()) where id = v_id;
+    return 'expired';
+  end if;
   if r.user_id is not null and r.active is not true then return 'disabled'; end if;
   -- v62: team sign-in off → every member session stops; a blocked address cannot use any session
   if r.user_id is not null and coalesce((select value from settings where key = 'team_login'), 'on') = 'off' then return 'disabled'; end if;
   if exists (select 1 from admin_ip_blocks where ip = adm_raw_ip() and (until is null or until > now())) then return 'signed_out'; end if;
   if r.last_seen < now() - interval '30 seconds' then
-    update admin_sessions set last_seen = now(), expires_at = least(now() + interval '30 days', created_at + interval '180 days') where id = v_id;
+    update admin_sessions set last_seen = now(),
+      expires_at = case when r.user_id is null then least(now() + interval '24 hours', created_at + interval '14 days')
+                        else least(now() + interval '12 hours', created_at + interval '7 days') end
+     where id = v_id;
   end if;
   perform set_config('cbt.sid', v_id::text, true);
   perform set_config('cbt.uid', coalesce(r.user_id::text, ''), true);
@@ -452,6 +474,11 @@ begin
         perform set_config('cbt.denied', '1', true); return 'forbidden';
       end if;
     end if;
+  end if;
+  -- audit 2026-11-23 (A26-03): risky changes (delete, grant, approve, money, team, security) need a sign-in made in
+  -- the last 12 hours; an older session must sign in again first (password + two-step code = a fresh check)
+  if cbt_private.admin_high_risk(v_fn, v_act, v_need) and r.created_at < now() - interval '12 hours' then
+    perform set_config('cbt.denied', '1', true); return 'reauth';
   end if;
   return null;
 end $$;
@@ -641,6 +668,9 @@ begin
     select * into u from admin_users where username = v_name;
     -- v62: team sign-in switched off by the owner: every try is refused and counted like a wrong password
     if coalesce((select value from settings where key = 'team_login'), 'on') = 'off' then u := null; end if;
+    -- audit 2026-11-23 (CWE-208): an unknown username does the same bcrypt work as a real one, so the answer time does
+    -- not tell which usernames exist (tests/db/break_it.sql 49a)
+    if u.id is null then perform adm_pw_new(p_pw); end if;
     if u.id is null or not adm_pw_ok(u.salt, u.pw_hash, p_pw) then
       perform adm_fail('team', false);
       perform adm_fail_ip();   -- v64
@@ -668,9 +698,10 @@ begin
   if u.id is not null then update admin_users set fail_count = 0, last_login = now() where id = u.id; end if;
 
   v_sec := adm_secret();
-  insert into admin_sessions (user_id, token_hash, device, ua, ip)
+  insert into admin_sessions (user_id, token_hash, device, ua, ip, expires_at)
   values (u.id, adm_sha(v_sec), left(regexp_replace(coalesce(p_device, ''), '[<>"`\r\n\t]', '', 'g'), 80),
-          left(coalesce(hd->>'user-agent', ''), 300), adm_ip())
+          left(coalesce(hd->>'user-agent', ''), 300), adm_ip(),
+          now() + case when u.id is null then interval '24 hours' else interval '12 hours' end)   -- audit 2026-11-23 (A26-03)
   returning id into v_sid;
   insert into admin_audit (sid, uid, who, fn, act, detail, ip)
   values (v_sid, u.id, coalesce(u.name, 'Owner'), 'session', 'sign_in', left(regexp_replace(coalesce(p_device, ''), '[<>"`\r\n\t]', '', 'g'), 80)
