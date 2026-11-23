@@ -641,6 +641,9 @@ begin
     select * into u from admin_users where username = v_name;
     -- v62: team sign-in switched off by the owner: every try is refused and counted like a wrong password
     if coalesce((select value from settings where key = 'team_login'), 'on') = 'off' then u := null; end if;
+    -- audit 2026-11-23 (CWE-208): an unknown username does the same bcrypt work as a real one, so the answer time does
+    -- not tell which usernames exist (tests/db/break_it.sql 49a)
+    if u.id is null then perform adm_pw_new(p_pw); end if;
     if u.id is null or not adm_pw_ok(u.salt, u.pw_hash, p_pw) then
       perform adm_fail('team', false);
       perform adm_fail_ip();   -- v64

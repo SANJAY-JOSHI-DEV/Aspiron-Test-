@@ -2160,6 +2160,31 @@ select pg_temp.chk('48f admin cheat: flag (twice = one row, the note is updated)
   and (:'cf3'::jsonb->'flags'->0->>'mobile') = '9000000002' and :'cf4' = 'true'
   and not exists (select 1 from public.cbt_cheat_flags where test_id = 'aaaaaaaa-0000-0000-0000-000000000004'));
 
+-- ===== 49. audit 2026-11-23: team sign-in does not reveal which usernames exist (CWE-208, timing) =====
+-- A wrong password for a real username used to take a bcrypt check (~60 ms) while an unknown username answered at once
+-- (~2 ms), so usernames could be listed by timing. Both must now do the same bcrypt work. Lock counters are cleared
+-- before every try so both paths reach the password check (this is the last section; nothing after it uses them).
+create function pg_temp.login_ms(p_user text) returns numeric language plpgsql as $$
+declare t0 timestamptz; s numeric := 0; i int;
+begin
+  for i in 1 .. 4 loop
+    delete from cbt_private.admin_fails; delete from cbt_private.admin_fail_ips; delete from cbt_private.admin_ip_blocks;
+    delete from cbt_private.settings where key = 'team_locked_until';
+    t0 := clock_timestamp();
+    perform public.cbt_admin_login(p_user, 'Wrong-pass-123', 'timing');
+    s := s + extract(epoch from clock_timestamp() - t0) * 1000;
+  end loop;
+  return s / 4;
+end $$;
+select pg_temp.login_ms('viewer1') as tm_known, pg_temp.login_ms('no-such-member-49') as tm_unknown \gset
+select pg_temp.chk('49a team sign-in: an unknown username takes as long as a real one with a wrong password (no timing hint)',
+  :'tm_unknown'::numeric >= 0.5 * :'tm_known'::numeric,
+  'known ' || round(:'tm_known'::numeric, 1) || ' ms, unknown ' || round(:'tm_unknown'::numeric, 1) || ' ms');
+select pg_temp.chk('49b team sign-in: unknown username and wrong password still give the same answer',
+  public.cbt_admin_login('no-such-member-49', 'Wrong-pass-123', 'timing')->>'error'
+  = public.cbt_admin_login('viewer1', 'Wrong-pass-123', 'timing')->>'error');
+delete from cbt_private.admin_fails; delete from cbt_private.admin_fail_ips; delete from cbt_private.admin_ip_blocks;
+
 -- ===== report =====
 \t off
 \a
