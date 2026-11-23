@@ -158,7 +158,7 @@ const CPK=['bg','s','tx','ink','acc','hero'];
 const DEF_TH={mode:oldMode==='light'?'light':oldMode==='oled'?'black':oldMode==='dark'?'dark':'system',pal:{light:'A',dark:'A',black:'A'},art:'none',hue:null,font:'geist',cus:{}};
 let TH=clone(DEF_TH),THP=null;
 {const v=lsGet('cbt_v3_theme',null);if(v&&(v.mode==='system'||THEMES[v.mode]))TH={mode:v.mode,pal:Object.assign({},DEF_TH.pal,v.pal),art:'none',hue:null,font:'geist',cus:{}};
-  if(v){if(typeof v.art==='string')TH.art=v.art;if(v.hue&&isFinite(v.hue.h)&&isFinite(v.hue.s))TH.hue={h:Math.round(v.hue.h)%360,s:Math.max(20,Math.min(100,Math.round(v.hue.s)))};if(typeof v.font==='string')TH.font=v.font;
+  if(v){if(typeof v.art==='string')TH.art=v.art;if(v.hue&&isFinite(v.hue.h)&&isFinite(v.hue.s))TH.hue={h:((Math.round(v.hue.h)%360)+360)%360,s:Math.max(20,Math.min(100,Math.round(v.hue.s)))};if(typeof v.font==='string')TH.font=v.font;
   if(v.cus&&typeof v.cus==='object')['light','dark','black'].forEach(m=>{const c=v.cus[m];if(!c||typeof c!=='object')return;const o={};CPK.forEach(k=>{if(/^#[0-9a-f]{6}$/i.test(c[k]||''))o[k]=c[k].toLowerCase()});if(Object.keys(o).length)TH.cus[m]=o})}}
 const resolveMode=m=>m==='system'?(MQ.matches?'dark':'light'):m;
 const tokens=(mode,pal)=>Object.assign({},TBASE[mode],(THEMES[mode].pals[pal]||THEMES[mode].pals.A)[1]);
@@ -242,7 +242,7 @@ function fontPreviews(){if(document.getElementById('v3fn-pv'))return;const l=doc
   l.href='https://fonts.googleapis.com/css2?'+Object.keys(FONTS).filter(k=>k!=='geist').map(k=>'family='+FONTS[k][1]+':wght@600').join('&')+'&text='+encodeURIComponent('Aa NEET 2027 '+Object.values(FONTS).map(f=>f[0]).join(''))+'&display=swap';document.head.appendChild(l)}
 function thExtras(t,tk){const k=ART[t.art]&&t.art!=='none'?t.art:'';
   if(k){host.style.setProperty('--art',artUrl(k,tk));host.dataset.art=k}else{host.style.removeProperty('--art');delete host.dataset.art}
-  const f=FONTS[t.font]?t.font:'geist';fontLoad(f);host.style.setProperty('--f',fontStack(f));document.body.style.setProperty('--v3f',fontStack(f))}
+  const f=FONTS[t.font]?t.font:'geist';fontLoad(f);host.style.setProperty('--f',fontStack(f))}
 function applyTheme(t,quick){if(!host)return;const mode=resolveMode(t.mode),pal=THEMES[mode].pals[t.pal[mode]]?t.pal[mode]:'A',tk=tkOf(t);
   for(const k in TK)host.style.setProperty(TK[k],tk[k]);thExtras(t,tk);
   CHL[mode==='light'?'light':'dark'].forEach((c,i)=>host.style.setProperty('--c'+(i+1),c));
@@ -2417,7 +2417,7 @@ function themeHtml(){const mode=resolveMode(THP.mode),P=THEMES[mode].pals,cur=P[
   <p class="hint">Shows on the dark cards: the top of Home, results, profile and tools.</p></section>
   <section class="th-sec" style="--i:1"><div class="sh"><h2>${THEMES[mode].name} themes</h2><span class="aside">${Object.keys(P).length} to choose</span></div>
   <div class="pals">${Object.entries(P).map(([k,v])=>{const t=tokens(mode,k);
-   return `<button class="pal${cur===k&&!THP.hue?' on':''}" data-a="thp" data-v="${k}" aria-pressed="${cur===k&&!THP.hue}"><span class="pv" style="background:${t.bg}"><i class="pv-h" style="background:linear-gradient(155deg,${t.h1},${t.h2})"></i><i class="pv-c" style="background:${t.s};border-color:${t.ln}"><b style="background:${t.tx}"></b><b style="background:${t.mt}"></b></i><i class="pv-a" style="background:linear-gradient(135deg,${t.a1},${t.a2})"></i></span><span class="pn"><b>${v[0]}</b><small>${v[2]}</small></span><span class="ck">${ic('check',14)}</span></button>`}).join('')}</div></section>
+   const pon=cur===k&&!THP.hue&&!(THP.cus&&THP.cus[mode]);return `<button class="pal${pon?' on':''}" data-a="thp" data-v="${k}" aria-pressed="${pon}"><span class="pv" style="background:${t.bg}"><i class="pv-h" style="background:linear-gradient(155deg,${t.h1},${t.h2})"></i><i class="pv-c" style="background:${t.s};border-color:${t.ln}"><b style="background:${t.tx}"></b><b style="background:${t.mt}"></b></i><i class="pv-a" style="background:linear-gradient(135deg,${t.a1},${t.a2})"></i></span><span class="pn"><b>${v[0]}</b><small>${v[2]}</small></span><span class="ck">${ic('check',14)}</span></button>`}).join('')}</div></section>
   <section class="th-sec" style="--i:2"><div class="sh"><h2>Your own colour</h2><span class="aside">${THP.hue?'On':'Off'}</span></div>
   <div class="card cwc${THP.hue?' on':''}"><div class="cw" role="slider" tabindex="0" aria-label="Your colour" aria-valuemin="0" aria-valuemax="359" aria-valuenow="${THP.hue?THP.hue.h:0}" aria-valuetext="${THP.hue?'Hue '+THP.hue.h:'Off'}"><i class="cw-k"></i></div>
    <div class="cw-s"><span class="cw-sw"></span><b>${THP.hue?'Your colour':'Drag on the circle'}</b><small>Buttons, highlights and the dark cards take this colour. Light, Dark and Black all keep it.</small>
@@ -2436,11 +2436,12 @@ let thRaf=0;
 /* the tap is answered at once (tick, pressed state, a short buzz); the colours follow on the next frame. Many quick
    taps are merged into one colour change, so the page never queues up work and never stops answering */
 function thSoon(redrawPage){if(thRaf)window.cancelAnimationFrame(thRaf);thRaf=requestAnimationFrame(()=>{thRaf=0;if(!THP)return;applyTheme(THP,true);thKeep();if(redrawPage){redraw();cwPaint()}})}
+function thNow(redrawPage){if(thRaf){window.cancelAnimationFrame(thRaf);thRaf=0}if(!THP)return;applyTheme(THP,true);thKeep();if(redrawPage){redraw();cwPaint()}}
 function thBuzz(){try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
 A.thm=el=>{if(!THP||THP.mode===el.dataset.v)return;THP.mode=el.dataset.v;$$('[data-a="thm"]').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});thBuzz();thSoon(true)};
-A.thp=el=>{if(!THP)return;const m=resolveMode(THP.mode),own=!!THP.hue;if(THP.pal[m]===el.dataset.v&&!own)return;THP.pal[m]=el.dataset.v;THP.hue=null;const hadC=!!(THP.cus&&THP.cus[m]);if(hadC){delete THP.cus[m];CPO=''}
-  $$('.pal').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});thBuzz();if(own||hadC)thVT(()=>thSoon(true));else{thSoon(false);setTimeout(artPv,40)}};
-A.thReset=()=>{if(!THP)return;THP=clone(DEF_TH);CPO='';thVT(()=>thSoon(true));toast3('Default theme is back.')};
+A.thp=el=>{if(!THP)return;const m=resolveMode(THP.mode),own=!!THP.hue,hadC=!!(THP.cus&&THP.cus[m]);if(THP.pal[m]===el.dataset.v&&!own&&!hadC)return;THP.pal[m]=el.dataset.v;THP.hue=null;if(hadC){delete THP.cus[m];CPO=''}
+  $$('.pal').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});thBuzz();if(own||hadC)thVT(()=>thNow(true));else{thSoon(false);setTimeout(artPv,40)}};
+A.thReset=()=>{if(!THP)return;THP=clone(DEF_TH);CPO='';thVT(()=>thNow(true));toast3('Default theme is back.')};
 /* picture themes, fonts and the colour wheel (v94). A picture or font change cross-fades the whole screen (View
    Transitions where the phone has them, else it simply changes); dragging on the wheel recolours live, frame by frame. */
 function thVT(fn){if(!RM&&document.startViewTransition){try{document.startViewTransition(fn);return}catch(e){}}fn()}
@@ -2452,7 +2453,7 @@ A.thf=el=>{if(!THP||THP.font===el.dataset.v)return;THP.font=el.dataset.v;$$('.fn
 function cwSet(h,s,fin){if(!THP)return;const was=!!THP.hue;THP.hue={h:Math.round((h%360+360)%360),s:Math.round(Math.max(20,Math.min(100,s)))};cwPaint();
   if(!was)$$('.pal').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed',false)});thSoon(false);if(fin)setTimeout(artPv,60)}
 A.thHue=el=>{thBuzz();cwSet(+el.dataset.h,+el.dataset.s,true)};
-A.thHueOff=()=>{if(!THP||!THP.hue)return;THP.hue=null;thBuzz();thVT(()=>thSoon(true))};
+A.thHueOff=()=>{if(!THP||!THP.hue)return;THP.hue=null;thBuzz();thVT(()=>thNow(true))};
 /* paint the wheel's knob, the sample dot and the on / off texts from THP.hue (no redraw of the page) */
 function cwPaint(){const w=$('.cw');if(!w||!THP)return;const c=w.closest('.cwc'),h=THP.hue,k=w.querySelector('.cw-k'),R=w.clientWidth/2||90,sw=c.querySelector('.cw-sw');
   c.classList.toggle('on',!!h);const off=c.querySelector('.cw-off');if(off)off.hidden=!h;const t=c.querySelector('.cw-s b');if(t)t.textContent=h?'Your colour':'Drag on the circle';
@@ -2475,7 +2476,7 @@ let CPO='';
 const cpVal=(k,tk)=>k==='hero'?tk.h1:tk[k];
 function cpWarn(tk){const w={},bg=solid(tk.bg),s=solid(tk.s),tx=solid(tk.tx),ink=solid(tk.ink),h1=solid(tk.h1);
   if(tx&&bg&&ccr(tx,bg)<4.5)w.tx=w.bg='Text is hard to read on this background.';
-  if(tx&&s&&ccr(tx,s)<4.5)w.s=w.tx=w.tx||'Text is hard to read on the cards.';
+  if(tx&&s&&ccr(tx,s)<4.5){w.s='Text is hard to read on the cards.';w.tx=w.tx||w.s}
   if(ink&&ccr(ink,conOn(ink))<4.5)w.ink='Button text may be hard to read.';
   if(h1&&ccr(h1,'#ffffff')<3.5)w.hero='Too light: the white text on these cards is hard to read.';
   return w}
@@ -2506,7 +2507,7 @@ function cpSet(k,v,from){if(!THP||!solid(v))return;const m=resolveMode(THP.mode)
   thSoon(false);cpWarnPaint()}
 function cpWarnPaint(){if(!THP)return;const w=cpWarn(tkOf(THP));$$('.cpr').forEach(r=>{const p=r.querySelector('.cpw0'),t=w[r.dataset.k];p.hidden=!t;p.querySelector('span').textContent=t||''})}
 A.cpRe=el=>{if(!THP)return;const m=resolveMode(THP.mode),c=THP.cus&&THP.cus[m];if(!c||!c[el.dataset.k])return;delete c[el.dataset.k];if(!Object.keys(c).length)delete THP.cus[m];thBuzz();thSoon(false);setTimeout(cpRedraw,30)};
-A.cpAll=()=>{if(!THP)return;delete THP.cus[resolveMode(THP.mode)];CPO='';thBuzz();thVT(()=>{thSoon(false);setTimeout(cpRedraw,30)});toast3("The theme's colours are back.")};
+A.cpAll=()=>{if(!THP)return;delete THP.cus[resolveMode(THP.mode)];CPO='';thBuzz();thVT(()=>{thNow(false);cpRedraw()});toast3("The theme's colours are back.")};
 let cpArmed=false;
 function cpArm(){if(cpArmed||!root)return;cpArmed=true;
   root.addEventListener('input',e=>{const t=e.target,ed=t.closest&&t.closest('.cpe');if(!ed)return;const k=ed.dataset.k;
