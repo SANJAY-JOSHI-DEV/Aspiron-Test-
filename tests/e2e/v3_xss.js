@@ -48,6 +48,11 @@ async function rpcRoute(route) {
   await q(`insert into cbt_private.announcements (title, body, link_label) values ($1, $1, $1)`, ['Notice ' + X]);
   await q(`update public.cbt_banners set title = $1, body = $1`, [X]);
   await q(`update public.cbt_store_items set title = title || $1`, [X]);
+  // v97 Level Up: the payload as another student's name and in the series title on the XP leaderboard
+  await q(`insert into cbt_private.students (id, name, mobile, status) values ('bbbbbbbb-0000-0000-0000-0000000000c9', $1, '9000000099', 'approved') on conflict (id) do update set name = $1`, [X + ' ' + X]);
+  await q(`insert into cbt_private.results (student_id, test_id, test_title, score, max_score, correct, wrong, skipped)
+           select s, 'aaaaaaaa-0000-0000-0000-000000000004', $1, 4, 4, 1, 0, 0 from unnest(array['bbbbbbbb-0000-0000-0000-0000000000c9', 'bbbbbbbb-0000-0000-0000-00000000000b']::uuid[]) s`, [X]);
+  await q(`delete from cbt_private.settings where key = 'xp_refresh_at'`).catch(() => {});
   await new Promise(r => server.listen(PORT, '127.0.0.1', r));
   const br = await chromium.launch();
   for (const vw of [{ width: 390, height: 844 }, { width: 1366, height: 860 }]) {
@@ -61,7 +66,7 @@ async function rpcRoute(route) {
     await p.goto(BASE + 'index.html'); await p.waitForSelector('#lp');
     await p.evaluate(() => { lpLogin(); login('code'); }); await p.waitForSelector('#ph');
     await p.fill('#ph', '9000000002'); await p.fill('#cd', 'BBBB2222'); await p.click('#lbtn'); await p.waitForTimeout(3500);
-    for (const h of ['#/', '#/x/test', '#/x/tools', '#/x/lib', '#/x/stats', '#/notices', '#/x/test']) {
+    for (const h of ['#/', '#/x/test', '#/x/tools', '#/x/lib', '#/x/stats', '#/notices', '#/lvl', '#/xpb', '#/x/test']) {
       await p.evaluate(h2 => { location.hash = h2; }, h); await p.waitForTimeout(1300);
     }
     // the open mock (question, options and explanation carry the payload)

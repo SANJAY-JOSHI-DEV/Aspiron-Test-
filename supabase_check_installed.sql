@@ -115,5 +115,11 @@ select 36, 'supabase_v96_promo_percent.sql', case when exists (select 1 from inf
   and to_regprocedure('cbt_private.cbt_admin_promos__core(text,text,jsonb)') is not null
   and pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_promos__core(text,text,jsonb)')) like '%rates_all%' then 'ok'
   else 'MISSING — run this file (after v95)' end
+union all
+-- v97: 'ok' when Level Up is in: XP, streak and the leaderboard of every student
+select 37, 'supabase_v97_levelup.sql', case when to_regclass('cbt_private.xp_board') is not null
+  and to_regprocedure('public.cbt_xp_me(text,text,text)') is not null
+  and to_regprocedure('public.cbt_xp_board(text,text,text,text)') is not null then 'ok'
+  else 'MISSING — run this file' end
 ) x
 order by n;
