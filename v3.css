@@ -5,6 +5,7 @@
 :host([data-view="old"]) .app>*:not(.back3),:host([data-view="old"]) .app::before{display:none!important}
 .back3{display:none;position:fixed;z-index:35;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(88px + env(safe-area-inset-bottom,0px));align-items:center;gap:6px;height:38px;padding:0 14px 0 10px;border-radius:99px;font:600 13px/1 var(--f);color:var(--onInk);background:var(--ink);box-shadow:0 10px 26px -8px rgba(0,0,0,.45);animation:rise .4s var(--out)}
 :host([data-view="old"]) .back3{display:inline-flex}
+:host([data-busy]) .back3{display:none!important}
 a.btn,a.bn{text-decoration:none}
 .pav .av{width:auto;height:auto}
 .mt.w2>div{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -3248,6 +3249,8 @@ sup,sub{font-size:.72em;line-height:0}
 .evD-top .xpt{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)}
 .sa-c.shield i .i{fill:rgba(255,255,255,.3)}
 
+/* submitted screen: the Done button is always fully visible */
+.held+.rs-note+.btn,.scr-b .btn.lg{opacity:1!important;animation:none!important}
 /* ================= v112: Level Up, professional: full-bleed poster hero, quiet type, fewer boxes ================= */
 .scr.bleed .scr-h{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:5;max-width:none;color:#fff;transition:background .3s var(--ease),color .3s}
 .scr.bleed .scr-h .ib{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.16);color:#fff;box-shadow:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}

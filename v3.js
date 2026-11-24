@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=112;
+const V3VER=113;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -327,7 +327,8 @@ function entr(root){if(!ENT||!root)return;if(Date.now()-ENT>2000){ENT=0;return}i
     if(el.getBoundingClientRect().top>H)return;el.style.setProperty('--e',i++);el.classList.add('ent')})}
 function push(v){if(popIgnore){settled(()=>push(v));return}const was=STK.length>0;STK.push(v);arm();try{history.pushState({v3s:STK.length},'',location.href)}catch(e){}
   drawScr(!RM?'fwd':'');try{pstSync()}catch(e){}$('#scrB').scrollTop=0;if(!scr.classList.contains('open')){scr.classList.add('open');scr.setAttribute('aria-hidden','false');clearTimeout(undT);undT=setTimeout(()=>{if(STK.length)$('#app3').classList.add('under')},260)}setTimeout(()=>$('#scrBack').focus({preventScroll:true}),60)}
-function pop(){const v=STK.pop();v&&v.leave&&v.leave();if(STK.length){drawScr(RM?'':'bwd')}else{clearTimeout(undT);$('#app3').classList.remove('under');scr.classList.remove('open');scr.setAttribute('aria-hidden','true');$('#scrB').innerHTML='';try{pstSync()}catch(e){}}}
+var STALE3=false;
+function pop(){const v=STK.pop();v&&v.leave&&v.leave();if(STK.length){drawScr(RM?'':'bwd')}else{if(STALE3){STALE3=false;setTimeout(()=>{try{softRender()}catch(e){}},0)}clearTimeout(undT);$('#app3').classList.remove('under');scr.classList.remove('open');scr.setAttribute('aria-hidden','true');$('#scrB').innerHTML='';try{pstSync()}catch(e){}}}
 function back(){if(!STK.length)return;history.back()}
 /* close every page first, wait for the browser history to settle, then run cb (so a hash change is never undone) */
 let afterUnwind=null;
@@ -1803,10 +1804,15 @@ A.rsBm=async el=>{const i=+el.dataset.i,tid=RS3.rec.test_id,on=!RS3.bm.has(i);on
 /* the result is not out yet (live tests): when it will be */
 function heldOpen(title,at){push({t:'Test submitted',s:'',key:'held',html:()=>`<section class="rsh held"><span class="ti g">${ic('check',26)}</span><h2>Test submitted</h2>${title?`<p><b>${esc3(title)}</b></p>`:''}<p>Your answers are saved. Your result, rank and answer key will show after</p><b class="held-at">${at?fD(at,{weekday:'short',day:'numeric',month:'short'})+', '+fT(at):'the test closes'}</b></section>
   <div class="card rs-note">${ic('bell',18)}<span>We will show the result here in Test history as soon as it is out.</span></div><button class="btn lg" data-a="back">Done</button>`})}
+/* while answers are being sent, the classic loading page shows: hide the "New design" pill there */
+(function(){const f=window.sendPending;if(typeof f!=='function')return;
+  window.sendPending=function(){try{host&&host.setAttribute('data-busy','1')}catch(e){}
+    const done=()=>{try{host&&host.removeAttribute('data-busy')}catch(e){}};let r;try{r=f.apply(this,arguments)}catch(e){done();throw e}
+    return Promise.resolve(r).finally(done)}})();
 /* after a test is submitted in the new design, show its result (or "result after …") here instead of the classic page */
 (function(){const v3now=()=>document.body.classList.contains('v3on');
   ['showResult','showHeld'].forEach(n=>{const f=window[n];if(typeof f!=='function')return;window[n]=function(){const r=f.apply(this,arguments);
-    if(v3now()){try{const args=arguments,R=(typeof RV!=='undefined'&&RV)||null;toNew();if(typeof loadCat==='function')loadCat(true).then(()=>{if(!scrOpen())softRender()}).catch(()=>{});
+    if(v3now()){try{const args=arguments,R=(typeof RV!=='undefined'&&RV)||null;toNew();if(typeof loadCat==='function')loadCat(true).then(()=>{if(!scrOpen())softRender();else STALE3=true}).catch(()=>{});
       if(n==='showResult'&&R&&R.result){let tt='';try{const T0=(typeof CAT!=='undefined'&&CAT&&CAT.tests||[]).find(x=>x.id===R.result.test_id);tt=T0?T0.title:''}catch(e){}rsOpen(R.result,R.review,tt||(typeof CURPEND!=='undefined'&&CURPEND&&CURPEND.title)||'')}else if(n==='showHeld')heldOpen(args[0],args[1])}catch(e){console.error(e)}}
     return r}})})();
 
