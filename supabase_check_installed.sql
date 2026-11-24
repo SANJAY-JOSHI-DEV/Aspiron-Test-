@@ -121,5 +121,11 @@ select 37, 'supabase_v97_levelup.sql', case when to_regclass('cbt_private.xp_boa
   and to_regprocedure('public.cbt_xp_me(text,text,text)') is not null
   and to_regprocedure('public.cbt_xp_board(text,text,text,text)') is not null then 'ok'
   else 'MISSING — run this file' end
+union all
+-- v98: 'ok' when the weekly leagues are in: level by league, climb / hold / drop zones
+select 38, 'supabase_v98_leagues.sql', case when to_regclass('cbt_private.league_member') is not null
+  and to_regprocedure('public.cbt_league(text,text,text)') is not null
+  and pg_get_functiondef(to_regprocedure('cbt_private.xp_save(uuid)')) like '%league_join%' then 'ok'
+  else 'MISSING — run this file (after v97)' end
 ) x
 order by n;

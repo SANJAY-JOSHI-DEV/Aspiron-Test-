@@ -2421,6 +2421,53 @@ end $$;
 reset role;
 delete from cbt_private.results where test_id in ('aaaaaaaa-0000-0000-0000-000000000971','aaaaaaaa-0000-0000-0000-000000000972');
 
+-- ===== 57. v98 weekly leagues: climb / hold / drop, the edges, nothing to read directly =====
+insert into cbt_private.tests (id, series_id, title, duration, data, question_count) values
+  ('aaaaaaaa-0000-0000-0000-000000000981','11111111-1111-1111-1111-111111111111','League test',30,'[]',200);
+insert into cbt_private.students (id, name, mobile, status)
+select ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, 'League ' || k || ' Kid', '98100000' || lpad(k::text, 2, '0'), 'approved'
+  from generate_series(1, 10) k;
+-- last week: a level-2 league of 6 (XP 600, 50, 400, 300, 200, 20) and a level-1 league of 3 and a level-10 league of 1
+insert into cbt_private.results (student_id, test_id, test_title, score, max_score, correct, wrong, skipped, created_at)
+select ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, 'aaaaaaaa-0000-0000-0000-000000000981', 'League test', 0, 0,
+       (array[300,25,200,150,100,10,40,30,5,150])[k], 0, 500, ((cbt_private.xp_week() - 4)::timestamp at time zone 'Asia/Kolkata') + interval '10 hours'
+  from generate_series(1, 10) k;
+insert into cbt_private.league_level (student_id, level, best)
+select ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, case when k <= 6 then 2 when k <= 9 then 1 else 10 end, case when k = 10 then 10 else 2 end
+  from generate_series(1, 10) k;
+insert into cbt_private.league_member (week, student_id, level, grp, joined_at)
+select cbt_private.xp_week() - 7, ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, case when k <= 6 then 2 when k <= 9 then 1 else 10 end, 900,
+       now() - interval '10 days' + (k || ' seconds')::interval
+  from generate_series(1, 10) k;
+select cbt_private.league_tick();
+select pg_temp.chk('57a league of 6 at level 2: top third climbs (needs 100+ XP), bottom third drops, the middle holds',
+  (select string_agg(m.zone || ':' || l.level, ',' order by m.rank) from cbt_private.league_member m join cbt_private.league_level l on l.student_id = m.student_id
+    where m.week = cbt_private.xp_week() - 7 and m.level = 2 and m.grp = 900) = 'up:3,up:3,stay:2,stay:2,down:1,down:1');
+select pg_temp.chk('57b level 1 has no drop zone; level 10 has no climb zone; Dr. stays with best level 10',
+  not exists (select 1 from cbt_private.league_member where week = cbt_private.xp_week() - 7 and grp = 900 and level = 1 and zone = 'down')
+  and (select zone from cbt_private.league_member where student_id = 'bbbbbbbb-0000-0000-0098-000000000010' and week = cbt_private.xp_week() - 7) = 'stay'
+  and (select best from cbt_private.league_level where student_id = 'bbbbbbbb-0000-0000-0098-000000000010') = 10);
+select pg_temp.chk('57c a top-third student under 100 XP does not climb',
+  (select zone from cbt_private.league_member where student_id = 'bbbbbbbb-0000-0000-0098-000000000007' and week = cbt_private.xp_week() - 7) <> 'up'
+  and (select level from cbt_private.league_level where student_id = 'bbbbbbbb-0000-0000-0098-000000000007') = 1);
+update cbt_private.students set salt = 's98', code_hash = cbt_private.hash_code('s98', 'LGUE9898') where mobile = '9810000001';
+select public.cbt_login('9810000001','LGUE9898','dev-lg980001')->>'token' as tk98 \gset
+insert into cbt_private.results (student_id, test_id, test_title, score, max_score, correct, wrong, skipped)
+values ('bbbbbbbb-0000-0000-0098-000000000001', 'aaaaaaaa-0000-0000-0000-000000000981', 'x', 0, 0, 12, 0, 0);
+select public.cbt_league('9810000001', :'tk98', 'dev-lg980001') as lg98 \gset
+select pg_temp.chk('57d this week: joins at the new level, sees only short names, no ids or phone numbers',
+  (:'lg98'::jsonb->>'in')::boolean and (:'lg98'::jsonb->>'level')::int = 3
+  and (select bool_and(not (x ?| array['student_id','id','mobile','email']) and x->>'name' !~ ' ') from jsonb_array_elements(:'lg98'::jsonb->'members') x)
+  and jsonb_array_length(:'lg98'::jsonb->'history') = 1);
+set role anon;
+do $$ begin
+  begin perform count(*) from cbt_private.league_member; perform pg_temp.chk('57e anon cannot read the league tables', false);
+  exception when insufficient_privilege then perform pg_temp.chk('57e anon cannot read the league tables', true); end;
+  begin perform cbt_private.league_close(current_date); perform pg_temp.chk('57f anon cannot close a week', false);
+  exception when insufficient_privilege then perform pg_temp.chk('57f anon cannot close a week', true); end;
+end $$;
+reset role;
+
 -- ===== report =====
 \t off
 \a

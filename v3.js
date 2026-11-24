@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=108;
+const V3VER=109;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -47,7 +47,7 @@ const dur=m=>m>=60?`${Math.floor(m/60)} h${m%60?` ${m%60} min`:''}`:`${m} min`;
 const fmtN=n=>Number(n||0).toLocaleString('en-IN');
 const day0=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
 const dayWord=t=>{const k=Math.round((day0(t)-day0(nowMs()))/DAY);return k===0?'Today':k===1?'Tomorrow':k===-1?'Yesterday':fD(t,{weekday:'short',day:'numeric',month:'short'})};
-const P={shield:'<path d="M12 3 4.5 6v5.6c0 4.5 3.1 8.1 7.5 9.4 4.4-1.3 7.5-4.9 7.5-9.4V6z"/>',steth:'<path d="M5 3v5a5 5 0 0 0 10 0V3"/><path d="M10 13v1.5a4.5 4.5 0 0 0 9 0V12"/><circle cx="19" cy="10" r="2"/>',podium:'<path d="M9 21v-9h6v9"/><path d="M3 21v-5h6"/><path d="M15 21v-7h6v7"/><path d="M2 21h20"/><path d="m12 3 1 2 2.1.3-1.5 1.5.4 2.1-2-1-2 1 .4-2.1L8.9 5.3 11 5z"/>',results:'<path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M9 17v-3"/><path d="M12 17v-6"/><path d="M15 17v-4.5"/>',mistake:'<path d="M5 19.5V4.5A2.5 2.5 0 0 1 7.5 2H19v16H7.5A2.5 2.5 0 0 0 5 20.5 1.5 1.5 0 0 0 6.5 22H19"/><path d="m10 7 4 4"/><path d="m14 7-4 4"/>',tracker:'<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 15.5 2 2 4-4"/>',hourglass:'<path d="M6 2h12"/><path d="M6 22h12"/><path d="M7.5 2v3.2a4 4 0 0 0 1.6 3.2L12 11l2.9-2.6a4 4 0 0 0 1.6-3.2V2"/><path d="M7.5 22v-3.2a4 4 0 0 1 1.6-3.2L12 13l2.9 2.6a4 4 0 0 1 1.6 3.2V22"/>',calPlus:'<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M12 13.5v5"/><path d="M9.5 16h5"/>',xp:'<path d="M13 2 4.5 13.5h6.5L10 22l8.5-11.5H12z"/>',practice:'<path d="M11 6h10"/><path d="M11 12h10"/><path d="M11 18h10"/><path d="m3 6 1.6 1.6L7.8 4.4"/><path d="m3 12 1.6 1.6 3.2-3.2"/><path d="m3 18 1.6 1.6 3.2-3.2"/>',wallet:'<path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v3.5"/><path d="M3 6v12a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-2.5"/><path d="M21 12.5h-3a2 2 0 0 0 0 4h3z"/>',trend:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',store:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',resources:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><path d="M8.5 13h7"/><path d="M8.5 16h4.5"/>',flame:'<path d="M12 3c.5 3 3.5 4.6 4.6 7.4A6 6 0 1 1 6.3 13c.5-1.6 1.6-2.6 2.6-3.2.2 1.6 1 2.7 2.1 3.2C10.6 9.6 11 5.8 12 3z"/>',tear:'<path d="M12 3C12 3 18 9.5 18 14.2A6 6 0 0 1 6 14.2C6 9.5 12 3 12 3Z"/><path d="M9.2 15a2.9 2.9 0 0 0 2.6 2.6"/>',eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',folder:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/>',star:'<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.4 5.9.9a.6.6 0 0 1 .3 1l-4.3 4.2 1 5.9a.6.6 0 0 1-.8.6L12 17.6l-5.3 2.8a.6.6 0 0 1-.8-.6l1-5.9-4.3-4.2a.6.6 0 0 1 .3-1l5.9-.9z"/>',
+const P={zup:'<path d="m7 12 5-5 5 5"/><path d="m7 18 5-5 5 5"/>',zdn:'<path d="m7 6 5 5 5-5"/><path d="m7 12 5 5 5-5"/>',shield:'<path d="M12 3 4.5 6v5.6c0 4.5 3.1 8.1 7.5 9.4 4.4-1.3 7.5-4.9 7.5-9.4V6z"/>',steth:'<path d="M5 3v5a5 5 0 0 0 10 0V3"/><path d="M10 13v1.5a4.5 4.5 0 0 0 9 0V12"/><circle cx="19" cy="10" r="2"/>',podium:'<path d="M9 21v-9h6v9"/><path d="M3 21v-5h6"/><path d="M15 21v-7h6v7"/><path d="M2 21h20"/><path d="m12 3 1 2 2.1.3-1.5 1.5.4 2.1-2-1-2 1 .4-2.1L8.9 5.3 11 5z"/>',results:'<path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M9 17v-3"/><path d="M12 17v-6"/><path d="M15 17v-4.5"/>',mistake:'<path d="M5 19.5V4.5A2.5 2.5 0 0 1 7.5 2H19v16H7.5A2.5 2.5 0 0 0 5 20.5 1.5 1.5 0 0 0 6.5 22H19"/><path d="m10 7 4 4"/><path d="m14 7-4 4"/>',tracker:'<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 15.5 2 2 4-4"/>',hourglass:'<path d="M6 2h12"/><path d="M6 22h12"/><path d="M7.5 2v3.2a4 4 0 0 0 1.6 3.2L12 11l2.9-2.6a4 4 0 0 0 1.6-3.2V2"/><path d="M7.5 22v-3.2a4 4 0 0 1 1.6-3.2L12 13l2.9 2.6a4 4 0 0 1 1.6 3.2V22"/>',calPlus:'<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M12 13.5v5"/><path d="M9.5 16h5"/>',xp:'<path d="M13 2 4.5 13.5h6.5L10 22l8.5-11.5H12z"/>',practice:'<path d="M11 6h10"/><path d="M11 12h10"/><path d="M11 18h10"/><path d="m3 6 1.6 1.6L7.8 4.4"/><path d="m3 12 1.6 1.6 3.2-3.2"/><path d="m3 18 1.6 1.6 3.2-3.2"/>',wallet:'<path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v3.5"/><path d="M3 6v12a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-2.5"/><path d="M21 12.5h-3a2 2 0 0 0 0 4h3z"/>',trend:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',store:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',resources:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><path d="M8.5 13h7"/><path d="M8.5 16h4.5"/>',flame:'<path d="M12 3c.5 3 3.5 4.6 4.6 7.4A6 6 0 1 1 6.3 13c.5-1.6 1.6-2.6 2.6-3.2.2 1.6 1 2.7 2.1 3.2C10.6 9.6 11 5.8 12 3z"/>',tear:'<path d="M12 3C12 3 18 9.5 18 14.2A6 6 0 0 1 6 14.2C6 9.5 12 3 12 3Z"/><path d="M9.2 15a2.9 2.9 0 0 0 2.6 2.6"/>',eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',folder:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/>',star:'<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.4 5.9.9a.6.6 0 0 1 .3 1l-4.3 4.2 1 5.9a.6.6 0 0 1-.8.6L12 17.6l-5.3 2.8a.6.6 0 0 1-.8-.6l1-5.9-4.3-4.2a.6.6 0 0 1 .3-1l5.9-.9z"/>',
  home:'<path class="f" d="M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2h-4v-6a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v6H5a2 2 0 0 1-2-2z"/>',
  tests:'<path class="f" d="M7 3h6.5L19 8.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M13 3v4a1.5 1.5 0 0 0 1.5 1.5H19"/><path d="m8.6 14.6 2.2 2.2 4.6-4.6"/>',
  tools:'<rect class="f" x="3.5" y="3.5" width="7" height="7" rx="2"/><rect class="f" x="13.5" y="3.5" width="7" height="7" rx="2"/><rect class="f" x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4"/><path d="M13.8 17h6.4"/>',
@@ -385,7 +385,7 @@ function deskSync(){const n=$('#dnav');if(!n)return;
 /* the profile picture in the top bar: a small menu (profile, settings, sign out); the theme has its own button */
 const dmClose=()=>{const m=$('#dmenu');if(m)m.classList.remove('open');const d=$('#dav');if(d)d.setAttribute('aria-expanded','false')};
 A.davM=()=>{const m=$('#dmenu');if(!m)return;if(m.classList.contains('open')){dmClose();return}
-  m.innerHTML=`<div class="dm-h">${avatar('dm-av')}<span><b>${esc3(stuDisp())}</b><small>${esc3(stuMeta())}</small></span></div>
+  m.innerHTML=`<div class="dm-h">${avatar('dm-av')}<span><b>${stuNameH()}</b><small>${esc3(stuMeta())}</small></span></div>
    <button role="menuitem" data-a="dmGo" data-k="profile">${ic('user',18)}Edit profile</button><button role="menuitem" data-a="dmGo" data-k="settings">${ic('gear',18)}Settings</button>
    <button role="menuitem" class="dm-out" data-a="dmGo" data-k="out">${ic('out',18)}Logout</button>`;
   m.classList.add('open');$('#dav').setAttribute('aria-expanded','true');
@@ -490,7 +490,7 @@ function hbRefLoad(){if(HBRL)return;HBRL=true;try{rfLoad(false).then(r=>{if(r&&r
 /* v106: XP and the streak come from Level Up (cbt_xp_me, or worked out on the phone until supabase_v97 is run) */
 function hbStats(){let R=[];try{R=allRes()}catch(e){}const st=stats(R);hbRefLoad();xpLoad();
   const m=xpMe(),xp=m.xp||0,sk=m.streak||0,k=n=>n>=10000?(Math.round(n/100)/10)+'k':fmtN(n);
-  const L=[['xp','xp',k(xp),'XP','XP points: '+fmtN(xp)+', level '+lvOf(xp).n+', '+lvOf(xp).name],['streak','flame',sk,'day'+(sk===1?'':'s'),sk+' day streak'],['prac','practice',k(st.tot||0),'Qs',fmtN(st.tot||0)+' questions practised']];
+  const L=[['xp','xp',k(xp),'XP','XP points: '+fmtN(xp)+', level '+myLv().n+', '+myLv().name],['streak','flame',sk,'day'+(sk===1?'':'s'),sk+' day streak'],['prac','practice',k(st.tot||0),'Qs',fmtN(st.tot||0)+' questions practised']];
   if(HBRF&&HBRF.ok)L.push(['ref','wallet',rfInr(HBRF.balance||0),'','Refer wallet: '+rfInr(HBRF.balance||0)]);
   return `<span class="hb-st" role="list">${L.map((x,i)=>`<button class="hb-sc" role="listitem" data-a="hbGo" data-k="${x[0]}" style="--i:${i}" aria-label="${esc3(x[4])}">${ic(x[1],14)}<b>${esc3(String(x[2]))}</b>${x[3]?`<small>${x[3]}</small>`:''}</button>`).join('')}</span>`}
 A.hbGo=el=>{const k=el.dataset.k;if(k==='ref')openRefer();else if(k==='prac')A.hist();else if(k==='streak')skSheet();else openLevel()};
@@ -1384,7 +1384,7 @@ function anRecords(R){if(!R.length)return '';const bs=R.reduce((a,r)=>pctOf(r)>p
   return anSec('Personal bests','',`<div class="card recs">${row('trophy','Highest score',pctOf(bs)+'%',`${esc3(titleOf(bs))}, ${dt(bs)}`)}${ba?row('target','Best accuracy',accOf(ba)+'%',`${esc3(titleOf(ba))}, ${dt(ba)}`):''}${row('spark','Longest streak',D.best+(D.best===1?' day':' days'),'Days in a row with a test')}${row('cal','Most tests in a day',String(D.most),'')}</div>`)}
 VIEW.stats=()=>{const R=allRes(),D=anDays(R);
   return `<div class="pt"><div><h1>Analytics</h1><p>Your preparation, from your own results</p></div></div>
-  <section class="sec an"><div class="card anid"><span class="anav">${avatar('anavi')}</span><div class="anidt"><b>${esc3(stuDisp())}</b><small>${esc3(stuMeta())}</small></div><button class="btn sm ghost" data-a="profile">${ic('pen',14)}Edit</button>
+  <section class="sec an"><div class="card anid"><span class="anav">${avatar('anavi')}</span><div class="anidt"><b>${stuNameH()}</b><small>${esc3(stuMeta())}</small></div><button class="btn sm ghost" data-a="profile">${ic('pen',14)}Edit</button>
    <div class="anidk"><div><b>${N(R.length)}</b><small>Tests</small></div><div><b>${N(D.streak)}</b><small>Day streak</small></div><div><b>${N(D.a30)}</b><small>Active days (30)</small></div></div></div></section>
   <section class="sec an"><div class="sh"><h2>Overview</h2></div><div class="chips" role="tablist" aria-label="Time period">${PERS.map(p=>`<button role="tab" aria-selected="${p[0]===AN.per}" class="${p[0]===AN.per?'on':''}" data-a="per" data-v="${p[0]}">${p[1]}</button>`).join('')}</div><div id="anPer" class="stack" style="gap:12px">${anPer()}</div></section>
   ${anTests(R)}
@@ -1633,7 +1633,7 @@ let PFD=null;
 function pfAv(sz){const o=stuProf();return o.photo&&/^data:image\//.test(o.photo)?`<img src="${esc3(o.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">`:`<b style="font-size:${Math.round(sz*.4)}px">${initial()}</b>`}
 function profileView(){return {t:'My profile',s:'Your details and progress',key:'prof',html:()=>{const o=PFD,R=allRes(),st=stats(R),nm=(o.name||(AUTH&&AUTH.name)||'').trim();
   return `<section class="pfh"><label class="pfa${isDr()?' dr':''}" for="pfFile" aria-label="Change photo">${pfAv(92)}${isDr()?`<i class="pfa-st">${ic('steth',18)}</i>`:''}<span class="pfc">${ic('pen',14)}</span></label><input id="pfFile" type="file" accept="image/*" hidden>
-    <div class="pfn"><b>${isDr()?'Dr. ':''}${esc3(nm||'Student')}</b><small>+91 ${esc3(typeof maskMob==='function'&&AUTH?maskMob(AUTH.mobile):'')}</small><button class="pflv" data-a="lvl">${crest(lvOf(xpNow()).i,22)}Level ${lvOf(xpNow()).n} · ${esc3(lvOf(xpNow()).name)}</button>${isDr()?`<span class="pfgs">${ic('steth',14)}Golden Stethoscope</span>`:''}${stuProf().photo?'<button class="lnk" data-a="pfRm">Remove photo</button>':''}</div>
+    <div class="pfn"><b>${nmH(nm||'Student',isDr())}</b><small>+91 ${esc3(typeof maskMob==='function'&&AUTH?maskMob(AUTH.mobile):'')}</small><button class="pflv" data-a="lvl">${crest(myLv().i,22)}Level ${myLv().n} · ${esc3(myLv().name)}</button>${isDr()?`<span class="pfgs">${ic('steth',14)}Golden Stethoscope</span>`:''}${stuProf().photo?'<button class="lnk" data-a="pfRm">Remove photo</button>':''}</div>
     <div class="pfs"><div><b>${fmtN(xpNow())}</b><small>XP</small></div><div><b>${st.avg!=null?Math.round(st.avg):0}%</b><small>Average</small></div><div><b>${xpMe().streak||0}</b><small>Day streak</small></div></div></section>
    <form class="card pff" id="pfForm" autocomplete="on" onsubmit="return false">
     ${PF3.f.map(f=>`<label class="fl"><span>${f[1]}</span><input class="inp" name="${f[0]}" type="${f[2]}" placeholder="${f[3]}" autocomplete="${f[4]}" maxlength="80" value="${esc3(f[0]==='name'?nm:(o[f[0]]||''))}"></label>`).join('')}
@@ -2675,7 +2675,7 @@ function rhHist(){const G=histGroups();
    <button class="btn ghost blk" data-a="hist">${ic('hist',16)}Full test history${G.length>4?` (${G.length})`:''}</button>`}
 function rhLb(){const b=RK3.ov;
   if(!b)return '<div class="card sk" style="height:200px"></div>';
-  const btn=`<button class="btn blk" data-a="xpBoard" data-p="week">${ic('crown',16)}XP leaderboard, all students</button><button class="btn ghost blk" data-a="ranks">${ic('medal',16)}Ranks for every test</button>`;
+  const btn=`<button class="btn blk" data-a="xpBoard" data-p="lg">${ic('crown',16)}My weekly league</button><button class="btn ghost blk" data-a="ranks">${ic('medal',16)}Ranks for every test</button>`;
   if(!b.ok||!b.top||!b.top.length)return `<div class="rh-e"><span class="ti">${ic('podium',22)}</span><b>No ranks yet</b><p>Take a test to get your overall rank.</p></div>${btn}`;
   const tot=b.total||1;
   return `<div class="rh-big"><div><small>OVERALL RANK</small><b>${b.my_rank?'#'+b.my_rank:'–'}<em> of ${fmtN(tot)}</em></b></div>${b.my_pct!=null?`<span><b>${b.my_pct}%</b><small>Your average</small></span>`:''}</div>
@@ -2701,45 +2701,46 @@ async function openResHub(){closeLayer();RH.i=(C().pending||[]).length?0:1;push(
 A.rhTab=el=>{const i=+el.dataset.i,p=$('#scrB .rh-pg');if(!p)return;p.scrollTo({left:i*p.clientWidth,behavior:RM?'auto':'smooth'})};
 A.rhMk=()=>openMistakes();
 
-/* ================= LEVEL UP (v106): XP, daily streak with Streak Shields, 10 levels, awards, one leaderboard =================
-   The server works out XP from the student's real work (supabase_v97_levelup.sql: cbt_xp_me, cbt_xp_board). Until that
-   file is run, the same rules are worked out here from the student's own results (xpLocal), without practice questions.
-   Levels, their names, the awards and the "Dr." title are worked out here from those numbers, so they can be renamed. */
-const LVL3=[ // [XP needed, name, line, colour 1, colour 2]
+/* ================= LEVEL UP (v109): weekly leagues, daily streak with Streak Shields, 10 levels, awards =================
+   XP comes from the student's real work (supabase_v97_levelup.sql: cbt_xp_me). The LEVEL comes from the weekly league
+   (supabase_v98_leagues.sql: cbt_league): leagues of up to 45 students at the same level, whatever test series; at the
+   end of the week the top third climbs a level (100+ XP that week), the bottom third drops one, the middle holds.
+   Level 10 is Aspiron Doctor: a golden "Dr." before the name, kept for good. Before v98 is run everyone shows level 1
+   and the league says "starts soon"; before v97 the test XP is worked out here (xpLocal). */
+const LVL3=[ // [weeks needed at least, name, line, colour 1, colour 2]
  [0,'Aspirant','Every topper started here','#c99366','#7a4a26'],
- [250,'Seeker','Curious and showing up','#a9b4c8','#5a6680'],
- [750,'Scholar','Basics getting stronger','#f0c24f','#a8731a'],
- [1500,'Achiever','Scores are climbing','#4cc8bf','#1d6f73'],
- [2500,'Ranker','In the rank race now','#a07cf0','#5634ad'],
- [4000,'Topper','Among the best of the batch','#f07cb6','#a3336f'],
- [6000,'Elite','Discipline few can match','#6c86f5','#2b3aa3'],
- [9000,'Legend','Others follow your lead','#8fd15a','#3d7a1d'],
- [13000,'Mastermind','One step from the white coat','#6fd3f5','#2272b3'],
- [20000,'Aspiron Doctor','Dr. before your name and the Golden Stethoscope','#ffe08a','#b27a1c']];
-const DR3=LVL3.length-1;
-const lvOf=xp=>{xp=Math.max(0,+xp||0);let i=0;LVL3.forEach((L,k)=>{if(xp>=L[0])i=k});const L=LVL3[i],N=LVL3[i+1];
-  return {i,n:i+1,name:L[1],line:L[2],c1:L[3],c2:L[4],min:L[0],next:N?N[0]:null,nextName:N?N[1]:null,p:N?Math.min(1,(xp-L[0])/(N[0]-L[0])):1}};
-/* awards: [key, name, what to do, tier 1 bronze · 2 silver · 3 gold · 4 platinum, icon, test, [have, need]] */
+ [1,'Seeker','Curious and showing up','#a9b4c8','#5a6680'],
+ [2,'Scholar','Basics getting stronger','#f0c24f','#a8731a'],
+ [3,'Achiever','Scores are climbing','#4cc8bf','#1d6f73'],
+ [4,'Ranker','In the rank race now','#a07cf0','#5634ad'],
+ [5,'Topper','Among the best of the batch','#f07cb6','#a3336f'],
+ [6,'Elite','Discipline few can match','#6c86f5','#2b3aa3'],
+ [7,'Legend','Others follow your lead','#8fd15a','#3d7a1d'],
+ [8,'Mastermind','One step from the white coat','#6fd3f5','#2272b3'],
+ [9,'Aspiron Doctor','The golden Dr. title and the Stethoscope','#ffe08a','#b27a1c']];
+const DR3=LVL3.length-1,LG_MIN=100;
+const lvAt=n=>{const i=Math.max(0,Math.min(DR3,(+n||1)-1)),L=LVL3[i],N=LVL3[i+1];return {i,n:i+1,name:L[1],line:L[2],c1:L[3],c2:L[4],nextName:N?N[1]:null}};
+const ZN3={up:['Climb zone','zup','Finish here to go one level up'],stay:['Hold zone','shield','Finish here to keep your level'],down:['Drop zone','zdn','Finish here and you go one level down']};
+/* awards: [key, name, what to do, tier 1 bronze · 2 silver · 3 gold · 4 platinum, icon, [have, need]] */
 const AW3=[
  ['first','First Step','Submit your first test',1,'play',m=>[m.tests,1]],
- ['live1','Live Wire','Take a test while it is live',1,'live',m=>[m.live,1]],
- ['acc','Sharpshooter','90%+ accuracy in a test (30+ answered)',2,'target',m=>[m.acc90,1]],
+ ['climb1','First Climb','Finish a week in the Climb zone',1,'zup',m=>[m.promos,1]],
  ['s7','Week on Fire','Keep a 7-day streak',2,'flame',m=>[m.best_streak,7]],
- ['full10','Marathoner','Finish 10 full tests',2,'timer',m=>[m.full,10]],
- ['p100','PYQ Hunter','Get 100 practice questions right',2,'pyq',m=>[m.practice,100]],
- ['live10','Live Warrior','Take 10 live tests',3,'trophy',m=>[m.live,10]],
- ['c1000','1000 Club','1000 right answers in tests',3,'check',m=>[m.correct,1000]],
+ ['top3','Podium Finish','Finish a week in the top 3 of your league',2,'medal',m=>[m.top3,1]],
+ ['live10','Live Warrior','Take 10 live tests',2,'live',m=>[m.live,10]],
+ ['p500','PYQ Hunter','Get 500 practice questions right',2,'pyq',m=>[m.practice,500]],
+ ['champ','League Champion','Finish a week 1st in your league',3,'crown',m=>[m.wins,1]],
+ ['acc5','Sharpshooter','90%+ accuracy in 5 tests (30+ answered)',3,'target',m=>[m.acc90,5]],
+ ['full25','Marathoner','Finish 25 full tests',3,'timer',m=>[m.full,25]],
  ['s30','Unstoppable','Keep a 30-day streak',3,'flame',m=>[m.best_streak,30]],
- ['lv5','Rank Rider','Reach level 5, Ranker',3,'medal',m=>[m.xp,LVL3[4][0]]],
- ['p1000','Practice Pro','Get 1000 practice questions right',4,'qb',m=>[m.practice,1000]],
+ ['climb5','High Flyer','Climb 5 times',3,'spark',m=>[m.promos,5]],
+ ['c5000','Question Crusher','5000 right answers in tests',4,'check',m=>[m.correct,5000]],
  ['s100','Iron Will','Keep a 100-day streak',4,'flame',m=>[m.best_streak,100]],
- ['c5000','Question Crusher','5000 right answers in tests',4,'spark',m=>[m.correct,5000]],
- ['dr','Golden Stethoscope','Reach Aspiron Doctor',4,'steth',m=>[m.xp,LVL3[DR3][0]]]];
+ ['dr','Golden Stethoscope','Reach Level 10, Aspiron Doctor',4,'steth',m=>[m.dr?1:0,1]]];
 const TIER3=['','Bronze','Silver','Gold','Platinum'];
 const awList=m=>AW3.map(a=>{const [h,n]=a[5](m||{});return {k:a[0],name:a[1],how:a[2],tier:a[3],ic:a[4],have:Math.min(+h||0,n),need:n,on:(+h||0)>=n}});
 const awCount=m=>awList(m).filter(a=>a.on).length;
 
-/* ---- the crest of a level: a shield in the level's colours; laurels from level 4, wings from 7, a crown and rays at 10 ---- */
 let crN=0;
 function crest(i,sz,o){i=Math.max(0,Math.min(DR3,i|0));o=o||{};const L=LVL3[i],id='cr'+(++crN),n=i+1,dr=i===DR3;
   /* laurel: leaves along a circle round the shield, from the bottom up each side; wings: three feathers each side */
@@ -2769,11 +2770,9 @@ function medal(a,sz){const C=[['#d9d9d9','#9a9a9a'],['#e3a76f','#8c5326'],['#e6e
   return `<span class="md3${a.on?' on':''} t${a.tier}" style="--m1:${C[0]};--m2:${C[1]};width:${sz}px;height:${sz}px"><i class="md3r"></i><i class="md3c">${ic(a.on?a.ic:'lock',Math.round(sz*.42))}</i></span>`}
 
 /* ---- data ---- */
-const XP3={me:lsGet('cbt_v3_xp',null),at:0,busy:false,off:false,per:'week',B:{week:null,all:null},bAt:{week:0,all:0}};
+const XP3={me:lsGet('cbt_v3_xp',null),at:0,busy:false,off:false,per:'lg',B:{all:null},bAt:{all:0},L:null,lAt:0,lOff:false};
 const xpKey=()=>'cbt_v3_xpl_'+((AUTH&&AUTH.mobile)||'');
 const weekStart=()=>{const d=new Date(nowMs());d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()};
-/* the streak walk, the same rules as the server: 1 shield to start, +1 every 7 days in a row (2 at most); one missed day uses a
-   shield, two in a row (or one without a shield) start again */
 function skWalk(days){const D=[...days].sort((a,b)=>a-b),today=day0(nowMs()),ws=weekStart(),wk=[];let st=0,best=0,sh=1,miss=0,i=0;
   let d=D.length?D[0]:today;for(let x=ws;x<Math.min(d,ws+7*DAY);x+=DAY)wk.push('none');
   for(;d<=today;d=day0(d+DAY*1.5)){let s;if(i<D.length&&D[i]===d){i++;st++;miss=0;s='done';if(st%7===0&&sh<2)sh++;best=Math.max(best,st)}
@@ -2789,43 +2788,46 @@ function xpLocal(){const R=allRes(),T={},ws=weekStart(),today=day0(nowMs());R.fo
   const per={};R.forEach(r=>{const d=day0(r.at);per[d]=(per[d]||0)+(r.correct||0)+(r.wrong||0)});
   const days=new Set(Object.keys(per).filter(d=>per[d]>=SKGOAL).map(Number)),td=per[today]||0;
   return Object.assign(m,skWalk(days),{today:{qs:td,test_qs:td,practice_qs:0,done:td>=SKGOAL},series:(curSeries()||{}).title||''})}
-const xpMe=()=>XP3.me&&XP3.me.ok?XP3.me:xpLocal();
+const xpMe=()=>{const m=XP3.me&&XP3.me.ok?XP3.me:xpLocal();return Object.assign({level:1,dr:false,promos:0,top3:0,wins:0},m)};
 const xpNow=()=>xpMe().xp||0;
-const isDr=()=>lvOf(xpNow()).i===DR3;
-const stuDisp=()=>(isDr()?'Dr. ':'')+stuName();
-const drName=(n,xp)=>(lvOf(xp).i===DR3?'Dr. ':'')+(n||'Student');
+const myLv=()=>lvAt(xpMe().level);
+const isDr=()=>!!xpMe().dr;
+/* a name with the golden Dr. title in front and the stethoscope badge after it (HTML; the name itself is escaped) */
+const nmH=(n,dr)=>`${dr?'<span class="drp">Dr.</span> ':''}<span class="nmt">${esc3(n||'Student')}</span>${dr?`<i class="drb" aria-label="Golden Stethoscope">${ic('steth',11)}</i>`:''}`;
+const stuNameH=()=>nmH(stuName(),isDr());
 function xpLoad(force){if(XP3.busy||XP3.off||typeof AUTH==='undefined'||!AUTH)return;if(!force&&Date.now()-XP3.at<45000)return;XP3.busy=true;XP3.at=Date.now();
   rpc('cbt_xp_me',{}).then(r=>{XP3.busy=false;if(r&&r.ok){XP3.me=r;lsSet('cbt_v3_xp',r);xpSeen(r)}else if(r&&r.error==='server'&&(r.status===404||r.status===400))XP3.off=true;
     xpRedraw()}).catch(()=>{XP3.busy=false})}
 function xpRedraw(){try{const v=top();if(v&&(v.key==='lvl'||v.key==='xpb'))qbKeep();else if(!scrOpen()&&S.tab==='home')softRender()}catch(e){}}
-/* XP gained since the last look (+N pill) and a new level (celebration); the first look only remembers */
-function xpSeen(m){const k=xpKey(),was=lsGet(k,null),xp=m.xp||0;lsSet(k,{xp,lv:lvOf(xp).i});if(!was)return;
-  const a=lvOf(was.xp).i,b=lvOf(xp).i;if(b>a&&b>(was.lv||0))lvWhenFree(()=>lvCelebrate(b));else if(xp>was.xp)lvWhenFree(()=>xpPill(xp-was.xp))}
-/* wait until nothing else is on screen (first-time setup, a sheet or the menu, a test) and the app is in front */
+/* what happened since the last look: last week's league result (climb = celebration, drop = a sheet, hold = a line),
+   else the XP gained (+N pill). The first look only remembers. */
+function xpSeen(m){const k=xpKey(),was=lsGet(k,null),xp=m.xp||0,lw=m.last&&m.last.week||'';lsSet(k,{xp,wk:lw,lv:m.level||1});if(!was)return;
+  if(lw&&lw!==was.wk){const z=m.last.zone;if(z==='up')lvWhenFree(()=>lvCelebrate(lvAt(m.last.to).i,m.last));else if(z==='down')lvWhenFree(()=>lgDropSheet(m.last));else lvWhenFree(()=>toast3(`Last week: #${m.last.rank} in your league. You hold Level ${m.last.to}.`));return}
+  if(xp>was.xp)lvWhenFree(()=>xpPill(xp-was.xp))}
 let LVW=null;
 function lvWhenFree(fn){const t0=Date.now();clearInterval(LVW);const ok=()=>{try{return document.visibilityState==='visible'&&!layer&&!OB.el&&!(typeof INTEST!=='undefined'&&INTEST)&&!document.body.classList.contains('intest')&&!root.querySelector('.lvc,.ob3,.qs')}catch(e){return false}};
   if(ok()){setTimeout(fn,500);return}LVW=setInterval(()=>{if(ok()){clearInterval(LVW);setTimeout(fn,500)}else if(Date.now()-t0>180000)clearInterval(LVW)},1200)}
-
-/* ---- count-up numbers and bars, played once when a page opens ---- */
 function cuRun(box){if(!box)return;box.querySelectorAll('[data-cu]').forEach(el=>{const to=+el.dataset.cu||0;if(RM||to<=0){el.textContent=fmtN(to);return}
   const t0=performance.now(),dur=Math.min(1400,500+to/8);const f=t=>{const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.textContent=fmtN(Math.round(to*e));if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)})}
-
-/* ---- "+N XP" pill ---- */
 function xpPill(n){if(!root||n<=0)return;const p=document.createElement('div');p.className='xp-pill';p.innerHTML=`${ic('spark',16)}<b>+${fmtN(n)} XP</b><small>earned</small>`;
   root.appendChild(p);p.addEventListener('click',()=>{p.remove();openLevel()});setTimeout(()=>p.classList.add('out'),2600);setTimeout(()=>p.remove(),3200)}
 
-/* ---- level-up celebration: rays, the new crest, confetti (not in lite mode / reduced motion) ---- */
-function lvCelebrate(i){if(!root)return;const L=lvOf(LVL3[i][0]),dr=i===DR3,lite=document.documentElement.hasAttribute('data-lite');
+/* ---- climb celebration: rays, the new crest, confetti (not in lite mode / reduced motion) ---- */
+function lvCelebrate(i,last){if(!root)return;const L=lvAt(i+1),dr=i===DR3,lite=document.documentElement.hasAttribute('data-lite');
   const o=document.createElement('div');o.className='lvc'+(dr?' dr':'');o.setAttribute('role','dialog');o.setAttribute('aria-label','Level up');
   o.style.setProperty('--c1',L.c1);o.style.setProperty('--c2',L.c2);
-  o.innerHTML=`<canvas class="lvc-cf"></canvas><div class="lvc-in"><span class="lvc-k">${dr?'YOU MADE IT':'LEVEL UP'}</span><div class="lvc-cr"><i class="lvc-glow"></i>${crest(i,150,{cls:'big'})}</div>
-   <b class="lvc-n">${dr?`Dr. ${esc3(stuName())}`:`Level ${L.n} · ${esc3(L.name)}`}</b><p>${dr?'You reached Aspiron Doctor. The <b>Dr.</b> title now shows before your name, and the Golden Stethoscope is yours.':esc3(L.line)+'. Keep going!'}</p>
-   <div class="lvc-b"><button class="btn ghost" data-k="board">${ic('trophy',16)}Leaderboard</button><button class="btn" data-k="ok">${dr?'Wear it proudly':'Awesome'}</button></div></div>`;
+  o.innerHTML=`<canvas class="lvc-cf"></canvas><div class="lvc-in"><span class="lvc-k">${dr?'YOU MADE IT':'YOU CLIMBED'}</span><div class="lvc-cr"><i class="lvc-glow"></i>${crest(i,150,{cls:'big'})}</div>
+   <b class="lvc-n">${dr?`<span class="drp">Dr.</span> ${esc3(stuName())}`:`Level ${L.n} · ${esc3(L.name)}`}</b>
+   <p>${dr?'You reached Aspiron Doctor. The golden <b>Dr.</b> now shows before your name, and the Golden Stethoscope is yours for good.':`${last&&last.rank?`#${last.rank} of ${last.n} in your league last week. `:''}${esc3(L.line)}. A new league starts now.`}</p>
+   <div class="lvc-b"><button class="btn ghost" data-k="board">${ic('trophy',16)}My league</button><button class="btn" data-k="ok">${dr?'Wear it proudly':'Let’s go'}</button></div></div>`;
   root.appendChild(o);requestAnimationFrame(()=>o.classList.add('on'));
-  const shut=k=>{o.classList.remove('on');o.classList.add('off');setTimeout(()=>o.remove(),450);if(k==='board')openXpBoard()};
+  const shut=k=>{o.classList.remove('on');o.classList.add('off');setTimeout(()=>o.remove(),450);if(k==='board')openXpBoard('lg')};
   o.addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(b)shut(b.dataset.k)});
   setTimeout(()=>{const f=o.querySelector('[data-k="ok"]');f&&f.focus({preventScroll:true})},500);
   if(!RM&&!lite)confetti(o.querySelector('canvas'),dr?['#ffe08a','#f7c948','#fff4cf','#b27a1c']:[L.c1,L.c2,'#ffffff','#ffd86b'])}
+function lgDropSheet(l){const L=lvAt(l.to);
+  openSheet(`<div class="lgd"><span class="lgd-c">${crest(L.i,84)}</span><b>Back to Level ${L.n} · ${esc3(L.name)}</b><p>You finished #${l.rank} of ${l.n} last week, in the Drop zone. A fresh league starts now: finish in the top third to climb back.</p>
+   <div class="sheet-ft"><button class="btn ghost" data-a="close">Close</button><button class="btn" data-a="skGo">${ic('play',16)}Start now</button></div></div>`)}
 function confetti(cv,cols){try{const W=cv.width=innerWidth,H=cv.height=innerHeight,g=cv.getContext('2d'),N=Math.min(140,Math.round(W/3));
   const P2=Array.from({length:N},()=>({x:W/2+(Math.random()-.5)*40,y:H*.42,vx:(Math.random()-.5)*14,vy:-Math.random()*15-5,r:Math.random()*6+4,a:Math.random()*6,va:(Math.random()-.5)*.3,c:cols[Math.random()*cols.length|0],s:Math.random()<.5}));
   const t0=performance.now();const f=t=>{const k=(t-t0)/1000;g.clearRect(0,0,W,H);P2.forEach(p=>{p.vy+=.38;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;g.save();g.translate(p.x,p.y);g.rotate(p.a);g.globalAlpha=Math.max(0,1-k/2.6);g.fillStyle=p.c;
@@ -2852,32 +2854,54 @@ function skSheet(){const m=xpMe(),t=m.today||{},sh=m.shields||0;
 A.skOpen=()=>skSheet();
 A.skGo=()=>{closeLayer();setTimeout(()=>go('test'),200)};
 
+/* ---- a row that slides left-right, with ‹ › buttons ---- */
+const carH=(id,inner)=>`<div class="car"><div class="car-t" id="${id}" data-noswipe>${inner}</div></div>`;
+const carNav=(id,label)=>`<span class="car-n"><button class="car-b l" data-a="carGo" data-c="${id}" data-d="-1" aria-label="Previous ${label}">${ic('back',16)}</button><button class="car-b r" data-a="carGo" data-c="${id}" data-d="1" aria-label="Next ${label}">${ic('right',16)}</button></span>`;
+A.carGo=el=>{const t=root.getElementById(el.dataset.c);if(!t)return;const c=t.firstElementChild,w=c?c.getBoundingClientRect().width+12:t.clientWidth*.8;t.scrollBy({left:(+el.dataset.d)*w,behavior:RM?'auto':'smooth'})};
+/* each row keeps its place when the page is drawn again (new data); the first time it starts on the given card */
+let CARS={};
+function carSync(first){$$('.car').forEach(c=>{const t=c.querySelector('.car-t');if(!t||t.dataset.sy)return;t.dataset.sy=1;const id=t.id;
+  if(CARS[id]!=null)t.scrollLeft=CARS[id];else if(first&&first[id]){const e=t.querySelector(first[id]);if(e){t.scrollLeft=e.offsetLeft-(t.clientWidth-e.offsetWidth)/2;CARS[id]=t.scrollLeft}}
+  const f=()=>{CARS[id]=t.scrollLeft;$$(`.car-b[data-c="${id}"]`).forEach(b=>{b.disabled=b.dataset.d<0?t.scrollLeft<4:t.scrollLeft+t.clientWidth>=t.scrollWidth-4})};t.addEventListener('scroll',f,{passive:true});f()})}
+
 /* ---- the Level Up page ---- */
 const XPWAYS=[['live','Live test','3 XP','for every right answer'],['play','First attempt','2 XP','for every right answer, any day after'],['redo','Re-attempt','1 XP','for every right answer (one re-attempt per test)'],['trophy','Full test bonus','+20 / +10','answer 90%+ of a test: +20 live, +10 otherwise'],['pyq','Practice','1 XP','each PYQ, Question bank or Question of the Day you get right']];
-function lvHero(m){const L=lvOf(m.xp||0);
+const cdTo=ms=>{const s=Math.max(0,ms-nowMs())/1000,d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d?`${d}d ${h}h`:h?`${h}h ${m}m`:`${m}m`};
+const lgEnds=()=>XP3.L&&XP3.L.ok?XP3.L.ends_at:weekStart()+7*DAY;
+const lgMine=()=>{const L=XP3.L;return L&&L.ok&&L.in?(L.members||[]).find(x=>x.me)||null:null};
+function lvHero(m){const L=myLv(),r=lgMine();
   return `<section class="lvh" style="--c1:${L.c1};--c2:${L.c2}"><i class="lvh-o"></i><div class="lvh-t"><button class="lvh-cr" data-a="lvRoad" aria-label="See all levels">${crest(L.i,104,{cls:'float'})}</button>
-    <div class="lvh-x"><small>LEVEL ${L.n} OF ${LVL3.length}</small><b class="lvh-n">${esc3(L.name)}</b><span class="lvh-xp"><b data-cu="${m.xp||0}">${fmtN(m.xp||0)}</b> XP</span></div></div>
-   <div class="lvh-p"><span class="lvh-bar"><i style="--p:${L.p.toFixed(3)}"></i></span><small>${L.next!=null?`<b>${fmtN(L.next-(m.xp||0))} XP</b> to ${esc3(L.nextName)}${L.i===DR3-1?' and the Dr. title':''}`:'Top level reached. You are an Aspiron Doctor.'}</small></div>
-   <div class="lvh-st"><button data-a="xpBoard" data-p="week"><b>${m.rank_week?'#'+fmtN(m.rank_week):'–'}</b><small>This week</small></button><button data-a="xpBoard" data-p="all"><b>${m.rank_all?'#'+fmtN(m.rank_all):'–'}</b><small>All time</small></button><button data-a="lvAw"><b>${awCount(m)}/${AW3.length}</b><small>Awards</small></button></div></section>`}
+    <div class="lvh-x"><small>LEVEL ${L.n} OF ${LVL3.length}</small><b class="lvh-n">${esc3(L.name)}</b><span class="lvh-xp"><b data-cu="${m.week_xp||0}">${fmtN(m.week_xp||0)}</b> XP this week</span></div></div>
+   <button class="lvh-z ${r?r.zone:'none'}" data-a="xpBoard" data-p="lg"><span>${r?`${ic(ZN3[r.zone][1],15)}<b>#${r.rank}</b> of ${XP3.L.n} · ${ZN3[r.zone][0]}`:XP3.lOff?`${ic('clock',15)}Weekly leagues start soon`:`${ic('trophy',15)}${(m.week_xp||0)>0?'Open your league':'Earn XP to join this week’s league'}`}</span><em>${ic('clock',13)}${cdTo(lgEnds())}</em></button>
+   <div class="lvh-st"><button data-a="xpBoard" data-p="lg"><b>${r?'#'+r.rank:'–'}</b><small>League</small></button><button data-a="xpBoard" data-p="all"><b>${fmtN(m.xp||0)}</b><small>Total XP</small></button><button data-a="lvAw"><b>${awCount(m)}/${AW3.length}</b><small>Awards</small></button></div></section>`}
 function lvParts(m){const p=m.parts||{},L=[['Live tests',p.live,'#ef7a73'],['First attempts',p.first,'#6c86f5'],['Re-attempts',p.re,'#b9bbc1'],['Full test bonus',p.bonus,'#f0c24f'],['Practice questions',p.practice,'#4cc8bf']],tot=Math.max(1,L.reduce((a,x)=>a+(x[1]||0),0));
-  return `<section class="card lvw"><div class="lvw-h"><div><small>THIS WEEK</small><b><span data-cu="${m.week_xp||0}">${fmtN(m.week_xp||0)}</span> XP</b></div><button class="btn sm ghost" data-a="xpBoard" data-p="week">${ic('trophy',15)}Weekly board</button></div>
+  return `<section class="card lvw"><div class="lvw-h"><div><small>THIS WEEK</small><b><span data-cu="${m.week_xp||0}">${fmtN(m.week_xp||0)}</span> XP</b></div><button class="btn sm ghost" data-a="xpBoard" data-p="lg">${ic('trophy',15)}My league</button></div>
    <small class="lvw-k">Where your ${fmtN(m.xp||0)} XP came from</small><div class="lvw-bar">${L.map(x=>x[1]?`<i style="--w:${(x[1]/tot*100).toFixed(2)}%;background:${x[2]}"></i>`:'').join('')}</div>
    <div class="lvw-l">${L.map(x=>`<span><i style="background:${x[2]}"></i>${x[0]}<b>${fmtN(x[1]||0)}</b></span>`).join('')}</div>
    <div class="lvw-n"><div><b>${fmtN(m.tests||0)}</b><small>Tests</small></div><div><b>${fmtN(m.live||0)}</b><small>Live</small></div><div><b>${fmtN((m.attempted||0)+(m.practice||0))}</b><small>Questions</small></div></div>
    ${m.local?'<p class="hint">Practice questions start counting once the server update is in.</p>':''}</section>`}
-function lvAwards(m){const L=awList(m);
-  return `<section class="sec" id="lvAwS"><div class="sh"><h2>Awards</h2><span class="aside">${L.filter(a=>a.on).length} of ${L.length}</span></div>
-   <div class="card aw3">${L.map((a,i)=>`<button class="aw3-i${a.on?' on':''}" data-a="awOpen" data-k="${a.k}" style="--i:${i}" aria-label="${esc3(a.name)}${a.on?', earned':', locked'}">${medal(a,54)}<b>${esc3(a.name)}</b>${a.on?`<small>${TIER3[a.tier]}</small>`:`<span class="aw3-p"><i style="--p:${(a.have/a.need).toFixed(3)}"></i></span>`}</button>`).join('')}</div></section>`}
-function lvRoad(m){const cur=lvOf(m.xp||0).i;
-  return `<section class="sec" id="lvRoadS"><div class="sh"><h2>Level road</h2><span class="aside">${LVL3.length} levels</span></div>
-   <div class="card lvr">${LVL3.slice().reverse().map((L,j)=>{const i=DR3-j,st=i<cur?'done':i===cur?'cur':'lock';
-     return `<div class="lvr-i ${st}${i===DR3?' dr':''}" style="--c1:${L[3]};--c2:${L[4]};--i:${j}"><span class="lvr-c">${crest(i,i===DR3?58:46)}</span><div class="lvr-t"><b>${i===DR3?'Dr. · ':''}${esc3(L[1])}</b><small>${esc3(L[2])}</small></div><span class="lvr-x">${st==='cur'?'<em>You are here</em>':st==='done'?ic('check',16):''}<small>${fmtN(L[0])} XP</small></span></div>`}).join('')}</div></section>`}
+function lvAwards(m){const L=awList(m),on=L.filter(a=>a.on).length,first=L.findIndex(a=>!a.on);
+  return `<section class="sec" id="lvAwS"><div class="sh car-h"><h2>Awards <small>${on}/${L.length}</small></h2>${carNav('awCar','award')}</div>
+   ${carH('awCar',L.map((a,i)=>`<button class="awc t${a.tier}${a.on?' on':''}${i===first?' nx':''}" data-a="awOpen" data-k="${a.k}" style="--i:${i}" aria-label="${esc3(a.name)}${a.on?', earned':', locked'}">
+     <span class="awc-r">${TIER3[a.tier]}</span>${medal(a,62)}<b>${esc3(a.name)}</b><small>${esc3(a.how)}</small>
+     ${a.on?`<em class="awc-ok">${ic('check',13)}Earned</em>`:`<span class="awc-p"><span class="bar"><i style="--p:${(a.have/a.need).toFixed(3)}"></i></span><small>${fmtN(a.have)} / ${fmtN(a.need)}</small></span>`}</button>`).join(''))}</section>`}
+function lvRoad(m){const cur=myLv().i;
+  return `<section class="sec" id="lvRoadS"><div class="sh car-h"><h2>Level road <small>${cur+1}/${LVL3.length}</small></h2>${carNav('lvCar','level')}</div>
+   ${carH('lvCar',LVL3.map((L,i)=>{const st=i<cur?'done':i===cur?'cur':'lock';
+     return `<div class="lrc ${st}${i===DR3?' dr':''}" style="--c1:${L[3]};--c2:${L[4]}">${st==='cur'?'<i class="lrc-beam"></i>':''}<span class="lrc-c">${crest(i,i===DR3?86:74)}</span>
+       <small>LEVEL ${i+1}</small><b>${i===DR3?'<span class="drp">Dr.</span> ':''}${esc3(L[1])}</b><p>${esc3(L[2])}</p>
+       <em>${st==='cur'?'You are here':st==='done'?`${ic('check',13)}Passed`:i===cur+1?'Next: climb this week':`${i-cur} climbs away`}</em><span class="lrc-pd"></span></div>`}).join(''))}
+   <p class="hint">One level per week at most: finish in the Climb zone of your league. Level 10 takes at least 9 good weeks.</p></section>`}
+function lvZones(){const L=myLv();return `<section class="sec"><div class="sh"><h2>How leagues work</h2></div><div class="card lgw">
+   <p>Every Monday you play in a league of up to 45 students at your level, from every Aspiron test series. You join with your first XP of the week. On Sunday night the league is ranked by the XP earned in the week:</p>
+   ${['up','stay','down'].map(z=>`<div class="lgw-z ${z}"><span>${ic(ZN3[z][1],18)}</span><div><b>${ZN3[z][0]}</b><small>${z==='up'?`Top third (15 of 45) with ${LG_MIN}+ XP: next week one level up`:z==='stay'?'The middle third: same level next week':'Bottom third (15 of 45): one level down'}</small></div></div>`).join('')}
+   <p class="hint">Level 1 has no Drop zone and Level 10 has no Climb zone. The golden Dr. title stays once you reach Level 10.</p></div></section>`}
 function lvWays(){return `<section class="sec"><div class="sh"><h2>How to earn XP</h2></div><div class="card lvx">${XPWAYS.map((x,i)=>`<div class="lvx-i" style="--i:${i}"><span class="ti">${ic(x[0],18)}</span><div><b>${x[1]}</b><small>${x[3]}</small></div><em>${x[2]}</em></div>`).join('')}
    <p class="hint">Right answers only. XP from a live test shows once its result is out. Tests flagged for cheating give no XP.</p></div></section>`}
-function levelView(){return {t:'Level Up',s:'XP, streak, levels and awards',key:'lvl',right:()=>`<button class="ib" data-a="xpBoard" data-p="week" aria-label="Leaderboard">${ic('trophy',20)}</button>`,
-  html:()=>{const m=xpMe();return `<div class="stack lvp">${lvHero(m)}${skCard(m)}${lvParts(m)}${lvAwards(m)}${lvRoad(m)}${lvWays()}</div>`},
-  after:()=>{const b=$('#scrB');if(!XP3.cu){XP3.cu=1;cuRun(b)}}}}
-function openLevel(){closeLayer();XP3.cu=0;if(!(top()&&top().key==='lvl'))push(levelView());else redraw();xpLoad(true)}
+function levelView(){return {t:'Level Up',s:'League, streak, levels and awards',key:'lvl',right:()=>`<button class="ib" data-a="xpBoard" data-p="lg" aria-label="My league">${ic('trophy',20)}</button>`,
+  html:()=>{const m=xpMe();return `<div class="stack lvp">${lvHero(m)}${skCard(m)}${lvRoad(m)}${lvAwards(m)}${lvParts(m)}${lvZones()}${lvWays()}</div>`},
+  after:()=>{const b=$('#scrB');carSync({lvCar:'.lrc.cur',awCar:'.awc.nx'});if(!XP3.cu){XP3.cu=1;cuRun(b)}}}}
+function openLevel(){closeLayer();XP3.cu=0;CARS={};if(!(top()&&top().key==='lvl'))push(levelView());else redraw();xpLoad(true);lgLoad()}
 A.lvl=()=>openLevel();
 A.lvRoad=()=>{const s=$('#lvRoadS');s&&s.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})};
 A.lvAw=()=>{const s=$('#lvAwS');s&&s.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})};
@@ -2886,44 +2910,74 @@ A.awOpen=el=>{const a=awList(xpMe()).find(x=>x.k===el.dataset.k);if(!a)return;
    ${a.on?`<span class="aws-ok">${ic('check',16)}Earned</span>`:`<div class="aws-p"><span class="bar"><i style="--p:${(a.have/a.need).toFixed(3)}"></i></span><small>${fmtN(a.have)} of ${fmtN(a.need)}</small></div>`}
    <div class="sheet-ft"><button class="btn ghost" data-a="close">Close</button><button class="btn" data-a="skGo">${ic('play',16)}Take a test</button></div></div>`)};
 
-/* ---- the leaderboard: every student of every test series ---- */
-function xbRow(x,per){return `<button class="xbr${x.me?' me':''}" data-a="xbOpen" data-r="${x.rank}" style="--i:${Math.min(x.rank,12)}"><span class="xbn">${x.rank}</span><span class="xbc">${crest(lvOf(x.xp).i,34)}</span>
-   <span class="xbt"><b><span>${esc3(drName(x.name,x.xp))}${x.me?' (you)':''}</span>${x.series?`<em>${esc3(x.series)}</em>`:''}</b><small>${fmtN((x.attempted||0)+(x.practice||0))} Qs · ${awCount(x)} awards${x.streak?` · ${ic('flame',12)}${x.streak}`:''}</small></span>
+/* ---- my league (this week) and all students (all-time XP) ---- */
+async function lgLoad(force){if(XP3.lOff||typeof AUTH==='undefined'||!AUTH)return;if(!force&&XP3.L&&Date.now()-XP3.lAt<45000)return;XP3.lAt=Date.now();
+  let r=null;try{r=await rpc('cbt_league',{})}catch(e){}
+  if(r&&r.error==='server'&&(r.status===404||r.status===400))XP3.lOff=true;
+  else{XP3.L=r&&r.ok?r:(XP3.L&&XP3.L.ok?XP3.L:{ok:false});if(r&&r.ok&&r.me){XP3.me=Object.assign({},XP3.me||{},r.me);lsSet('cbt_v3_xp',XP3.me);xpSeen(XP3.me)}}
+  xpRedraw()}
+function lgRow(x){return `<button class="lgr ${x.zone}${x.me?' me':''}" data-a="lgOpen" data-r="${x.rank}" style="--i:${Math.min(x.rank,14)}"><span class="lgr-n">${x.rank<=3?`<i class="lgr-m m${x.rank}">${x.rank}</i>`:x.rank}</span>
+   <span class="lgr-a">${esc3(((x.name||'S')[0]||'S').toUpperCase())}</span><span class="lgr-t"><b>${nmH(x.name,x.dr)}${x.me?' <em class="lgr-y">You</em>':''}</b><small>${x.series?`<span>${esc3(x.series)}</span>`:''}${x.streak?`<span class="lgr-s">${ic('flame',12)}${x.streak}</span>`:''}</small></span>
+   <span class="lgr-v"><b>${fmtN(x.xp)}</b><small>XP</small></span></button>`}
+const lgSep=(z,lv)=>`<div class="lgs ${z}"><span>${ic(ZN3[z][1],14)}${ZN3[z][0]}</span><small>${z==='up'?`Level ${Math.min(10,lv+1)} next week`:z==='down'?`Level ${Math.max(1,lv-1)} next week`:`Stay at Level ${lv}`}</small></div>`;
+function lgBody(){const b=XP3.L;
+  if(XP3.lOff)return `<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>Weekly leagues start soon</b><p>They open as soon as the update is switched on. Your XP and streak are already counting.</p><button class="btn sm" data-a="xbPer" data-p="all">See all students</button></div>`;
+  if(!b)return '<div class="card sk" style="height:200px"></div><div class="card sk" style="height:320px"></div>';
+  if(!b.ok)return `<div class="card empty"><span class="ti">${ic('wifiOff',22)}</span><b>Could not load your league</b><p>Check the internet and try again.</p><button class="btn sm" data-a="xbRe">Try again</button></div>`;
+  const lv=lvAt(b.level),M=b.members||[],me=M.find(x=>x.me),n=b.n||M.length,t=b.third||0,up=lv.n<10?t:0,dn=lv.n>1?t:0;
+  const head=`<section class="lgh" style="--c1:${lv.c1};--c2:${lv.c2}"><div class="lgh-t"><span class="lgh-c">${crest(lv.i,70,{cls:'float'})}</span><div><small>LEVEL ${lv.n} LEAGUE</small><b>${esc3(lv.name)}</b><span>${ic('clock',13)}Ends in ${cdTo(b.ends_at)}</span></div>
+     <button class="ib lgh-h" data-a="lgHist" aria-label="Past weeks">${ic('hist',18)}</button></div>
+    ${b.in?`<div class="lgh-m"><div><b>#${me?me.rank:'–'}</b><small>of ${n}</small></div><div><b>${fmtN(me?me.xp:0)}</b><small>XP this week</small></div><div class="${me?me.zone:''}"><b>${me?ic(ZN3[me.zone][1],18):''}</b><small>${me?ZN3[me.zone][0]:''}</small></div></div>
+     <div class="lgz"><i class="up" style="--w:${n?up/n:0}"></i><i class="stay" style="--w:${n?(n-up-dn)/n:1}"></i><i class="down" style="--w:${n?dn/n:0}"></i>${me&&n>1?`<b class="lgz-k" style="--x:${((me.rank-1)/(n-1)).toFixed(3)}"></b>`:''}</div>
+     <p class="lgh-f">${me&&me.zone==='up'?'Great! Keep it up to climb on Sunday night.':me&&me.zone==='down'?`Earn more XP to get out of the Drop zone.`:up&&me&&me.xp<LG_MIN?`Climbing needs a top-${up} finish and ${LG_MIN}+ XP this week.`:up?`Top ${up} climb to Level ${lv.n+1} on Sunday night.`:'Hold your place: the top level has no Climb zone.'}</p>`
+    :`<p class="lgh-f">You join this week’s league with your first XP. Take a test or practise a few questions.</p><button class="btn blk" data-a="skGo">${ic('play',16)}Start now</button>`}</section>`;
+  if(!b.in)return head;
+  let z0='',rows='';M.forEach(x=>{if(x.zone!==z0){rows+=lgSep(x.zone,lv.n);z0=x.zone}rows+=lgRow(x)});
+  return `${head}<div class="card lgl">${rows}</div><p class="hint" style="text-align:center">${fmtN(n)} student${n===1?'':'s'} in your league · every Aspiron test series · new leagues every Monday</p>`}
+function xbRow(x){return `<button class="xbr${x.me?' me':''}" data-a="xbOpen" data-r="${x.rank}" style="--i:${Math.min(x.rank,12)}"><span class="xbn">${x.rank}</span><span class="xbc">${crest(lvAt(x.level).i,34)}</span>
+   <span class="xbt"><b><span>${nmH(x.name,x.dr)}${x.me?' (you)':''}</span>${x.series?`<em>${esc3(x.series)}</em>`:''}</b><small>${fmtN((x.attempted||0)+(x.practice||0))} Qs · ${awCount(x)} awards${x.streak?` · ${ic('flame',12)}${x.streak}`:''}</small></span>
    <span class="xbv"><b>${fmtN(x.pts)}</b><small>XP</small></span></button>`}
 function xbPod(T){const p=[T[1],T[0],T[2]];return `<div class="xbp">${p.map((x,j)=>{if(!x)return '<div class="xbp-i z"></div>';const r=x.rank;
-  return `<button class="xbp-i r${r}${x.me?' me':''}" data-a="xbOpen" data-r="${r}" style="--d:${[1,0,2][j]}"><span class="xbp-c">${crest(lvOf(x.xp).i,r===1?74:60)}${r===1&&lvOf(x.xp).i!==DR3?`<i class="xbp-k">${ic('crown',18)}</i>`:''}</span>
-   <b>${esc3(drName(x.name,x.xp))}</b><small>${fmtN(x.pts)} XP</small>${x.series?`<em>${esc3(x.series)}</em>`:''}<span class="xbp-s"><span>${r}</span></span></button>`}).join('')}</div>`}
-function xbBody(){const b=XP3.B[XP3.per];
-  if(XP3.off)return `<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>Leaderboard coming soon</b><p>It opens as soon as the update is switched on. Your XP and streak are already counting.</p></div>`;
+  return `<button class="xbp-i r${r}${x.me?' me':''}" data-a="xbOpen" data-r="${r}" style="--d:${[1,0,2][j]}"><span class="xbp-c">${crest(lvAt(x.level).i,r===1?74:60)}${r===1&&!x.dr?`<i class="xbp-k">${ic('crown',18)}</i>`:''}</span>
+   <b>${nmH(x.name,x.dr)}</b><small>${fmtN(x.pts)} XP</small>${x.series?`<em>${esc3(x.series)}</em>`:''}<span class="xbp-s"><span>${r}</span></span></button>`}).join('')}</div>`}
+function xbAll(){const b=XP3.B.all;
+  if(XP3.off)return `<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>Leaderboard coming soon</b><p>It opens as soon as the update is switched on.</p></div>`;
   if(!b)return '<div class="card sk" style="height:220px"></div><div class="card sk" style="height:300px"></div>';
   if(!b.ok)return `<div class="card empty"><span class="ti">${ic('wifiOff',22)}</span><b>Could not load the leaderboard</b><p>Check the internet and try again.</p><button class="btn sm" data-a="xbRe">Try again</button></div>`;
-  const T=b.top||[],my=b.mine,me=b.me||xpMe(),L=lvOf(me.xp||0);
-  return `<section class="xbh" style="--c1:${L.c1};--c2:${L.c2}"><div class="xbh-c">${crest(L.i,64,{cls:'float'})}</div><div class="xbh-t"><small>${XP3.per==='week'?'YOUR RANK THIS WEEK':'YOUR RANK, ALL TIME'}</small><b>${my?'#'+fmtN(my.rank):'–'}<em> of ${fmtN(b.total||0)}</em></b><span>${my?`${fmtN(my.pts)} XP · ${esc3(L.name)}`:XP3.per==='week'?'Earn XP this week to get on the board':'Earn XP to get on the board'}</span></div></section>
-   ${T.length?xbPod(T):`<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>${XP3.per==='week'?'Nobody on the board yet this week':'Nobody on the board yet'}</b><p>Take a test now and be the first.</p></div>`}
-   ${T.length>3?`<div class="card xbl">${T.slice(3).map(x=>xbRow(x)).join('')}</div>`:''}
+  const T=b.top||[],my=b.mine;
+  return `${T.length?xbPod(T):`<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>Nobody on the board yet</b><p>Take a test now and be the first.</p></div>`}
+   ${T.length>3?`<div class="card xbl">${T.slice(3).map(xbRow).join('')}</div>`:''}
    ${my&&my.rank>T.length?`<div class="card xbl xbme">${xbRow(my)}</div>`:''}
-   <p class="hint" style="text-align:center">All students of every Aspiron test series · ${XP3.per==='week'?`Week ${esc3(fmtWk(b.week_start))} · starts again every Monday`:'XP of all time'}</p>`}
-const fmtWk=s=>{try{const d=new Date(s+'T00:00:00'),e=new Date(d.getTime()+6*DAY),o={day:'numeric',month:'short'};return d.toLocaleDateString('en-IN',o)+' – '+e.toLocaleDateString('en-IN',o)}catch(e){return ''}};
-function xbView(){return {t:'Leaderboard',s:'Every student, every test series',key:'xpb',right:()=>`<button class="ib" data-a="lvl" aria-label="Level Up">${ic('medal',20)}</button>`,
-  html:()=>`<div class="seg xbseg" role="tablist">${[['week','This week'],['all','All time']].map(p=>`<button role="tab" aria-selected="${XP3.per===p[0]}" class="${XP3.per===p[0]?'on':''}" data-a="xbPer" data-p="${p[0]}">${p[1]}</button>`).join('')}</div>
-   <div class="stack xbb">${xbBody()}</div>`}}
-async function xbLoad(force){const per=XP3.per;if(XP3.off)return;if(!force&&XP3.B[per]&&Date.now()-XP3.bAt[per]<60000)return;
-  let r=null;try{r=await rpc('cbt_xp_board',{p_period:per})}catch(e){}
-  if(r&&r.error==='server'&&(r.status===404||r.status===400)){XP3.off=true}else{XP3.B[per]=r&&r.ok?r:(XP3.B[per]&&XP3.B[per].ok?XP3.B[per]:{ok:false});XP3.bAt[per]=Date.now();
-    if(r&&r.ok&&r.me){XP3.me=Object.assign({},XP3.me||{},r.me);lsSet('cbt_v3_xp',XP3.me);xpSeen(r.me)}}
-  if(top()&&top().key==='xpb'&&XP3.per===per)qbKeep()}
-function openXpBoard(per){closeLayer();if(per)XP3.per=per;if(!(top()&&top().key==='xpb'))push(xbView());else redraw();xbLoad()}
+   <p class="hint" style="text-align:center">All students of every Aspiron test series · XP of all time${my?` · you are #${fmtN(my.rank)} of ${fmtN(b.total||0)}`:''}</p>`}
+function xbView(){return {t:'Leaderboard',s:'Weekly league and all students',key:'xpb',right:()=>`<button class="ib" data-a="lvl" aria-label="Level Up">${ic('medal',20)}</button>`,
+  html:()=>`<div class="seg xbseg" role="tablist">${[['lg','My league'],['all','All students']].map(p=>`<button role="tab" aria-selected="${XP3.per===p[0]}" class="${XP3.per===p[0]?'on':''}" data-a="xbPer" data-p="${p[0]}">${p[1]}</button>`).join('')}</div>
+   <div class="stack xbb">${XP3.per==='lg'?lgBody():xbAll()}</div>`}}
+async function xbLoad(force){if(XP3.per==='lg'){await lgLoad(force);return}if(XP3.off)return;if(!force&&XP3.B.all&&Date.now()-XP3.bAt.all<60000)return;
+  let r=null;try{r=await rpc('cbt_xp_board',{p_period:'all'})}catch(e){}
+  if(r&&r.error==='server'&&(r.status===404||r.status===400)){XP3.off=true}else{XP3.B.all=r&&r.ok?r:(XP3.B.all&&XP3.B.all.ok?XP3.B.all:{ok:false});XP3.bAt.all=Date.now();
+    if(r&&r.ok&&r.me){XP3.me=Object.assign({},XP3.me||{},r.me);lsSet('cbt_v3_xp',XP3.me);xpSeen(XP3.me)}}
+  if(top()&&top().key==='xpb'&&XP3.per==='all')qbKeep()}
+function openXpBoard(per){closeLayer();XP3.per=per==='all'?'all':'lg';if(!(top()&&top().key==='xpb'))push(xbView());else redraw();xbLoad()}
 A.xpBoard=el=>openXpBoard(el&&el.dataset&&el.dataset.p);
-A.xbPer=el=>{if(XP3.per===el.dataset.p)return;XP3.per=el.dataset.p;arm(XP3.per==='all'?'r':'l');qbKeep();xbLoad()};
-A.xbRe=()=>{XP3.B[XP3.per]=null;qbKeep();xbLoad(true)};
-A.xbOpen=el=>{const b=XP3.B[XP3.per];if(!b||!b.ok)return;const r=+el.dataset.r,x=(b.top||[]).find(y=>y.rank===r)||(b.mine&&b.mine.rank===r?b.mine:null);if(!x)return;
-  const L=lvOf(x.xp),A2=awList(x),on=A2.filter(a=>a.on);
-  openSheet(`<div class="xbs" style="--c1:${L.c1};--c2:${L.c2}"><div class="xbs-c">${crest(L.i,92,{cls:'float'})}</div><b>${esc3(drName(x.name,x.xp))}${x.me?' (you)':''}</b>
+A.xbPer=el=>{if(XP3.per===el.dataset.p)return;XP3.per=el.dataset.p==='all'?'all':'lg';arm(XP3.per==='all'?'r':'l');qbKeep();xbLoad()};
+A.xbRe=()=>{if(XP3.per==='lg')XP3.L=null;else XP3.B.all=null;qbKeep();xbLoad(true)};
+A.lgHist=()=>{const H=(XP3.L&&XP3.L.history)||[];
+  openSheet(`<h2>Past weeks</h2><p class="sub">Your league finishes, newest first.</p><div class="lgx">${H.length?H.map(h=>{const L=lvAt(h.level);return `<div class="lgx-r ${h.zone}"><span>${crest(L.i,30)}</span><div><b>Week of ${esc3(fmtWk(h.week))}</b><small>Level ${L.n} · #${h.rank} · ${fmtN(h.xp||0)} XP</small></div><em>${ic(ZN3[h.zone][1],14)}${ZN3[h.zone][0].replace(' zone','')}</em></div>`}).join(''):'<p class="hint">No finished weeks yet. Your first result comes on Sunday night.</p>'}</div>
+   <div class="sheet-ft"><button class="btn ghost" data-a="close">Close</button><button class="btn" data-a="close">OK</button></div>`)};
+A.lgOpen=el=>{const b=XP3.L;if(!b||!b.ok)return;const x=(b.members||[]).find(y=>y.rank===+el.dataset.r);if(!x)return;const L=lvAt(b.level);
+  openSheet(`<div class="xbs" style="--c1:${L.c1};--c2:${L.c2}"><div class="xbs-c">${crest(L.i,86,{cls:'float'})}</div><b>${nmH(x.name,x.dr)}${x.me?' (you)':''}</b><small>Level ${L.n} · ${esc3(L.name)}${x.series?` · ${esc3(x.series)}`:''}</small>
+   <div class="xbs-n n3"><div><b>#${x.rank}</b><small>In league</small></div><div><b>${fmtN(x.xp)}</b><small>XP this week</small></div><div><b>${fmtN(x.streak||0)}</b><small>Day streak</small></div></div>
+   <span class="lgs-pill ${x.zone}">${ic(ZN3[x.zone][1],14)}${ZN3[x.zone][0]} · ${ZN3[x.zone][2]}</span>
+   <div class="sheet-ft"><button class="btn ghost" data-a="close">Close</button><button class="btn" data-a="lvlFromSheet">${ic('medal',16)}My level</button></div></div>`)};
+A.xbOpen=el=>{const b=XP3.B.all;if(!b||!b.ok)return;const r=+el.dataset.r,x=(b.top||[]).find(y=>y.rank===r)||(b.mine&&b.mine.rank===r?b.mine:null);if(!x)return;
+  const L=lvAt(x.level),on=awList(x).filter(a=>a.on);
+  openSheet(`<div class="xbs" style="--c1:${L.c1};--c2:${L.c2}"><div class="xbs-c">${crest(L.i,92,{cls:'float'})}</div><b>${nmH(x.name,x.dr)}${x.me?' (you)':''}</b>
    <small>Level ${L.n} · ${esc3(L.name)}${x.series?` · ${esc3(x.series)}`:''}</small>
    <div class="xbs-n"><div><b>${fmtN(x.xp)}</b><small>Total XP</small></div><div><b>${fmtN(x.tests)}</b><small>Tests</small></div><div><b>${fmtN((x.attempted||0)+(x.practice||0))}</b><small>Questions</small></div><div><b>${fmtN(x.best_streak)}</b><small>Best streak</small></div></div>
    <div class="xbs-a"><b>${on.length} award${on.length===1?'':'s'}</b><div>${on.length?on.map(a=>`<span title="${esc3(a.name)}">${medal(a,40)}<small>${esc3(a.name)}</small></span>`).join(''):'<p class="hint">No awards yet.</p>'}</div></div>
    <div class="sheet-ft"><button class="btn ghost" data-a="close">Close</button><button class="btn" data-a="lvlFromSheet">${ic('medal',16)}My level</button></div></div>`)};
 A.lvlFromSheet=()=>{closeLayer();setTimeout(openLevel,200)};
+const fmtWk=s=>{try{const d=new Date(s+'T00:00:00'),e=new Date(d.getTime()+6*DAY),o={day:'numeric',month:'short'};return d.toLocaleDateString('en-IN',o)+' – '+e.toLocaleDateString('en-IN',o)}catch(e){return ''}};
 V3H.push([/^#\/lvl$/,()=>openLevel()]);
 V3H.push([/^#\/xpb$/,()=>openXpBoard()]);
 
@@ -3021,9 +3075,9 @@ function obClose(done){lsSet(obKey(),1);const el=OB.el;OB.el=null;if(!el)return;
 A.menu=()=>{const u=unread();let n=0;const web=!standalone3();
   const mi=(i,t,k,on,extra,cls)=>`<button class="mi${on?' on':''}${cls||''}${n<14?' ma':''}" data-a="m" data-k="${k}" style="--i:${n++}">${ic(i)}<span>${t}</span>${extra||''}</button>`;
   const nw='<em class="mnew">NEW</em>',gh=t=>`<p class="mgh${n<14?' ma':''}" style="--i:${n++}">${t}</p>`;
-  drawer.innerHTML=`<div class="mtop ma" style="--i:${n++}"><button class="mx" data-a="close" aria-label="Close menu">${ic('x',18)}</button><span class="mavw${isDr()?' dr':''}">${avatar('mav')}${isDr()?`<i class="mav-st">${ic('steth',16)}</i>`:''}</span><b>${esc3(stuDisp())}</b><button class="mlv" data-a="m" data-k="lvl">${crest(lvOf(xpNow()).i,18)}Level ${lvOf(xpNow()).n} · ${esc3(lvOf(xpNow()).name)}</button><small>${esc3(stuMeta())}</small><button class="mvp" data-a="m" data-k="profile">View Profile <span aria-hidden="true">→</span></button></div>
+  drawer.innerHTML=`<div class="mtop ma" style="--i:${n++}"><button class="mx" data-a="close" aria-label="Close menu">${ic('x',18)}</button><span class="mavw${isDr()?' dr':''}">${avatar('mav')}${isDr()?`<i class="mav-st">${ic('steth',16)}</i>`:''}</span><b>${stuNameH()}</b><button class="mlv" data-a="m" data-k="lvl">${crest(myLv().i,18)}Level ${myLv().n} · ${esc3(myLv().name)}</button><small>${esc3(stuMeta())}</small><button class="mvp" data-a="m" data-k="profile">View Profile <span aria-hidden="true">→</span></button></div>
   <div class="mlist">${gh('Study')}${mi('home','Home','home',S.tab==='home')}${mi('tests','Test Series','series',S.tab==='test')}${mi('lib','Library','lib',S.tab==='lib')}${mi('pyq','PYQ Analysis','pyq',0,nw)}${mi('qb','Question Bank','qb',0,nw)}${mi('spark','Test Generator','gen',0,nw)}
-   ${gh('My progress')}${mi('medal','Level Up & Streak','lvl',0,nw)}${mi('crown','XP Leaderboard','xpb',0,nw)}${mi('podium','Results & Ranks','ranks')}${mi('hist','Test History','history')}${mi('mistake','Mistake Notebook','mistakes')}${mi('bookmark','Saved Questions','saved')}${mi('tracker','Study Tracker','tracker')}
+   ${gh('My progress')}${mi('medal','Level Up & Streak','lvl',0,nw)}${mi('crown','Weekly League','xpb',0,nw)}${mi('podium','Results & Ranks','ranks')}${mi('hist','Test History','history')}${mi('mistake','Mistake Notebook','mistakes')}${mi('bookmark','Saved Questions','saved')}${mi('tracker','Study Tracker','tracker')}
    ${gh('Explore')}${mi('store','Store','store')}${mi('gift','Refer & Earn','refer')}${mi('bell','Notifications','notif',0,u?`<em class="mcnt">${u}</em>`:'')}${mi('hourglass','Exam Countdown','cd')}
    ${gh('Help & settings')}${mi('sun','Theme Settings','theme',0,`<em class="mval">${THEMES[resolveMode(TH.mode)].name}</em>`)}${mi('gear','Settings','settings')}${mi('info','About Us','about')}${mi('mail','Contact Us','contact')}
    ${web?gh('Policies')+mi('file','Terms & Conditions','terms')+mi('file','Privacy Policy','privacy')+mi('file','Refund Policy','refund'):''}
