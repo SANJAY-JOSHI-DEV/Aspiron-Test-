@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=106;
+const V3VER=107;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -2786,8 +2786,9 @@ function xpLocal(){const R=allRes(),T={},ws=weekStart(),today=day0(nowMs());R.fo
       bonus=n===1&&c+w+sk>=10&&c+w>=.9*(c+w+sk)?(lv?20:10):0;
     m.xp+=base+bonus;if(r.at>=ws)m.week_xp+=base+bonus;m.parts[lv?'live':n===1?'first':'re']+=base;m.parts.bonus+=bonus;
     if(n===1){m.tests++;m.attempted+=c+w;if(bonus)m.full++;if(c+w>=30&&c>=.9*(c+w))m.acc90++}if(lv)m.live++;if(n<=2)m.correct+=c})});
-  const days=new Set(R.map(r=>day0(r.at))),td=R.filter(r=>day0(r.at)===today).length;
-  return Object.assign(m,skWalk(days),{today:{tests:td,qs:0,done:td>0},series:(curSeries()||{}).title||''})}
+  const per={};R.forEach(r=>{const d=day0(r.at);per[d]=(per[d]||0)+(r.correct||0)+(r.wrong||0)});
+  const days=new Set(Object.keys(per).filter(d=>per[d]>=SKGOAL).map(Number)),td=per[today]||0;
+  return Object.assign(m,skWalk(days),{today:{qs:td,test_qs:td,practice_qs:0,done:td>=SKGOAL},series:(curSeries()||{}).title||''})}
 const xpMe=()=>XP3.me&&XP3.me.ok?XP3.me:xpLocal();
 const xpNow=()=>xpMe().xp||0;
 const isDr=()=>lvOf(xpNow()).i===DR3;
@@ -2831,21 +2832,21 @@ function confetti(cv,cols){try{const W=cv.width=innerWidth,H=cv.height=innerHeig
     if(p.s)g.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);else{g.beginPath();g.arc(0,0,p.r/2.6,0,7);g.fill()}g.restore()});if(k<2.6&&cv.isConnected)requestAnimationFrame(f);else g.clearRect(0,0,W,H)};requestAnimationFrame(f)}catch(e){}}
 
 /* ---- streak pieces ---- */
-const SKD=['M','T','W','T','F','S','S'];
+const SKD=['M','T','W','T','F','S','S'],SKGOAL=25;   // daily goal: 25 questions answered (same as supabase_v97)
 const skIc={done:'flame',shield:'shield',broke:'x',miss:'',today:'',next:'',none:''};
 function skWeek(m){const W=m.week||[],td=(new Date(nowMs()).getDay()+6)%7;return `<div class="skw">${SKD.map((d,i)=>{const s=W[i]||'next';return `<span class="skd ${s}${i===td?' td':''}" style="--i:${i}"><small>${d}</small><i>${skIc[s]?ic(skIc[s],s==='done'?18:15):''}</i></span>`}).join('')}</div>`}
-function skCard(m){const t=m.today||{},prog=t.done?1:Math.max(Math.min(1,(t.tests||0)),Math.min(1,(t.qs||0)/10)),sh=m.shields||0,on=(m.streak||0)>0;
+function skCard(m){const t=m.today||{},prog=t.done?1:Math.min(1,(t.qs||0)/SKGOAL),sh=m.shields||0,on=(m.streak||0)>0;
   return `<button class="card skc${on?' on':''}" data-a="skOpen" aria-label="Streak ${m.streak||0} days, open details">
    <div class="skc-t"><span class="skf${t.done?' lit':''}">${ic('flame',30)}</span><div><b><span data-cu="${m.streak||0}">${fmtN(m.streak||0)}</span> day${m.streak===1?'':'s'}</b><small>${t.done?'Today is done. See you tomorrow!':on?'Do today\'s goal to keep it':'Start a streak today'}</small></div>
     <span class="skc-sh" aria-label="${sh} Streak Shield${sh===1?'':'s'}">${[0,1].map(k=>`<i class="${k<sh?'on':''}">${ic('shield',15)}</i>`).join('')}</span></div>
    ${skWeek(m)}
-   <div class="skg"><span class="bar"><i style="--p:${prog.toFixed(3)}"></i></span><small>${t.done?'Goal done':`Today: ${t.tests||0}/1 test or ${Math.min(10,t.qs||0)}/10 questions`}</small></div></button>`}
+   <div class="skg"><span class="bar"><i style="--p:${prog.toFixed(3)}"></i></span><small>${t.done?`Goal done · ${fmtN(t.qs||0)} questions today`:`Today: ${Math.min(SKGOAL,t.qs||0)}/${SKGOAL} questions`}</small></div></button>`}
 function skSheet(){const m=xpMe(),t=m.today||{},sh=m.shields||0;
   openSheet(`<div class="sk3"><div class="sk3-h${(m.streak||0)>0?' on':''}"><span class="sk3-f">${ic('flame',54)}</span><b data-cu="${m.streak||0}">${fmtN(m.streak||0)}</b><span>day streak · best ${fmtN(m.best_streak||0)}</span></div>
    ${skWeek(m)}
-   <div class="sk3-g card"><div><b>Today's goal</b><small>${t.done?'Done for today':'1 test, or 10 practice questions (PYQ, Question bank, Question of the Day)'}</small></div><span class="sk3-ok${t.done?' on':''}">${ic(t.done?'check':'target',18)}</span></div>
+   <div class="sk3-g card"><div><b>Today's goal</b><small>${t.done?`Done for today · ${fmtN(t.qs||0)} questions`:`Answer ${SKGOAL} questions: ${Math.min(SKGOAL,t.qs||0)} done. Questions in tests and practice (PYQ, Question bank, Question of the Day) all count.`}</small></div><span class="sk3-ok${t.done?' on':''}">${ic(t.done?'check':'target',18)}</span></div>
    <div class="sk3-s card"><span class="sk3-si">${[0,1].map(k=>`<i class="${k<sh?'on':''}">${ic('shield',20)}</i>`).join('')}</span><div><b>${sh} Streak Shield${sh===1?'':'s'}</b><small>Miss one day and a shield keeps your streak safe. Earn one for every 7 days in a row (you can hold 2).</small></div></div>
-   <div class="sk3-how" data-noswipe>${[['flame','Show up daily','Finish the daily goal and your streak grows by 1.'],['shield','A shield saves one day','Missed a day? A shield is used and your streak stays as it is.'],['redo','Two days missed','Two days in a row (or one day with no shield) and it starts again from 0.']].map((x,i)=>`<div class="sk3-c" style="--i:${i}"><span>${ic(x[0],20)}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('')}</div>
+   <div class="sk3-how" data-noswipe>${[['flame','25 questions a day','Answer 25 questions (tests or practice) and your streak grows by 1.'],['shield','A shield saves one day','Missed a day? A shield is used and your streak stays as it is.'],['redo','Two days missed','Two days in a row (or one day with no shield) and it starts again from 0.']].map((x,i)=>`<div class="sk3-c" style="--i:${i}"><span>${ic(x[0],20)}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('')}</div>
    <div class="sheet-ft"><button class="btn ghost" data-a="close">Close</button><button class="btn" data-a="skGo">${ic('play',16)}${t.done?'Keep practising':'Do today\'s goal'}</button></div></div>`);
   cuRun(sheet)}
 A.skOpen=()=>skSheet();

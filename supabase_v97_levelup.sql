@@ -10,7 +10,8 @@
 --          +20 XP live, +10 XP otherwise
 --    Practice, per question answered right (once per question, ever):
 --      • PYQ Analyzer, Question bank, Question of the Day                  1 XP
---  Streak: a day counts when the student submits 1 test OR answers 10 practice questions (India time).
+--  Streak: a day counts when the student answers 25 questions that day (India time): questions answered in tests
+--      (right or wrong, not skipped) and practice questions together. There are no lectures, so questions are the goal.
 --      Every student starts with 1 Streak Shield; every 7 days in a row earns one more (2 at most).
 --      Miss ONE day and a shield is used up: the streak stays (it does not grow that day).
 --      Miss two days in a row, or one day with no shield, and the streak starts again from 0.
@@ -114,17 +115,18 @@ begin
   select count(*) filter (where ok), count(*) filter (where ok and at >= wk_ts),
          count(*) filter (where (at at time zone 'Asia/Kolkata')::date = today)
     into p_all, p_wk, p_today from q;
-  select count(*) into t_today from results where student_id = p_sid and (created_at at time zone 'Asia/Kolkata')::date = today;
+  -- questions answered in tests today (right + wrong; skipped do not count)
+  select coalesce(sum(coalesce(correct, 0) + coalesce(wrong, 0)), 0) into t_today from results
+   where student_id = p_sid and (created_at at time zone 'Asia/Kolkata')::date = today;
 
-  -- active days: a test submitted, or 10 practice questions answered
+  -- active days: 25 questions answered that day, test questions and practice questions together
   select array_agg(z.d order by z.d) into days from (
-    select (created_at at time zone 'Asia/Kolkata')::date d from results where student_id = p_sid
-    union
-    select y.d from (select (at at time zone 'Asia/Kolkata')::date d from (
-              select at from pyq_progress where student_id = p_sid
-              union all select at from qb_log where student_id = p_sid
-              union all select at from qotd_ans where student_id = p_sid) x) y
-     group by y.d having count(*) >= 10) z;
+    select y.d from (
+      select (created_at at time zone 'Asia/Kolkata')::date d, coalesce(correct, 0) + coalesce(wrong, 0) n from results where student_id = p_sid
+      union all select (at at time zone 'Asia/Kolkata')::date, 1 from pyq_progress where student_id = p_sid
+      union all select (at at time zone 'Asia/Kolkata')::date, 1 from qb_log where student_id = p_sid
+      union all select (at at time zone 'Asia/Kolkata')::date, 1 from qotd_ans where student_id = p_sid) y
+     group by y.d having sum(y.n) >= 25) z;
 
   -- walk day by day from the first active day: streak, shields, and this week's 7 days
   d := coalesce(days[1], today);
@@ -159,7 +161,7 @@ begin
     'parts', jsonb_build_object('live', x_live, 'first', x_first, 're', x_re, 'bonus', x_bonus, 'practice', p_all),
     'tests', n_tests, 'live', n_live, 'full', n_full, 'correct', n_cor, 'attempted', n_att, 'practice', p_all, 'acc90', n_acc,
     'streak', st, 'best_streak', best, 'shields', sh, 'last_day', days[cardinality(days)],
-    'today', jsonb_build_object('tests', t_today, 'qs', p_today, 'done', today = any(coalesce(days, '{}'))),
+    'today', jsonb_build_object('qs', t_today + p_today, 'test_qs', t_today, 'practice_qs', p_today, 'goal', 25, 'done', today = any(coalesce(days, '{}'))),
     'week', to_jsonb(wkd), 'series', coalesce(v_series, ''), 'day', today);
 end $$;
 revoke all on function cbt_private.xp_calc(uuid) from public, anon, authenticated;

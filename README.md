@@ -279,7 +279,7 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   **Full test bonus**: first attempt with 90%+ questions answered (10+ questions) **+20** live, **+10** otherwise.
   **Practice**: each PYQ Analyzer / Question bank / Question of the Day question answered right **1 XP** (once per question).
   A test flagged for cheating gives 0; a held-back live result counts once its result is out.
-- **Streak:** a day counts with 1 test or 10 practice questions (India time). **Streak Shield**: 1 to start, +1 for every 7 days in a row
+- **Streak:** a day counts when the student answers **25 questions** that day (India time): questions answered in tests (right or wrong) and practice questions together (no lectures, so no 10-minute rule). **Streak Shield**: 1 to start, +1 for every 7 days in a row
   (2 at most). One missed day uses a shield (the streak stays); two days in a row, or one without a shield, start it again.
 - **10 levels** (all-time XP): Aspirant 0 · Seeker 250 · Scholar 750 · Achiever 1,500 · Ranker 2,500 · Topper 4,000 · Elite 6,000 ·
   Legend 9,000 · Mastermind 13,000 · **Aspiron Doctor 20,000**. Each level has its own crest (shield in its colours, laurels from 4, wings
