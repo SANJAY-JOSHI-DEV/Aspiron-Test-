@@ -2620,3 +2620,32 @@ sup,sub{font-size:.72em;line-height:0}
 .palr{flex-direction:row!important}
 /* v102 dark / black: the poster colour is deep, so on a dark card its icons disappeared. Lift it towards the text colour. */
 :host(:not([data-mode="light"])) .pc .tt2 .ti{color:color-mix(in srgb,var(--pcDeep) 35%,var(--tx));background:color-mix(in srgb,var(--pcDeep) 30%,var(--surface2))}
+
+/* v105: top card. Folded: small numbers (XP, streak, practised, refer) in place of the title. Open: the numbers fade
+   out, the title fades in, then the subjects slide down. */
+.hb-hl{position:relative;flex:1;min-width:0;height:34px;display:block}
+.hb-hl>.hb-k,.hb-hl>.hb-st{position:absolute;left:0;top:50%;transition:opacity .28s var(--out),transform .38s var(--out),visibility 0s linear .38s}
+.hb-hl>.hb-k{transform:translateY(-50%) translateY(8px);opacity:0;visibility:hidden;white-space:nowrap}
+.hb-hl>.hb-st{right:0;transform:translateY(-50%);display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.hb-st::-webkit-scrollbar{display:none}
+.hb-q.open .hb-hl>.hb-k{opacity:1;visibility:visible;transform:translateY(-50%);transition:opacity .3s var(--out) .12s,transform .4s var(--out) .12s,visibility 0s}
+.hb-q.open .hb-hl>.hb-st{opacity:0;visibility:hidden;transform:translateY(-50%) translateY(-8px)}
+.hb-q:not(.open) .hb-hl>.hb-st{visibility:visible;transition:opacity .3s var(--out) .12s,transform .4s var(--out) .12s,visibility 0s}
+.hb-sc{flex:none;display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 9px 0 8px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);color:var(--heroTx);font-size:13px;line-height:1;-webkit-tap-highlight-color:transparent;transition:transform .25s var(--spring),background .2s}
+.hb-sc:active{transform:scale(.93);background:rgba(255,255,255,.16)}
+.hb-sc .i{color:var(--acc1);flex:none}
+.hb-sc b{font-weight:700;font-variant-numeric:tabular-nums}
+.hb-sc small{font-size:11px;font-weight:600;color:var(--heroMut);letter-spacing:.02em}
+.hb-sc[data-k="streak"] .i{color:#ffb35c}
+:host([data-art]) .hb-sc{background:color-mix(in srgb,var(--hero2) 70%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.hb-h.nq{min-height:36px}
+/* the subjects wait for the swap above, then slide down */
+.hb-s.on{transition:grid-template-rows .45s var(--out) .1s}
+@media (max-width:370px){.hb-sc{padding:0 7px;gap:3px;font-size:12px}.hb-sc small{display:none}}
+@media (prefers-reduced-motion:reduce){.hb-hl>.hb-k,.hb-hl>.hb-st,.hb-q.open .hb-hl>.hb-k,.hb-q:not(.open) .hb-hl>.hb-st,.hb-s.on{transition:none}}
+
+/* v105: the picture behind the top card no longer stretches when the card opens: every layer has a fixed height
+   from the top (like a curtain going down over a still picture), and the line drawing keeps its size too. */
+.band.hcd{background-color:var(--hero2);background-size:100% 440px;background-position:right top;background-repeat:no-repeat}
+.hcd .hb-bg{bottom:auto;height:440px}
+:host([data-art]) .band.hcd.hcd{background-color:var(--hero2)!important;background-size:100% 440px,100% 440px,auto 440px,100% 440px!important;background-position:right top!important;background-repeat:no-repeat!important}
