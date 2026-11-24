@@ -2649,3 +2649,26 @@ sup,sub{font-size:.72em;line-height:0}
 .band.hcd{background-color:var(--hero2);background-size:100% 440px;background-position:right top;background-repeat:no-repeat}
 .hcd .hb-bg{bottom:auto;height:440px}
 :host([data-art]) .band.hcd.hcd{background-color:var(--hero2)!important;background-size:100% 440px,100% 440px,auto 440px,100% 440px!important;background-position:right top!important;background-repeat:no-repeat!important}
+
+/* v106: questions of the day, smoother. One soft curve for everything; on open the numbers blur out, the title blurs in,
+   the card opens, then the circles rise one by one; on close the circles go first, then the card folds.
+   The row is wider than its box on both sides, so the glow of the first and last circle is never cut off. */
+.hcd{--qdE:cubic-bezier(.32,.72,0,1);--qdS:cubic-bezier(.34,1.4,.64,1)}
+.hcd .hb-s{transition:grid-template-rows .5s var(--qdE) .12s}
+.hcd .hb-s.on{transition:grid-template-rows .56s var(--qdE) .08s}
+.hcd .hb-si{margin:0 -18px;padding:0 18px;contain:paint}
+.hcd .hb-row{margin:0 -18px;padding:16px 20px 12px;scroll-padding-inline:20px}
+.hcd .qd-c{opacity:0;transform:translateY(-10px) scale(.86);filter:blur(4px);transition:opacity .18s ease-in,transform .22s ease-in,filter .18s ease-in;will-change:transform,opacity}
+.hcd .hb-s.on .qd-c{opacity:1;transform:none;filter:none;transition:opacity .4s var(--qdE) calc(var(--i) * 70ms + 200ms),transform .62s var(--qdS) calc(var(--i) * 70ms + 200ms),filter .4s var(--qdE) calc(var(--i) * 70ms + 200ms)}
+.hcd .qd-c:active .qd-r{transform:scale(.92)}
+.hb-hl>.hb-k,.hb-hl>.hb-st{transition:opacity .26s ease-in,transform .3s ease-in,filter .26s ease-in,visibility 0s linear .3s}
+.hb-hl>.hb-k{filter:blur(4px)}
+.hb-q.open .hb-hl>.hb-k{filter:none;transition:opacity .36s var(--qdE) .1s,transform .5s var(--qdE) .1s,filter .36s var(--qdE) .1s,visibility 0s}
+.hb-q.open .hb-hl>.hb-st{filter:blur(4px);transform:translateY(-50%) translateY(-10px) scale(.96)}
+.hb-q:not(.open) .hb-hl>.hb-st{filter:none;transition:opacity .36s var(--qdE) .28s,transform .5s var(--qdE) .28s,filter .36s var(--qdE) .28s,visibility 0s}
+.hb-q:not(.open) .hb-sc{animation:hbChip .5s var(--qdS) both;animation-delay:calc(var(--i) * 45ms + .3s)}
+.hb-q:not(.open).still .hb-sc{animation:none}
+@keyframes hbChip{from{opacity:0;transform:translateY(6px) scale(.9)}to{opacity:1;transform:none}}
+.hcd .hb-tg .i{transition:transform .55s var(--qdS)}
+.hcd .hb-tg{transition:transform .35s var(--qdS),background .25s}
+@media (prefers-reduced-motion:reduce){.hcd .hb-s,.hcd .hb-s.on,.hcd .qd-c,.hcd .hb-s.on .qd-c,.hb-hl>.hb-k,.hb-hl>.hb-st,.hb-q.open .hb-hl>.hb-k,.hb-q:not(.open) .hb-hl>.hb-st{transition:none;filter:none}.hb-q:not(.open) .hb-sc{animation:none}}
