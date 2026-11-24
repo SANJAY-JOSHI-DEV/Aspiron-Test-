@@ -41,6 +41,8 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   Notification test kiye bina keys band mat karna.
 - [x] **1.10 Admin redesign (Storage + Billing & costs + PYQ fix):** Supabase → SQL Editor: `supabase_v70_ops.sql` → `supabase_v35_admin_team.sql`.
   *Check:* Admin → Storage shows the database size; Admin → PYQ bank → Papers opens.
+- [ ] **1.15 Level Up (XP, streak, levels, leaderboard):** Supabase → SQL Editor: `supabase_v97_levelup.sql` (nothing after it).
+  *Check:* app → menu → *XP Leaderboard* shows students (not "coming soon"), and Level Up shows *Practice questions* XP.
 - [ ] **1.9** Backup password aur 2FA recovery codes kagaz par likh kar offline rakho.
 
 ## Phase 2: Brand aur email (pehchaan)

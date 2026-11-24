@@ -2388,6 +2388,39 @@ select pg_temp.chk('55e one commission for every active influencer; per-series r
   and (select promo_rate from public.cbt_store_orders where code = :'o96b') = 120
   and public.cbt_admin_promos('wrong-password','bulk','{"commission":"1","pct":false}')->>'ok' = 'false');
 
+-- ===== 56. v97 Level Up: XP only from real work, nothing to read or write directly =====
+update cbt_private.students set fail_count = 0, locked_until = 0, devices = '{}' where mobile = '9000000002';
+select public.cbt_login('9000000002','BBBB2222','dev-bbbbbbbb')->>'token' as tk97 \gset
+insert into cbt_private.tests (id, series_id, title, duration, data, question_count, practice, opens_at, closes_at, result_at) values
+  ('aaaaaaaa-0000-0000-0000-000000000971','11111111-1111-1111-1111-111111111111','XP open',30,'[]',20,false,null,null,null),
+  ('aaaaaaaa-0000-0000-0000-000000000972','11111111-1111-1111-1111-111111111111','XP held',30,'[]',20,false,
+   (extract(epoch from now() - interval '1 hour') * 1000)::bigint, (extract(epoch from now() + interval '1 hour') * 1000)::bigint, null);
+select (public.cbt_xp_me('9000000002', :'tk97', 'dev-bbbbbbbb')->>'xp')::int as xp0 \gset
+insert into cbt_private.results (student_id, test_id, test_title, score, max_score, correct, wrong, skipped, created_at)
+select 'bbbbbbbb-0000-0000-0000-00000000000b', 'aaaaaaaa-0000-0000-0000-000000000971', 'XP open', 0, 80, 10, 0, 10, now() - (k || ' minutes')::interval
+  from generate_series(1, 4) k;
+insert into cbt_private.results (student_id, test_id, test_title, score, max_score, correct, wrong, skipped)
+values ('bbbbbbbb-0000-0000-0000-00000000000b', 'aaaaaaaa-0000-0000-0000-000000000972', 'XP held', 0, 80, 20, 0, 0);
+select (public.cbt_xp_me('9000000002', :'tk97', 'dev-bbbbbbbb')->>'xp')::int as xp1 \gset
+select pg_temp.chk('56a XP: first attempt 2 per right answer, one re-attempt 1, later attempts 0, a held-back live result 0 until it is out',
+  :xp1 - :xp0 = 10 * 2 + 10, :xp0 || ' -> ' || :xp1);
+insert into public.cbt_cheat_flags (student_id, test_id) values ('bbbbbbbb-0000-0000-0000-00000000000b', 'aaaaaaaa-0000-0000-0000-000000000971');
+select pg_temp.chk('56b XP: a test flagged for cheating gives none',
+  (public.cbt_xp_me('9000000002', :'tk97', 'dev-bbbbbbbb')->>'xp')::int = :xp0);
+delete from public.cbt_cheat_flags where test_id = 'aaaaaaaa-0000-0000-0000-000000000971';
+select pg_temp.chk('56c leaderboard: names shortened, no mobile, ids or other private fields',
+  (select bool_and(not (x ?| array['mobile','student_id','id','email','code','name_full']) and x->>'name' !~ ' ')
+     from jsonb_array_elements(public.cbt_xp_board('9000000002', :'tk97', 'dev-bbbbbbbb', 'all')->'top') x));
+set role anon;
+do $$ begin
+  begin perform count(*) from cbt_private.xp_board; perform pg_temp.chk('56d anon cannot read the XP table', false);
+  exception when insufficient_privilege then perform pg_temp.chk('56d anon cannot read the XP table', true); end;
+  begin perform cbt_private.xp_save('bbbbbbbb-0000-0000-0000-00000000000b'); perform pg_temp.chk('56e anon cannot run xp_save / xp_refresh', false);
+  exception when insufficient_privilege then perform pg_temp.chk('56e anon cannot run xp_save / xp_refresh', true); end;
+end $$;
+reset role;
+delete from cbt_private.results where test_id in ('aaaaaaaa-0000-0000-0000-000000000971','aaaaaaaa-0000-0000-0000-000000000972');
+
 -- ===== report =====
 \t off
 \a

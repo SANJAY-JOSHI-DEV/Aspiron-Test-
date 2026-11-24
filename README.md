@@ -65,7 +65,7 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   offer boxes, the Admin → Broadcasts → Home banners as a slider, and the test series. *My Test Series* opens its own page.
   The filter is Exam / Class / Subject, set in Admin → Tests page (see v61 below).
 - **Not built yet** (shown as *Coming soon* in the Library): books reader, handwritten notes and DPPs, mindmaps and flashcards,
-  download manager. XP, syllabus progress and overall leaderboards need new data and are not shown.
+  download manager. Syllabus progress needs new data and is not shown (XP, streak and the overall leaderboard: see Level Up below).
 - **To remove it:** delete `v3.js`, `v3.css` and the `<script src="v3.js?v=…">` line in `index.html`.
 
 ## Landing page before sign-in (`app29.js`, `landing.css`)
@@ -272,6 +272,29 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   Admin → Plans → Access & limits (PYQ bank: Free / Basic 0, Ultra unlimited; Pro as you like) and turn the locks on when ready.
 - **Tests:** `tests/db/break_it.sql` section 52; by hand `tests/e2e/pyq.js` (student walk-through on phone + computer, plan lock)
   then `tests/e2e/pyq_admin.js`.
+
+## Level Up: XP, streak, levels, awards, one leaderboard (`supabase_v97_levelup.sql`, `v3.js`)
+- **XP is worked out on the server** from what the student really did (the phone cannot change it). Per **right answer** in a test:
+  live attempt **3 XP**, first attempt on another day **2 XP**, the 2nd attempt **1 XP** (3rd and later 0, so one test cannot be farmed).
+  **Full test bonus**: first attempt with 90%+ questions answered (10+ questions) **+20** live, **+10** otherwise.
+  **Practice**: each PYQ Analyzer / Question bank / Question of the Day question answered right **1 XP** (once per question).
+  A test flagged for cheating gives 0; a held-back live result counts once its result is out.
+- **Streak:** a day counts with 1 test or 10 practice questions (India time). **Streak Shield**: 1 to start, +1 for every 7 days in a row
+  (2 at most). One missed day uses a shield (the streak stays); two days in a row, or one without a shield, start it again.
+- **10 levels** (all-time XP): Aspirant 0 · Seeker 250 · Scholar 750 · Achiever 1,500 · Ranker 2,500 · Topper 4,000 · Elite 6,000 ·
+  Legend 9,000 · Mastermind 13,000 · **Aspiron Doctor 20,000**. Each level has its own crest (shield in its colours, laurels from 4, wings
+  from 7, crown and rays at 10). At level 10 the student's name shows as **Dr. Name** (menu, profile, leaderboard) with the **Golden Stethoscope**.
+  Names, colours and XP steps are `LVL3` in `v3.js` (no SQL needed to change them).
+- **14 awards** (bronze, silver, gold, platinum): first test, live tests, accuracy, streaks, full tests, practice, right answers, level 5, Dr. (`AW3`).
+- **Leaderboard:** every student of every test series on one board, *This week* (from Monday, India time) and *All time*; each row shows
+  the level crest, Dr. title, the student's main test series, questions solved, awards and streak; tap a row for the student's card.
+  Only the first name is shown (as on the test ranks). The board copy (`cbt_private.xp_board`) is brought up to date when someone opens it
+  (at most every 2 minutes, 300 students per time): no scheduled job, no extra cost.
+- **Where:** Home top line (XP and streak chips open Level Up / the streak sheet), menu → *Level Up & Streak* and *XP Leaderboard*,
+  Results → Leaderboard, `#/lvl`, `#/xpb`. A new level plays a full-screen celebration (confetti off in lite mode / reduced motion);
+  new XP since the last look shows a small "+N XP".
+- **Before the SQL is run** the app works out the same test XP on the phone (no practice XP), and the leaderboard says *coming soon*.
+- Tests: `tests/db/break_it.sql` section 56; `tests/e2e/v3_xss.js` opens Level Up and the leaderboard with a script payload in names.
 
 ## Promotions board (`supabase_v95_promo_board.sql`, `cx/m-promos.js`, `store.js`)
 - **Board:** Admin → Sales & billing → Promotions opens as a table, one line per influencer: code, clicks, leads, orders,
