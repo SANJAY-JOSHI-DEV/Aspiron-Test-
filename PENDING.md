@@ -43,9 +43,9 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   *Check:* Admin → Storage shows the database size; Admin → PYQ bank → Papers opens.
 - [x] **1.15 Level Up (XP, streak, levels, leaderboard):** Supabase → SQL Editor: `supabase_v97_levelup.sql` (nothing after it).
   *Check:* app → menu → *XP Leaderboard* shows students (not "coming soon"), and Level Up shows *Practice questions* XP.
-- [ ] **1.16 Weekly leagues (level by league, not by total XP):** Supabase → SQL Editor: `supabase_v98_leagues.sql` (nothing after it).
+- [x] **1.16 Weekly leagues (level by league, not by total XP):** Supabase → SQL Editor: `supabase_v98_leagues.sql` (nothing after it).
   *Check:* `supabase_check_installed.sql` row 38 says ok; app → menu → *Weekly League* shows your league (after your first XP this week).
-- [ ] **1.17 Two keys per level (XP Mark + Climb zone):** Supabase → SQL Editor: `supabase_v99_xp_marks.sql` (after v98, nothing after it).
+- [x] **1.17 Two keys per level (XP Mark + Climb zone):** Supabase → SQL Editor: `supabase_v99_xp_marks.sql` (after v98, nothing after it).
   *Check:* `supabase_check_installed.sql` row 39 says ok; Level Up shows "XP Mark + Climb zone" under your level.
 - [ ] **1.9** Backup password aur 2FA recovery codes kagaz par likh kar offline rakho.
 
