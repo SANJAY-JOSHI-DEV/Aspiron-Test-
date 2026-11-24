@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=110;
+const V3VER=111;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -332,7 +332,7 @@ function back(){if(!STK.length)return;history.back()}
 /* close every page first, wait for the browser history to settle, then run cb (so a hash change is never undone) */
 let afterUnwind=null;
 function unwind(cb){if(popIgnore){settled(()=>unwind(cb));return}if(!STK.length){cb();return}const n=STK.length;while(STK.length)pop();afterUnwind=cb;try{history.go(-n)}catch(e){const f=afterUnwind;afterUnwind=null;f()}}
-addEventListener('popstate',()=>{if(popIgnore){if(!--popIgnore)flushSettle();return}if(layer){closeLayer(true);return}if(afterUnwind){const f=afterUnwind;afterUnwind=null;setTimeout(f,0);return}if(STK.length)pop()});
+addEventListener('popstate',()=>{if(popIgnore){if(!--popIgnore)flushSettle();return}if(STY){stClose(false,true);return}if(layer){closeLayer(true);return}if(afterUnwind){const f=afterUnwind;afterUnwind=null;setTimeout(f,0);return}if(STK.length)pop()});
 function redraw(){const b=$('#scrB'),y=b.scrollTop;drawScr('');b.scrollTop=y}
 
 /* ---------- actions: one delegated handler ---------- */
@@ -589,7 +589,7 @@ function evLive(x){const t=x.t,t0=nowMs(),op=t.opens_at||t0,cl=t.closes_at||0,s=
   const pct=cl>op?Math.min(100,Math.max(0,Math.round((t0-op)*100/(cl-op)))):0;
   const bell=typeof alOn==='function'?`<button class="evD-bell" data-a="evBell" aria-label="Notifications">${ic('bell',18)}</button>`:'';
   return `<article class="evD"><i class="evD-glow" aria-hidden="true"></i><i class="evD-grain" aria-hidden="true"></i>
-   <div class="evD-top"><span class="evD-live"><i></i>LIVE</span><span class="evD-r">${cl?`<span class="evD-end">Ends in <b data-cd="${cl}">${cdTxt(cl-t0)}</b></span>`:''}${bell}</span></div>
+   <div class="evD-top"><span class="evD-live"><i></i>LIVE</span>${xpTag(t)}<span class="evD-r">${cl?`<span class="evD-end">Ends in <b data-cd="${cl}">${cdTxt(cl-t0)}</b></span>`:''}${bell}</span></div>
    <button class="evD-b" data-a="openSD" data-id="${esc3(t.series_id)}" data-t="t"><b>${esc3(t.title)}</b><small>${esc3(s.title||'')}</small></button>
    ${cl?`<div class="evD-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Live window used"><i style="width:${pct}%"></i></div>`:''}
    <small class="evD-t">Started ${fT(op)}${cl?` · Live till ${fT(cl)}`:''}</small>
@@ -617,7 +617,7 @@ function evCard(x){if(x.st==='held')return evHeld(x);if(['live','prog'].includes
   const when=today?`Today, ${fT(op)}`:`${dayWord(op)}, ${fT(op)}`;
   const meta=[esc3(s.title||''),t.questions?`${t.questions} questions`:'',dur(t.duration||0)].filter(Boolean).join(' · ');
   const bell=typeof alOn==='function'?`<button class="evbell${alOn3(t.id)?' on':''}" data-a="alT" data-id="${id}" aria-label="${alOn3(t.id)?'Alert on':'Notify me'}" aria-pressed="${alOn3(t.id)}">${ic('bell',18)}</button>`:'';
-  return `<article class="card evc evA st-${st}"><div class="evc-top">${pill}<span class="evw">${when}</span>${bell}</div>
+  return `<article class="card evc evA st-${st}"><div class="evc-top">${pill}${xpTag(t)}<span class="evw">${when}</span>${bell}</div>
    <button class="evc-b" data-a="openSD" data-id="${esc3(t.series_id)}" data-t="t"><b>${esc3(t.title)}</b><small>${meta}</small></button>
    <div class="evcd"><span>Starts in</span><b data-cd="${op}">${cdTxt(op-t0)}</b></div></article>`}
 function evTick(){const n1=nowMs();const L=root.querySelectorAll('[data-cd]');if(!L.length)return;let due=false;L.forEach(e=>{const ms=+e.dataset.cd-n1;if(ms<=0)due=true;e.textContent=cdTxt(ms)});if(due)softRender()}
@@ -1047,7 +1047,7 @@ function tCard(t){const s=tState(t),r=resOf(t.id)[0],syl=((META||{}).syl||{})[t.
   const act=s==='lock'?['lock','Unlock','test']:s==='up'?['bell',alOn3(t.id)?'Alert on':'Notify me','alT']:s==='held'?['clock','Result','']:s==='miss'?(r&&!p?['chart','Result','review']:['lock','Closed','']):s==='res'?['play','Resume','test']:s==='att'?['redo','Re-attempt','test']:['play','Start','test'];
   const L=TSL[s];
   return `<article class="card tc3${s==='miss'||s==='lock'?' dim':''}"><div class="tc3-b">
-   <div class="tc3-top"><span class="st ${L[0]}">${L[1]}</span>${when?`<span class="mut">${s==='up'?'Opens':'Held on'} ${fD(when,{day:'numeric',month:'short'})}, ${fT(when)}</span>`:''}</div>
+   <div class="tc3-top"><span class="st ${L[0]}">${L[1]}</span>${s!=='miss'?xpTag(t):''}${when?`<span class="mut">${s==='up'?'Opens':'Held on'} ${fD(when,{day:'numeric',month:'short'})}, ${fT(when)}</span>`:''}</div>
    <h3>${esc3(t.title)}</h3>
    <p class="tc3-m">${ic('list',15)}<span>${t.questions||0} Question${t.questions===1?'':'s'}</span><i></i><span>${fmtN(marks)} Marks</span><i></i><span>${t.duration||0} Mins</span></p>
    <p class="tc3-m">${ic('hist',15)}<span>Attempts: ${t.attempts||0}${r&&t.best!=null&&t.best_max?`, best ${t.best}/${t.best_max}`:''}</span></p>
@@ -2760,7 +2760,9 @@ function crest(i,sz,o){i=Math.max(0,Math.min(DR3,i|0));o=o||{};const L=LVL3[i],i
    ${i>=6?wing(1)+wing(-1):''}${i>=3?leaf(1)+leaf(-1):''}
    <path d="M50 6 86 19v31c0 25-16 42-36 52C30 92 14 75 14 50V19z" fill="url(#${id}g)"/>
    <g clip-path="url(#${id}c)"><path d="M10 0h44L22 110H10z" fill="#fff" opacity=".16"/><rect class="cr-sh" x="-40" y="-10" width="22" height="130" fill="#fff" opacity=".35" transform="skewX(-18)"/></g>
-   <path d="M50 12 80 23v27c0 21-13 36-30 45C33 86 20 71 20 50V23z" fill="none" stroke="#fff" stroke-opacity=".38" stroke-width="2"/>
+   <g clip-path="url(#${id}c)" class="cr-fc"><path d="M50 6 50 52 14 19z" fill="#fff" opacity=".2"/><path d="M50 6 86 19 50 52z" fill="#fff" opacity=".06"/><path d="M14 19 50 52 14 50z" fill="#000" opacity=".06"/><path d="M86 19 86 50 50 52z" fill="#000" opacity=".12"/><path d="M14 50 50 52 50 104z" fill="#000" opacity=".1"/><path d="M86 50 50 52 50 104z" fill="#000" opacity=".2"/><path d="M14 50 50 52 30 92z" fill="#fff" opacity=".08"/></g>
+   <path d="M50 12 80 23v27c0 21-13 36-30 45C33 86 20 71 20 50V23z" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/>
+   <path class="cr-tw" d="M74 24l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6z" fill="#fff"/>
    ${dr?`<g transform="translate(29 30) scale(1.75)" fill="none" stroke="#5a3a06" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v5a5 5 0 0 0 10 0V3"/><path d="M10 13v1.5a4.5 4.5 0 0 0 9 0V12"/><circle cx="19" cy="10" r="2" fill="#5a3a06"/></g>`
      :`<text x="50" y="${n>9?66:68}" text-anchor="middle" font-family="Geist,system-ui,sans-serif" font-weight="700" font-size="${n>9?34:40}" fill="#fff" style="paint-order:stroke" stroke="rgba(0,0,0,.18)" stroke-width="3">${n}</text>`}
    ${i>=4?`<g transform="translate(50 100)">${Array.from({length:Math.min(3,i-3)},(_,k,a)=>`<path transform="translate(${(k-(Math.min(3,i-3)-1)/2)*11} 0) scale(.42)" d="M0-10 2.9-3.1 10.5-2.4 4.7 2.6 6.5 10 0 6.1-6.5 10-4.7 2.6-10.5-2.4-2.9-3.1z" fill="#ffe08a" stroke="#8a5a10" stroke-width="1.4"/>`).join('')}</g>`:''}
@@ -2844,16 +2846,92 @@ function skCard(m){const t=m.today||{},prog=t.done?1:Math.min(1,(t.qs||0)/SKGOAL
     <span class="skc-sh" aria-label="${sh} Streak Shield${sh===1?'':'s'}">${[0,1].map(k=>`<i class="${k<sh?'on':''}">${ic('shield',15)}</i>`).join('')}</span></div>
    ${skWeek(m)}
    <div class="skg"><span class="bar"><i style="--p:${prog.toFixed(3)}"></i></span><small>${t.done?`Goal done · ${fmtN(t.qs||0)} questions today`:`Today: ${Math.min(SKGOAL,t.qs||0)}/${SKGOAL} questions`}</small></div></button>`}
-function skSheet(){const m=xpMe(),t=m.today||{},sh=m.shields||0;
-  openSheet(`<div class="sk3"><div class="sk3-h${(m.streak||0)>0?' on':''}"><span class="sk3-f">${ic('flame',54)}</span><b data-cu="${m.streak||0}">${fmtN(m.streak||0)}</b><span>day streak · best ${fmtN(m.best_streak||0)}</span></div>
+function skSheet(){const m=xpMe(),t=m.today||{},sh=m.shields||0,q=Math.min(SKGOAL,t.qs||0),sk=m.streak||0;
+  const h=t.done?`${sk} day streak, safe today!`:sk>0?`Keep your ${sk}-day streak!`:(m.best_streak||0)>0?'Restart your streak!':'Start your streak!';
+  const sub=t.done?'Goal done for today. Come back tomorrow and keep the fire going.':`Answer ${SKGOAL-q} more question${SKGOAL-q===1?'':'s'} today. Tests and practice both count.`;
+  openSheet(`<div class="sk4${t.done?' done':''}"><div class="sk4-r">${ringSvg(q/SKGOAL,'run')}<div class="sk4-c"><b><span data-cu="${q}">${q}</span><em>/${SKGOAL}</em></b><small>Questions today</small></div>${t.done?`<i class="sk4-fl">${ic('flame',28)}</i>`:''}</div>
+   <h2>${h}</h2><p>${sub}</p>
    ${skWeek(m)}
-   <div class="sk3-g card"><div><b>Today's goal</b><small>${t.done?`Done for today · ${fmtN(t.qs||0)} questions`:`Answer ${SKGOAL} questions: ${Math.min(SKGOAL,t.qs||0)} done. Questions in tests and practice (PYQ, Question bank, Question of the Day) all count.`}</small></div><span class="sk3-ok${t.done?' on':''}">${ic(t.done?'check':'target',18)}</span></div>
-   <div class="sk3-s card"><span class="sk3-si">${[0,1].map(k=>`<i class="${k<sh?'on':''}">${ic('shield',20)}</i>`).join('')}</span><div><b>${sh} Streak Shield${sh===1?'':'s'}</b><small>Miss one day and a shield keeps your streak safe. Earn one for every 7 days in a row (you can hold 2).</small></div></div>
-   <div class="sk3-how" data-noswipe>${[['flame','25 questions a day','Answer 25 questions (tests or practice) and your streak grows by 1.'],['shield','A shield saves one day','Missed a day? A shield is used and your streak stays as it is.'],['redo','Two days missed','Two days in a row (or one day with no shield) and it starts again from 0.']].map((x,i)=>`<div class="sk3-c" style="--i:${i}"><span>${ic(x[0],20)}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('')}</div>
-   <div class="sheet-ft"><button class="btn ghost" data-a="close">Close</button><button class="btn" data-a="skGo">${ic('play',16)}${t.done?'Keep practising':'Do today\'s goal'}</button></div></div>`);
+   <div class="sk4-s"><span>${[0,1].map(k=>`<i class="${k<sh?'on':''}">${ic('shield',15)}</i>`).join('')}</span><small><b>${sh} Streak Shield${sh===1?'':'s'}</b> · saves one missed day</small><em>${ic('flame',13)}Best ${fmtN(m.best_streak||0)}</em></div>
+   <button class="btn blk sk4-go" data-a="skGo">${ic('play',16)}${t.done?'Keep practising':'Complete my streak'}</button>
+   <button class="btn ghost blk" data-a="skHow">${ic('info',16)}What’s a streak?</button></div>`);
   cuRun(sheet)}
 A.skOpen=()=>skSheet();
 A.skGo=()=>{closeLayer();setTimeout(()=>go('test'),200)};
+
+
+/* ---- full-screen stories (v111): bars on top, tap right / Next to go on, tap left / Back to go back; the phone's Back closes ---- */
+let STY=null;
+function story(slides,o){o=o||{};if(!root)return;if(STY)stClose(true);
+  const el=document.createElement('div');el.className='sty'+(o.cls?' '+o.cls:'');el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label',o.label||'How it works');
+  el.innerHTML=`<i class="sty-bg"></i><i class="sty-orb a"></i><i class="sty-orb b"></i><div class="sty-top"><div class="sty-bars">${slides.map(()=>'<i><b></b></i>').join('')}</div><button class="sty-x" data-k="x" aria-label="Close">${ic('x',20)}</button></div>
+   <div class="sty-st" aria-live="polite"></div><div class="sty-tap" aria-hidden="true"><span data-k="prev"></span><span data-k="next"></span></div>
+   <div class="sty-ft"><button class="btn ghost" data-k="prev">${ic('back',16)}Back</button><button class="btn" data-k="next">Next${ic('right',16)}</button></div>`;
+  root.appendChild(el);const S={el,slides,i:-1,o,t:0,h:false};STY=S;
+  try{history.pushState({v3sty:1},'',location.href);S.h=true}catch(e){}
+  requestAnimationFrame(()=>el.classList.add('on'));
+  el.addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b||STY!==S)return;const k=b.dataset.k;
+    if(k==='x')stClose();else if(k==='prev'){if(S.i>0)stGo(S.i-1)}else if(S.i>=slides.length-1)stClose();else stGo(S.i+1)});
+  stGo(o.start||0)}
+function stGo(i){const S=STY;if(!S)return;i=Math.max(0,Math.min(S.slides.length-1,i));const dir=i>=S.i?'f':'b';S.i=i;const s=S.slides[i],last=i===S.slides.length-1;
+  S.el.style.setProperty('--sc',s.c||'#d6a23a');S.el.style.setProperty('--sd',(S.o.auto||0)+'ms');
+  const st=S.el.querySelector('.sty-st');st.innerHTML=`<div class="sty-s ${dir}"><div class="sty-art">${s.art}</div>${s.k?`<small class="sty-k">${s.k}</small>`:''}<h2>${s.h}</h2><p>${s.p}</p></div>`;
+  S.el.querySelectorAll('.sty-bars>i').forEach((b,j)=>{b.className=j<i?'done':j===i?(S.o.auto&&!RM&&!last?'on run':'on'):''});
+  const pb=S.el.querySelector('.sty-ft [data-k="prev"]'),nb=S.el.querySelector('.sty-ft [data-k="next"]');pb.style.visibility=i?'':'hidden';
+  nb.innerHTML=last?`${S.o.last||'Got it'}${ic('check',16)}`:`Next${ic('right',16)}`;
+  clearTimeout(S.t);if(S.o.auto&&!RM&&!last)S.t=setTimeout(()=>{if(STY===S&&S.i===i)stGo(i+1)},S.o.auto);
+  try{s.run&&s.run(st)}catch(e){}}
+function stClose(now,fromPop){const S=STY;if(!S)return;clearTimeout(S.t);STY=null;
+  if(S.h&&!fromPop){popIgnore++;clearTimeout(settleT);settleT=setTimeout(flushSettle,700);try{history.back()}catch(e){flushSettle()}}
+  if(now){S.el.remove();return}S.el.classList.remove('on');S.el.classList.add('off');setTimeout(()=>S.el.remove(),420);try{S.o.done&&S.o.done()}catch(e){}}
+addEventListener('keydown',e=>{if(!STY)return;if(e.key==='Escape')stClose();else if(e.key==='ArrowRight')stGo(STY.i+1);else if(e.key==='ArrowLeft')stGo(STY.i-1)});
+const cuTo=(el,to,ms)=>{if(!el)return;if(RM){el.textContent=to;return}const t0=performance.now();const f=t=>{const k=Math.min(1,(t-t0)/ms);el.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1&&el.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)};
+const ringSvg=(p,cls)=>`<svg class="rg ${cls||''}" viewBox="0 0 120 120" aria-hidden="true"><circle class="rg-b" cx="60" cy="60" r="52"/><circle class="rg-f" cx="60" cy="60" r="52" pathLength="100" style="--p:${(Math.max(0,Math.min(1,p))*100).toFixed(1)}"/></svg>`;
+/* the XP crystal */
+const xpGem=sz=>`<svg class="gem" viewBox="0 0 100 100" width="${sz}" height="${sz}" aria-hidden="true"><defs><linearGradient id="gmA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f7ff"/><stop offset=".5" stop-color="#c9d4f2"/><stop offset="1" stop-color="#8592c4"/></linearGradient></defs>
+  <path d="M50 4 90 27v46L50 96 10 73V27z" fill="url(#gmA)" stroke="#fff" stroke-width="2"/><path d="M50 4 50 50 10 27z" fill="#fff" opacity=".5"/><path d="M50 4 90 27 50 50z" fill="#fff" opacity=".2"/><path d="M10 73 50 50 50 96z" fill="#3a4680" opacity=".18"/><path d="M90 73 50 50 50 96z" fill="#3a4680" opacity=".3"/><path d="M10 27 50 50 10 73z" fill="#fff" opacity=".12"/>
+  <text x="50" y="61" text-anchor="middle" font-family="Geist,system-ui,sans-serif" font-weight="800" font-size="30" fill="#3d4878">XP</text><path class="gem-sp" d="M76 14l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff"/></svg>`;
+const wkCell=(d,s,extra)=>`<span class="sa-c ${s}" style="--i:${extra||0}"><small>${d}</small><i>${s==='done'?ic('flame',18):s.startsWith('shield')?ic('shield',18):s==='miss'?ic('x',14):''}</i></span>`;
+
+/* the streak story */
+function streakStory(){const n=SKGOAL;
+  story([
+   {c:'#f0592b',k:'HOW IT WORKS',h:'The daily streak rule',p:`Answer <b>${n} questions</b> in a day: in tests, PYQ, Question bank or Question of the Day. The ring fills and your streak grows by one.`,
+    art:`<div class="sa-ring">${ringSvg(1,'run')}<div class="sa-ring-c"><b class="sa-n">0</b><small>/${n} Questions</small></div><i class="sa-fl">${ic('flame',30)}</i></div>`,
+    run:st=>cuTo(st.querySelector('.sa-n'),n,1500)},
+   {c:'#3d6fe0',k:'MISSED ONE DAY',h:'Streak Shield saves you',p:'Miss one day and a Streak Shield is used: your streak is safe (it does not grow that day). You start with 1 shield.',
+    art:`<div class="sa-wk">${wkCell('T','done',0)}${wkCell('W','done',1)}${wkCell('T','shield sh-drop',2)}${wkCell('F','today',3)}</div><div class="sa-note">${ic('shield',16)}Shield used, streak safe</div>`},
+   {c:'#1f9a5c',k:'EARN MORE',h:'7 days in a row = +1 shield',p:'Every 7 days in a row earns one more Streak Shield. You can keep 2 at a time, so your streak is safer the longer it gets.',
+    art:`<div class="sa-wk sm">${['M','T','W','T','F','S','S'].map((d,i)=>wkCell(d,'done',i)).join('')}</div><div class="sa-gain"><i>${ic('shield',26)}</i><b>+1</b></div>`},
+   {c:'#d9443a',k:'MISSED TWO DAYS',h:'The streak breaks',p:'Two days missed in a row (or one day with no shield) and the streak starts again from 0. Answer 25 questions tomorrow to start a new one!',
+    art:`<div class="sa-wk">${wkCell('T','done',0)}${wkCell('W','done',1)}${wkCell('T','miss',2)}${wkCell('F','miss',3)}</div><div class="sa-broke">${ic('flame',44)}<i></i></div>`}
+  ],{label:'What is a streak',cls:'sty-sk',last:'Start my streak'})}
+
+/* the Level Up story: XP, league, levels, the two keys */
+function lvStory(start){const L=myLv();
+  story([
+   {c:L.c1,k:'INTRODUCING',h:'Aspiron Level Up',p:'Practise, earn XP, climb weekly leagues and become an <span class="drp">Dr.</span> Aspiron Doctor. Here is how, in one minute.',
+    art:`<div class="sa-hero"><i class="sa-rays"></i>${crest(L.i,130,{cls:'float'})}</div>`},
+   {c:'#6c86f5',k:'WHAT IS XP?',h:'XP = Experience Points',p:'You earn XP for every <b>right answer</b>. XP decides your rank in your league, and your total XP opens the next level.',
+    art:`<div class="sa-gem">${xpGem(130)}<i class="sa-shadow"></i></div>`},
+   {c:'#ef5a50',k:'XP IN TESTS',h:'Every right answer counts',p:'Submit the test to get your XP. Flagged tests give none.',
+    art:`<div class="sa-tbl">${[['live','Live test','3 XP','each right answer'],['play','First attempt','2 XP','each right answer'],['redo','Re-attempt','1 XP','one re-attempt per test'],['trophy','Full test bonus','+20','+10 when not live']].map((x,i)=>`<div class="sa-tr" style="--i:${i}"><span>${ic(x[0],18)}</span><div><b>${x[1]}</b><small>${x[3]}</small></div><em>${x[2]}</em></div>`).join('')}</div>`},
+   {c:'#1d9c8f',k:'XP IN PRACTICE',h:'1 XP per question you get right',p:'PYQ Analyzer, Question bank and Question of the Day: each question gives XP once, the first time you get it right.',
+    art:`<div class="sa-chips">${[['pyq','PYQ'],['qb','Question bank'],['spark','Question of the Day']].map((x,i)=>`<span style="--i:${i}">${ic(x[0],18)}${x[1]}<b>+1</b></span>`).join('')}</div>`},
+   {c:'#34a86b',k:'WEEKLY LEAGUE',h:'45 students, one week',p:'Every Monday you play with up to 45 students at your level, from every test series. On Sunday night: <b class="zu">top 15 climb</b>, <b class="zs">middle 15 hold</b>, <b class="zd">bottom 15 drop</b>.',
+    art:`<div class="sa-dots">${Array.from({length:45},(_,j)=>`<i class="${j<15?'u':j<30?'s':'d'}" style="--i:${j}"></i>`).join('')}</div>`},
+   {c:'#d99a2b',k:'10 LEVELS',h:'From Aspirant to Dr.',p:'Each level has its own crest. At Level 10 a golden <span class="drp">Dr.</span> shines before your name, with the Golden Stethoscope.',
+    art:`<div class="sa-crests">${LVL3.map((_,j)=>`<span style="--i:${j}">${crest(j,j===DR3?62:46)}</span>`).join('')}</div>`},
+   {c:'#8a63e8',k:'HOW YOU CLIMB',h:'Two keys open the next level',p:'1. Your total XP reaches the level’s <b>XP Mark</b>.<br>2. You finish the week in the <b>Climb zone</b>.<br>Both done on Sunday night = one level up!',
+    art:`<div class="sa-keys"><span class="k1">${ic('spark',26)}<b>XP Mark</b></span><em>+</em><span class="k2">${ic('zup',26)}<b>Climb zone</b></span><i class="sa-eq">${ic('right',18)}</i><span class="k3">${crest(Math.min(DR3,L.i+1),58)}</span></div>`}
+  ],{label:'How Level Up works',auto:6500,start:start||0,last:'Let’s climb',done:()=>lsSet('cbt_v3_lvintro',1)})}
+A.lvHow=el=>lvStory(+(el&&el.dataset&&el.dataset.s)||0);
+A.skHow=()=>{closeLayer();setTimeout(streakStory,250)};
+
+/* XP on a test card: what this student gets for each right answer here */
+function xpTag(t){if(!t)return '';const n=nowMs(),a=t.attempts||0,live=!t.practice&&!!t.closes_at&&n<=t.closes_at;
+  const v=live&&!a?3:a===0?2:a===1?1:0;if(!v)return '';
+  return `<span class="xpt${v===3?' hot':''}" title="XP for every right answer">${ic('spark',12)}${v} XP<small>/right</small>${v===3?'<em>Live</em>':''}</span>`}
 
 /* ---- a row that slides left-right, with ‹ › buttons ---- */
 const carH=(id,inner)=>`<div class="car"><div class="car-t" id="${id}" data-noswipe>${inner}</div></div>`;
@@ -2911,8 +2989,10 @@ function lvZones(){const L=myLv();return `<section class="sec"><div class="sh"><
 function lvWays(){return `<section class="sec"><div class="sh"><h2>How to earn XP</h2></div><div class="card lvx">${XPWAYS.map((x,i)=>`<div class="lvx-i" style="--i:${i}"><span class="ti">${ic(x[0],18)}</span><div><b>${x[1]}</b><small>${x[3]}</small></div><em>${x[2]}</em></div>`).join('')}
    <p class="hint">Right answers only. XP from a live test shows once its result is out. Tests flagged for cheating give no XP.</p></div></section>`}
 function levelView(){return {t:'Level Up',s:'League, streak, levels and awards',key:'lvl',right:()=>`<button class="ib" data-a="xpBoard" data-p="lg" aria-label="My league">${ic('trophy',20)}</button>`,
-  html:()=>{const m=xpMe();return `<div class="stack lvp">${lvHero(m)}${skCard(m)}${lvRoad(m)}${lvAwards(m)}${lvParts(m)}${lvZones()}${lvWays()}</div>`},
-  after:()=>{const b=$('#scrB');carSync({lvCar:'.lrc.cur',awCar:'.awc.nx'});if(!XP3.cu){XP3.cu=1;cuRun(b)}}}}
+  html:()=>{const m=xpMe();return `<div class="stack lvp">${lvHero(m)}
+   <div class="lvq">${[['info','How it works','lvHow',''],['zup','How to climb','lvHow','6'],['spark','Earn XP','lvHow','2'],['flame','Streak','skOpen','']].map((x,i)=>`<button data-a="${x[2]}"${x[3]?` data-s="${x[3]}"`:''} style="--i:${i}"><span>${ic(x[0],18)}</span><small>${x[1]}</small></button>`).join('')}</div>
+   ${skCard(m)}${lvRoad(m)}${lvAwards(m)}</div>`},
+  after:()=>{const b=$('#scrB');carSync({lvCar:'.lrc.cur',awCar:'.awc.nx'});if(!XP3.cu){XP3.cu=1;cuRun(b);if(!lsGet('cbt_v3_lvintro',0))setTimeout(()=>{if(top()&&top().key==='lvl'&&!STY)lvStory()},650)}}}}
 function openLevel(){closeLayer();XP3.cu=0;CARS={};if(!(top()&&top().key==='lvl'))push(levelView());else redraw();xpLoad(true);lgLoad()}
 A.lvl=()=>openLevel();
 A.lvRoad=()=>{const s=$('#lvRoadS');s&&s.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})};
@@ -2938,7 +3018,7 @@ function lgBody(){const b=XP3.L;
   if(!b.ok)return `<div class="card empty"><span class="ti">${ic('wifiOff',22)}</span><b>Could not load your league</b><p>Check the internet and try again.</p><button class="btn sm" data-a="xbRe">Try again</button></div>`;
   const lv=lvAt(b.level),M=b.members||[],me=M.find(x=>x.me),n=b.n||M.length,t=b.third||0,up=lv.n<10?t:0,dn=lv.n>1?t:0;
   const head=`<section class="lgh" style="--c1:${lv.c1};--c2:${lv.c2}"><div class="lgh-t"><span class="lgh-c">${crest(lv.i,70,{cls:'float'})}</span><div><small>LEVEL ${lv.n} LEAGUE</small><b>${esc3(lv.name)}</b><span>${ic('clock',13)}Ends in ${cdTo(b.ends_at)}</span></div>
-     <button class="ib lgh-h" data-a="lgHist" aria-label="Past weeks">${ic('hist',18)}</button></div>
+     <button class="ib lgh-h" data-a="lvHow" data-s="4" aria-label="How leagues work">${ic('info',18)}</button><button class="ib lgh-h" data-a="lgHist" aria-label="Past weeks">${ic('hist',18)}</button></div>
     ${b.in?`<div class="lgh-m"><div><b>#${me?me.rank:'–'}</b><small>of ${n}</small></div><div><b>${fmtN(me?me.xp:0)}</b><small>XP this week</small></div><div class="${me?me.zone:''}"><b>${me?ic(ZN3[me.zone][1],18):''}</b><small>${me?ZN3[me.zone][0]:''}</small></div></div>
      <div class="lgz"><i class="up" style="--w:${n?up/n:0}"></i><i class="stay" style="--w:${n?(n-up-dn)/n:1}"></i><i class="down" style="--w:${n?dn/n:0}"></i>${me&&n>1?`<b class="lgz-k" style="--x:${((me.rank-1)/(n-1)).toFixed(3)}"></b>`:''}</div>
      <p class="lgh-f">${me&&me.zone==='ready'?`Climb zone, but you need ${fmtN(Math.max(0,(b.next_mark||0)-(xpMe().xp||0)))} more total XP (the XP Mark) to climb.`:me&&me.zone==='up'?'Both keys ready! Keep it up to climb on Sunday night.':me&&me.zone==='down'?`Earn more XP to get out of the Drop zone.`:up&&me&&me.xp<LG_MIN?`Climbing needs a top-${up} finish and ${LG_MIN}+ XP this week.`:up?`Top ${up} climb to Level ${lv.n+1} on Sunday night.`:'Hold your place: the top level has no Climb zone.'}</p>`
