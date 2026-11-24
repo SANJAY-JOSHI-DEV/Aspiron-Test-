@@ -132,5 +132,10 @@ union all
 select 39, 'supabase_v99_xp_marks.sql', case when to_regprocedure('cbt_private.lv_mark(integer)') is not null
   and pg_get_functiondef(to_regprocedure('cbt_private.league_close(date)')) like '%lv_mark%' then 'ok'
   else 'MISSING — run this file (after v98)' end
+union all
+-- v100: 'ok' when one open test per account and the device check are in
+select 40, 'supabase_v100_one_device.sql', case when exists (select 1 from information_schema.columns where table_schema = 'cbt_private' and table_name = 'sessions' and column_name = 'device')
+  and pg_get_functiondef(to_regprocedure('public.cbt_start(text,text,text,uuid)')) like '%running_elsewhere%' then 'ok'
+  else 'MISSING — run this file (after v99)' end
 ) x
 order by n;
