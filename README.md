@@ -302,6 +302,14 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   *All students* (all-time XP, every test series); rows show the level crest, Dr. title, test series, questions, awards and streak.
   Only the first name is shown (as on the test ranks). The board copy (`cbt_private.xp_board`) is brought up to date when someone opens it
   (at most every 2 minutes, 300 students per time): no scheduled job, no extra cost.
+- **Explained in stories (v111):** full-screen pages with bars on top, Next / Back and a tap on either side; colours and art
+  animate on every page. *Level Up story* (7 pages: XP, tests, practice, weekly league, 10 levels, the two keys) plays once on
+  the first open (`cbt_v3_lvintro`) and from the quick buttons on Level Up and the ⓘ on the league. *Streak story* (4 pages: the
+  25-question ring fills, Streak Shield, +1 shield per 7 days, two missed days break it) opens from *What's a streak?*.
+  The streak sheet shows today's ring (N/25), the week and two buttons: *Complete my streak* and *What's a streak?*.
+  Level Up is shorter: hero with the two keys, 4 quick buttons, streak, level road, awards. Crests have crystal facets
+  and a twinkle. **Every test card and live / upcoming card shows the XP per right answer for this student** (3 live,
+  2 first attempt, 1 one re-attempt; nothing once no more XP is possible).
 - **Where:** Home top line (XP and streak chips open Level Up / the streak sheet), menu → *Level Up & Streak* and *XP Leaderboard*,
   Results → Leaderboard, `#/lvl`, `#/xpb`. A new level plays a full-screen celebration (confetti off in lite mode / reduced motion);
   new XP since the last look shows a small "+N XP".
