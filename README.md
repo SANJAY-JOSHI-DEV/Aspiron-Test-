@@ -338,6 +338,10 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   so v35 does not need to run again. If `supabase_v30_promotions.sql` is ever run again, run `v35_admin_team` and then
   v95 again. `supabase_check_installed.sql` row 35 then says "ok".
 - **Tests:** `tests/db/break_it.sql` section 54.
+- **Phone layout (m-promos v6):** on a phone the board is a list (name, clicks · leads · paid, owed). The influencer page shows
+  Report / Pay / Share / Edit, three numbers (paid students, commission earned, owed now), the funnel clicks › leads › orders ›
+  paid, and four equal tabs. Series and Commission are tables on a computer and two-line cards on a phone. The commission is
+  set only in the **Commission** tab (the *Default* row = any series left empty); Edit no longer asks for it.
 - **Commission in ₹ or % (`supabase_v96_promo_percent.sql`):** every commission (normal and per series) is ₹ per paid
   student or a % of what the student paid (10% → ₹30 on ₹299, ₹80 on ₹799; rounded to the rupee, saved on the order when
   it is paid). Commission tab: *Same for every series* (Fill all / Clear all), a live "= ₹30 on ₹299", and *Save + use
