@@ -2489,6 +2489,88 @@ do $$ begin
 end $$;
 reset role;
 
+-- ===== 100. attacker test 24 Nov 2026 (supabase_v100_pentest_fixes.sql) =====
+select set_config('request.headers', '{"x-real-ip":"198.51.100.60"}', false);
+-- P-01: re-solving an OLD question must not give this week's XP again (PYQ and Question bank)
+select id as q52, answer as a52 from public.cbt_pyq where answer between 0 and 3 order by id limit 1 \gset
+insert into cbt_private.qbank (id, subject, chapter, q, options, answer, active)
+values ('52525252-0000-0000-0000-000000000052', 'Physics', 'Units', 'QB 52?', '["a","b","c","d"]', 2, true);
+select public.cbt_pyq_attempt('9000000002','BBBB2222','dev-bbbbbbbb', :'q52', :a52)->>'right' as r52a,
+       public.cbt_qb_check('9000000002','BBBB2222','dev-bbbbbbbb', '52525252-0000-0000-0000-000000000052', 2)->>'right' as r52b \gset
+update cbt_private.pyq_progress set at = at - interval '8 days', first_ok_at = first_ok_at - interval '8 days'
+ where student_id = 'bbbbbbbb-0000-0000-0000-00000000000b' and qid = :'q52';
+update cbt_private.qb_log set at = at - interval '8 days', first_ok_at = first_ok_at - interval '8 days'
+ where student_id = 'bbbbbbbb-0000-0000-0000-00000000000b' and qid = '52525252-0000-0000-0000-000000000052';
+select cbt_private.xp_between('bbbbbbbb-0000-0000-0000-00000000000b', cbt_private.xp_week()) as wk52a,
+       (cbt_private.xp_calc('bbbbbbbb-0000-0000-0000-00000000000b')->>'xp')::int as all52a \gset
+select public.cbt_pyq_attempt('9000000002','BBBB2222','dev-bbbbbbbb', :'q52', :a52)->>'right' as r52c,
+       public.cbt_qb_check('9000000002','BBBB2222','dev-bbbbbbbb', '52525252-0000-0000-0000-000000000052', 2)->>'right' as r52d \gset
+select pg_temp.chk('100a P-01 re-solving an old PYQ / question-bank question gives no new weekly XP (league farming)',
+  :'r52a' = 'true' and :'r52b' = 'true' and :'r52c' = 'true' and :'r52d' = 'true'
+  and cbt_private.xp_between('bbbbbbbb-0000-0000-0000-00000000000b', cbt_private.xp_week()) = :wk52a
+  and (cbt_private.xp_calc('bbbbbbbb-0000-0000-0000-00000000000b')->>'week_xp')::int = :wk52a,
+  'week XP before ' || :wk52a || ', after ' || cbt_private.xp_between('bbbbbbbb-0000-0000-0000-00000000000b', cbt_private.xp_week()));
+select pg_temp.chk('100b P-01 the XP earned stays (a later wrong try does not take it away; total XP unchanged by re-solving)',
+  public.cbt_qb_check('9000000002','BBBB2222','dev-bbbbbbbb', '52525252-0000-0000-0000-000000000052', 0)->>'right' = 'false'
+  and (cbt_private.xp_calc('bbbbbbbb-0000-0000-0000-00000000000b')->>'xp')::int = :all52a);
+delete from cbt_private.qb_log where qid = '52525252-0000-0000-0000-000000000052';
+delete from cbt_private.qbank where id = '52525252-0000-0000-0000-000000000052';
+
+-- P-02: joining requests: 10 a day per address; 1000 old requests (3 days) no longer stop every new student
+insert into cbt_private.access_requests (ip, created_at)
+select md5('cbt-access|198.51.100.52'), now() - interval '3 hours' from generate_series(1, 10);
+select set_config('request.headers', '{"x-real-ip":"198.51.100.52"}', false);
+select pg_temp.chk('100c P-02 an address that sent 10 requests today is refused (not only 5 in the last hour)',
+  public.cbt_request_access('Day Limit', '9852000001')->>'error' = 'busy');
+insert into cbt_private.students (name, mobile, status, created_at)
+select 'Flood ' || g, '6' || lpad(g::text, 9, '0'), 'pending', now() - interval '3 days' from generate_series(1, 1000) g;
+select set_config('request.headers', '{"x-real-ip":"198.51.100.53"}', false);
+select pg_temp.chk('100d P-02 1000 fake requests from 3 days ago do not stop a real new student joining today',
+  public.cbt_request_access('Real Student', '9852000002')->>'status' = 'received');
+delete from cbt_private.students where mobile like '6%' and name like 'Flood %';
+delete from cbt_private.students where mobile in ('9852000001', '9852000002');
+
+-- P-03: a stranger cannot block a buyer by making orders for the buyer's number
+select set_config('request.headers', '{"x-real-ip":"198.51.100.54"}', false);
+do $$ begin for i in 1 .. 5 loop perform public.cbt_store_order('cccccccc-0000-0000-0000-000000000001', 'Not Me', '9853000003'); end loop; end $$;
+select set_config('request.headers', '{"x-real-ip":"198.51.100.55"}', false);
+select pg_temp.chk('100e P-03 after 5 orders for a number from another address, the real buyer can still order',
+  public.cbt_store_order('cccccccc-0000-0000-0000-000000000001', 'Real Buyer', '9853000003')->>'ok' = 'true');
+delete from public.cbt_store_orders where mobile = '9853000003';
+
+-- P-05: at most 60 generated tests a day per student
+delete from cbt_private.rate_hits where student_id = 'bbbbbbbb-0000-0000-0000-00000000000a';
+insert into cbt_private.gen_tests (student_id, title, qids, duration, starts_at, submitted_at)
+select 'bbbbbbbb-0000-0000-0000-00000000000a', 'flood', '{}', 30, 0, cbt_private.now_ms() from generate_series(1, 60);
+select pg_temp.chk('100f P-05 a student who made 60 tests today cannot make more (database size)',
+  public.cbt_gen_create('9000000001','AAAA1111','dev-aaaaaaaa', '{}')->>'error' = 'busy');
+delete from cbt_private.gen_tests where title = 'flood';
+
+-- P-06: a repeat lead from someone else does not change the name the owner sees
+select code as pl52 from public.cbt_promo_links where active limit 1 \gset
+select set_config('request.headers', '{"x-real-ip":"198.51.100.56"}', false);
+select public.cbt_promo_lead(:'pl52', 'Real Name', '9856000006', 'neet')->>'ok' as l52a \gset
+update public.cbt_promo_leads set last_at = now() - interval '5 minutes' where mobile = '9856000006';
+select set_config('request.headers', '{"x-real-ip":"198.51.100.57"}', false);
+select public.cbt_promo_lead(:'pl52', 'Hacked Name', '9856000006', 'jee')->>'ok' as l52b \gset
+select pg_temp.chk('100g P-06 nobody can overwrite the name (or course) on another person''s lead',
+  (select name from public.cbt_promo_leads where mobile = '9856000006') = 'Real Name'
+  and (select course from public.cbt_promo_leads where mobile = '9856000006') = 'neet');
+delete from public.cbt_promo_leads where mobile = '9856000006';
+
+-- P-07: alerts a stranger can cause never use up the Telegram budget; owner / team alerts still go out
+insert into cbt_private.settings (key, value) values ('tg_token', '123456789:test'), ('tg_chat', '1')
+  on conflict (key) do update set value = excluded.value;
+delete from cbt_private.tg_sent;
+do $$ begin for i in 1 .. 10 loop perform cbt_private.sec_event('many:code_guessing', 'high', '', 'flood ' || i); end loop; end $$;
+select count(*) as tg52a from cbt_private.tg_sent \gset
+select cbt_private.sec_event('2fa_off', 'high', 'Owner', 'real alert');
+select pg_temp.chk('100h P-07 10 attacker-made alerts send at most 3 Telegram messages, and a real 2FA-off alert still goes out',
+  :tg52a <= 3 and (select count(*) from cbt_private.tg_sent) = :tg52a + 1, :tg52a || ' sent for 10 attacker alerts');
+delete from cbt_private.settings where key in ('tg_token', 'tg_chat');
+delete from cbt_private.tg_sent;
+select set_config('request.headers', '{"x-real-ip":"203.0.113.10"}', false);
+
 -- ===== report =====
 \t off
 \a

@@ -132,5 +132,12 @@ union all
 select 39, 'supabase_v99_xp_marks.sql', case when to_regprocedure('cbt_private.lv_mark(integer)') is not null
   and pg_get_functiondef(to_regprocedure('cbt_private.league_close(date)')) like '%lv_mark%' then 'ok'
   else 'MISSING — run this file (after v98)' end
+union all
+-- v100: 'ok' when the attacker-test fixes are in (XP dated by the first right answer, request limits per day)
+select 40, 'supabase_v100_pentest_fixes.sql', case when exists (select 1 from information_schema.columns
+    where table_schema = 'cbt_private' and table_name = 'pyq_progress' and column_name = 'first_ok_at')
+  and pg_get_functiondef(to_regprocedure('cbt_private.xp_calc(uuid)')) like '%first_ok_at%'
+  and pg_get_functiondef(to_regprocedure('public.cbt_request_access(text,text)')) like '%P-02%' then 'ok'
+  else 'MISSING — run this file (after v99; again after re-running v42, v45, v63, v91, v93, v95 or v98)' end
 ) x
 order by n;
