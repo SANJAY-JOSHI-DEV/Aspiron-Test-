@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=105;
+const V3VER=106;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -47,7 +47,7 @@ const dur=m=>m>=60?`${Math.floor(m/60)} h${m%60?` ${m%60} min`:''}`:`${m} min`;
 const fmtN=n=>Number(n||0).toLocaleString('en-IN');
 const day0=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
 const dayWord=t=>{const k=Math.round((day0(t)-day0(nowMs()))/DAY);return k===0?'Today':k===1?'Tomorrow':k===-1?'Yesterday':fD(t,{weekday:'short',day:'numeric',month:'short'})};
-const P={flame:'<path d="M12 3c.5 3 3.5 4.6 4.6 7.4A6 6 0 1 1 6.3 13c.5-1.6 1.6-2.6 2.6-3.2.2 1.6 1 2.7 2.1 3.2C10.6 9.6 11 5.8 12 3z"/>',tear:'<path d="M12 3C12 3 18 9.5 18 14.2A6 6 0 0 1 6 14.2C6 9.5 12 3 12 3Z"/><path d="M9.2 15a2.9 2.9 0 0 0 2.6 2.6"/>',eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',folder:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/>',star:'<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.4 5.9.9a.6.6 0 0 1 .3 1l-4.3 4.2 1 5.9a.6.6 0 0 1-.8.6L12 17.6l-5.3 2.8a.6.6 0 0 1-.8-.6l1-5.9-4.3-4.2a.6.6 0 0 1 .3-1l5.9-.9z"/>',
+const P={podium:'<path d="M9 21v-9h6v9"/><path d="M3 21v-5h6"/><path d="M15 21v-7h6v7"/><path d="M2 21h20"/><path d="m12 3 1 2 2.1.3-1.5 1.5.4 2.1-2-1-2 1 .4-2.1L8.9 5.3 11 5z"/>',results:'<path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M9 17v-3"/><path d="M12 17v-6"/><path d="M15 17v-4.5"/>',mistake:'<path d="M5 19.5V4.5A2.5 2.5 0 0 1 7.5 2H19v16H7.5A2.5 2.5 0 0 0 5 20.5 1.5 1.5 0 0 0 6.5 22H19"/><path d="m10 7 4 4"/><path d="m14 7-4 4"/>',tracker:'<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 15.5 2 2 4-4"/>',hourglass:'<path d="M6 2h12"/><path d="M6 22h12"/><path d="M7.5 2v3.2a4 4 0 0 0 1.6 3.2L12 11l2.9-2.6a4 4 0 0 0 1.6-3.2V2"/><path d="M7.5 22v-3.2a4 4 0 0 1 1.6-3.2L12 13l2.9 2.6a4 4 0 0 1 1.6 3.2V22"/>',calPlus:'<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M12 13.5v5"/><path d="M9.5 16h5"/>',xp:'<path d="M13 2 4.5 13.5h6.5L10 22l8.5-11.5H12z"/>',practice:'<path d="M4 21h7"/><path d="M14.5 3.5a2.1 2.1 0 0 1 3 3L8.5 15.5l-4 1 1-4z"/><path d="m14.5 17.5 2 2 4-4"/>',wallet:'<path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v3.5"/><path d="M3 6v12a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-2.5"/><path d="M21 12.5h-3a2 2 0 0 0 0 4h3z"/>',trend:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',store:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',resources:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><path d="M8.5 13h7"/><path d="M8.5 16h4.5"/>',flame:'<path d="M12 3c.5 3 3.5 4.6 4.6 7.4A6 6 0 1 1 6.3 13c.5-1.6 1.6-2.6 2.6-3.2.2 1.6 1 2.7 2.1 3.2C10.6 9.6 11 5.8 12 3z"/>',tear:'<path d="M12 3C12 3 18 9.5 18 14.2A6 6 0 0 1 6 14.2C6 9.5 12 3 12 3Z"/><path d="M9.2 15a2.9 2.9 0 0 0 2.6 2.6"/>',eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',folder:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/>',star:'<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.4 5.9.9a.6.6 0 0 1 .3 1l-4.3 4.2 1 5.9a.6.6 0 0 1-.8.6L12 17.6l-5.3 2.8a.6.6 0 0 1-.8-.6l1-5.9-4.3-4.2a.6.6 0 0 1 .3-1l5.9-.9z"/>',
  home:'<path class="f" d="M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2h-4v-6a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v6H5a2 2 0 0 1-2-2z"/>',
  tests:'<path class="f" d="M7 3h6.5L19 8.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M13 3v4a1.5 1.5 0 0 0 1.5 1.5H19"/><path d="m8.6 14.6 2.2 2.2 4.6-4.6"/>',
  tools:'<rect class="f" x="3.5" y="3.5" width="7" height="7" rx="2"/><rect class="f" x="13.5" y="3.5" width="7" height="7" rx="2"/><rect class="f" x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4"/><path d="M13.8 17h6.4"/>',
@@ -397,7 +397,7 @@ A.dk=el=>({pyq:()=>openPyq(),qb:()=>openQB(),gen:()=>openGen(),ranks:()=>openRan
 /* ================= QUICK SEARCH (Ctrl/⌘ K or "/"): jump to any page, tool, test series or test ================= */
 const CK={el:null,i:0,L:[]};
 function ckAll(){const L=[];NAV.forEach(n=>L.push([n[1],'Page',n[2],()=>go(n[0])]));
-  [['PYQ Analyzer','pyq',()=>openPyq()],['Question bank','qb',()=>openQB()],['Test generator','spark',()=>openGen()],['Ranks and leaderboards','trophy',()=>openRanks()],['Test history','hist',()=>A.hist()],['Mistake notebook','pen',()=>openMistakes()],['Saved questions','bookmark',()=>openSaved()],['Study tracker','cal',()=>openTracker()],['Notes and PDFs','file',()=>openNotes()],['Notifications','mega',()=>A.bell()],['Refer and earn','gift',()=>openRefer()],['My profile','user',()=>A.profile()],['My test series','layers',()=>A.mySeries()],['Settings','gear',()=>A.settings()],['Theme and colours','sun',()=>openTheme()],['Help and contact','mail',()=>A.setHelp()]].forEach(x=>L.push([x[0],'Page',x[1],x[2]]));
+  [['PYQ Analyzer','pyq',()=>openPyq()],['Question bank','qb',()=>openQB()],['Test generator','spark',()=>openGen()],['Ranks and leaderboards','podium',()=>openRanks()],['Test history','hist',()=>A.hist()],['Mistake notebook','mistake',()=>openMistakes()],['Saved questions','bookmark',()=>openSaved()],['Study tracker','tracker',()=>openTracker()],['Notes and PDFs','file',()=>openNotes()],['Notifications','mega',()=>A.bell()],['Refer and earn','gift',()=>openRefer()],['My profile','user',()=>A.profile()],['My test series','layers',()=>A.mySeries()],['Settings','gear',()=>A.settings()],['Theme and colours','sun',()=>openTheme()],['Help and contact','mail',()=>A.setHelp()]].forEach(x=>L.push([x[0],'Page',x[1],x[2]]));
   Object.keys(TOOLS).forEach(k=>TOOLS[k].forEach(t=>L.push([t[2],'Tool',t[1],()=>A.tool({dataset:{k:t[0]}})])));
   try{(C().series||[]).forEach(x=>L.push([x.title,'Test series','layers',()=>openSeriesAny(x.id,'t')]));(C().tests||[]).forEach(t=>L.push([t.title,(sOf(t.series_id)||{}).title||'Test','tests',()=>A.test({dataset:{id:t.id}})]))}catch(e){}
   return L}
@@ -490,16 +490,16 @@ function hbRefLoad(){if(HBRL)return;HBRL=true;try{rfLoad(false).then(r=>{if(r&&r
 /* XP is worked out on the phone from what the student did: 10 per test, 2 per right answer, 5 per question of the day answered today */
 function hbStats(){let R=[];try{R=allRes()}catch(e){}const st=stats(R),qd=QD.ok?QD.items.filter(x=>x.done).length:0;hbRefLoad();
   const xp=R.length*10+(st.cor||0)*2+qd*5,k=n=>n>=10000?(Math.round(n/100)/10)+'k':fmtN(n);
-  const L=[['xp','spark',k(xp),'XP','XP points: '+fmtN(xp)],['streak','flame',st.streak||0,'day'+((st.streak||0)===1?'':'s'),(st.streak||0)+' day streak'],['prac','target',k(st.tot||0),'Qs',fmtN(st.tot||0)+' questions practised']];
-  if(HBRF&&HBRF.ok)L.push(['ref','gift',rfInr(HBRF.balance||0),'','Refer wallet: '+rfInr(HBRF.balance||0)]);
+  const L=[['xp','xp',k(xp),'XP','XP points: '+fmtN(xp)],['streak','flame',st.streak||0,'day'+((st.streak||0)===1?'':'s'),(st.streak||0)+' day streak'],['prac','practice',k(st.tot||0),'Qs',fmtN(st.tot||0)+' questions practised']];
+  if(HBRF&&HBRF.ok)L.push(['ref','wallet',rfInr(HBRF.balance||0),'','Refer wallet: '+rfInr(HBRF.balance||0)]);
   return `<span class="hb-st" role="list">${L.map((x,i)=>`<button class="hb-sc" role="listitem" data-a="hbGo" data-k="${x[0]}" style="--i:${i}" aria-label="${esc3(x[4])}">${ic(x[1],14)}<b>${esc3(String(x[2]))}</b>${x[3]?`<small>${x[3]}</small>`:''}</button>`).join('')}</span>`}
 A.hbGo=el=>{const k=el.dataset.k;if(k==='ref')openRefer();else if(k==='prac')A.hist();else go('stats')};
 function hbQd(){qdLoad();const G=QD.ok?qdGroups():[];if(!G.length)return `<div class="hb-q" id="hbTop"><div class="hb-h nq"><span class="hb-hl">${hbStats()}</span></div></div>`;const all=QD.items.length,dn=QD.items.filter(x=>x.done).length;
-  return `<div class="hb-q${QD.fresh?' pop':''}${HBO?' open':''}" id="qdBox"><div class="hb-h" data-a="qdTg"><span class="hb-hl"><small class="hb-k">QUESTIONS OF THE DAY</small>${hbStats()}</span>
+  return `<div class="hb-q still${QD.fresh?' pop':''}${HBO?' open':''}" id="qdBox"><div class="hb-h" data-a="qdTg"><span class="hb-hl"><small class="hb-k">QUESTIONS OF THE DAY</small>${hbStats()}</span>
     <button class="hb-tg${HBO?' on':''}${dn<all?' new':''}" data-a="qdTg" aria-expanded="${HBO}" aria-controls="hbS" aria-label="${HBO?'Hide':'Show'} the questions of the day">${ic('down',16)}</button></div>
    <div class="hb-s${HBO?' on':''}" id="hbS"><div class="hb-si"><div class="qd-row hb-row" role="list">${G.map((g,i)=>`<button class="qd-c${g.done===g.L.length?' seen':''}" style="--i:${i}" role="listitem" data-a="qdOpen" data-s="${esc3(g.s)}" aria-label="${esc3(qbSub(g.s))}, ${g.done} of ${g.L.length} answered"${HBO?'':' tabindex="-1"'}><span class="qd-r"><span class="qd-i">${ic(QD_IC[g.s]||'book',24)}</span></span><span class="qd-l">${esc3(qbSub(g.s))}</span><small>${g.done}/${g.L.length}</small></button>`).join('')}</div></div></div>
    </div>`}
-A.qdTg=()=>{const el=$('#qdBox .hb-tg');if(!el)return;HBO=!HBO;try{localStorage.setItem('cbt_v3_qd_open',HBO?'1':'0')}catch(e){}const b=$('#hbS'),q=$('#qdBox');if(b)b.classList.toggle('on',HBO);if(q)q.classList.toggle('open',HBO);el.classList.toggle('on',HBO);
+A.qdTg=()=>{const el=$('#qdBox .hb-tg');if(!el)return;HBO=!HBO;try{localStorage.setItem('cbt_v3_qd_open',HBO?'1':'0')}catch(e){}const b=$('#hbS'),q=$('#qdBox');if(q)q.classList.remove('still');if(b)b.classList.toggle('on',HBO);if(q)q.classList.toggle('open',HBO);el.classList.toggle('on',HBO);
   el.setAttribute('aria-expanded',String(HBO));el.setAttribute('aria-label',(HBO?'Hide':'Show')+' the questions of the day');if(b)b.querySelectorAll('.qd-c').forEach(c=>{if(HBO)c.removeAttribute('tabindex');else c.setAttribute('tabindex','-1')})};
 function seriesHero(){const s=curSeries();
   if(!s)return `<section class="band hcd" id="serBox">${HB_BG}<div class="band-in">${hbQd()}<small class="hb-k">YOUR TEST SERIES</small><div class="hb-r"><b class="hb-ser hb-none"><span>Choose your first test series</span></b><button class="pillbtn hb-up" data-a="tab" data-tab="test">Open store</button></div></div></section>`;
@@ -508,7 +508,7 @@ function seriesHero(){const s=curSeries();
     <button class="pillbtn upg hb-up" data-a="upg" aria-label="Upgrade plan">${ic('crown',15)}<span>Upgrade plan</span></button></div></div></section>`}
 /* ---------- v89: the shortcut tiles under the series band: Resources and All Tests (both need a series). My Doubts joins them with the Doubts feature.
    Everything else stays in "My study zone". Upgrade plan opens the series' plans when the admin set upgrades for it. ---------- */
-const QK=[['res','Resources','file'],['tests','All Tests','tests'],['doubts','My Doubts','doubt'],['results','Results','trophy']];
+const QK=[['res','Resources','resources'],['tests','All Tests','tests'],['doubts','My Doubts','doubt'],['results','Results','results']];
 function quickGrid(){const s=curSeries();if(!s)return '';
   return `<section class="qk" id="qkBox" aria-label="Shortcuts"><div class="qk-g" style="--n:${QK.length}">${QK.map((x,i)=>`<button class="qk-t" data-a="qk" data-k="${x[0]}" style="--i:${i}"><span class="qk-i">${ic(x[2],21)}</span><span class="qk-l">${x[1]}</span></button>`).join('')}</div></section>`}
 A.qk=el=>{const s=curSeries();if(!s)return;if(el.dataset.k==='doubts'){openDoubts();return}if(el.dataset.k==='results'){openResHub();return}A.openSD({dataset:{id:s.id,t:el.dataset.k==='res'?'r':'t'}})};
@@ -560,7 +560,7 @@ A.qdFirst=()=>{if(!QV)return;const f=qdList().findIndex(x=>!x.done);QV.i=f<0?0:f
 A.qdQb=()=>{openQB()};
 const RC=2*Math.PI*24;
 function cdCard3(){let c=null;try{c=cdGet()}catch(e){}
-  if(!c)return `<section class="sec"><div class="card cdc"><div class="cd-top"><span class="ti g">${ic('target',22)}</span><div style="min-width:0"><h3>Exam countdown</h3><p>Set your exam date and see how much time is left.</p></div><button class="btn sm" data-a="cdEdit">Set date</button></div></div></section>`;
+  if(!c)return `<section class="sec"><div class="card cdc"><div class="cd-top"><span class="ti g">${ic('hourglass',22)}</span><div style="min-width:0"><h3>Exam countdown</h3><p>Set your exam date and see how much time is left.</p></div><button class="btn sm" data-a="cdEdit">Set date</button></div></div></section>`;
   const u=(id,l)=>`<div class="cu"><span class="dg" id="${id}"><span>00</span></span><small>${l}</small></div>`;
   return `<section class="sec"><div class="card cdc" id="cdBox" role="timer">
    <div class="cd-top"><div class="ring" aria-hidden="true"><svg viewBox="0 0 56 56"><circle class="tr" cx="28" cy="28" r="24"/><circle class="pg" id="cdPg" cx="28" cy="28" r="24" stroke-dasharray="${RC.toFixed(1)}" stroke-dashoffset="${RC.toFixed(1)}"/></svg><span id="cdPct">0%</span></div>
@@ -791,7 +791,7 @@ const mpass=s=>{const w=TQ.q.toLowerCase().split(/\s+/).filter(Boolean),h=[s.tit
 /* ---------- top: the poster from Admin → Tests page, edge to edge, with the search on it and the two big buttons on its bottom ---------- */
 function tabs2(){const c=myCount(),n=shop().filter(x=>x.buy_on!==false).length;
   return `<div class="tt2">
-   <button class="${TQ.tile==='store'?'on':''}" data-a="toList"><span class="ti">${ic('tests',22)}</span><b>Test Series Store</b><small>${STORE&&known()?(n||!STORE.some(x=>x.buy_on!==false)?n+' series':'All bought'):'Loading'}</small></button>
+   <button class="${TQ.tile==='store'?'on':''}" data-a="toList"><span class="ti">${ic('store',22)}</span><b>Test Series Store</b><small>${STORE&&known()?(n||!STORE.some(x=>x.buy_on!==false)?n+' series':'All bought'):'Loading'}</small></button>
    <button class="${TQ.tile==='my'?'on':''}" data-a="mySeries"><span class="ti">${ic('layers',22)}</span><b>My Test Series</b><small>${c.all?c.all+' enrolled':'None yet'}</small></button></div>`}
 function posterImg(){const p=LK().poster||'';return /^data:image\/(jpeg|png|webp);base64,/.test(p)?p:''}
 function poster(){const L=LK(),img=posterImg(),u=/^(https:\/\/|#\/|store\.html#)[^\s"'<>\\]*$/.test(L.link||'')?L.link:'';
@@ -1335,16 +1335,16 @@ function anTests(R){const T=(C().tests||[]).filter(t=>!t.locked&&!t.practice),t0
    ${nM?`<p class="note">${ic('info',15)}<span>You missed ${nM===1?'<b>'+esc3(miss[0].title)+'</b>':`${nM} tests`}. You can still take it when it opens again: your first attempt gets a rank in that test.</span></p>`:''}</div>
   ${R.length?`<div class="card p stack" style="gap:14px"><div class="rowb"><b>Score in your latest tests</b><small class="mut">${Math.min(10,R.length)} of ${R.length}</small></div>${vbars(resPts(R,pctOf,'%'),{max:100,unit:'%',label:'Marks across your latest 10 tests',tip0:'Tap a bar to see the test.'})}
    ${re.length?`<div class="sub2"><b>Tests you took again</b>${re.map(x=>{const d=x.b-x.a;return `<div class="rt"><span>${esc3(x.t)}<small>${x.n} attempts</small></span><span class="rtv">${x.a}% <i aria-hidden="true">→</i> <b>${x.b}%</b><i class="atr ${d>0?'up':d<0?'dn':''}">${d>0?'+':d<0?'−':''}${Math.abs(d)}</i></span></div>`}).join('')}</div>`:''}</div>
-   <button class="morebtn card" data-a="hist"><span>${ic('trophy',19)}Test history, results and solutions</span>${ic('right',18)}</button>`
-   :`<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>Take your first test</b><p>Your scores, accuracy and rank appear here after it.</p><button class="btn sm gold" data-a="mySeries">Open my test series</button></div>`}`)}
+   <button class="morebtn card" data-a="hist"><span>${ic('hist',19)}Test history, results and solutions</span>${ic('right',18)}</button>`
+   :`<div class="card empty"><span class="ti">${ic('results',22)}</span><b>Take your first test</b><p>Your scores, accuracy and rank appear here after it.</p><button class="btn sm gold" data-a="mySeries">Open my test series</button></div>`}`)}
 /* the parts that need their own server calls */
 function anLive(){if(!AX.t)return anSk(3);const o=[];
   /* rank */
   const v=AX.ov;if(v&&v.my_rank){const topP=v.top&&v.top[0]?+v.top[0].pct:0,pc=v.total?Math.max(1,Math.round(v.my_rank*100/v.total)):0;
     o.push(anSec('Rank','All India, all tests',`<div class="card p stack" style="gap:14px"><div class="ark"><div><small>Your rank</small><b>#${N(v.my_rank)}</b><em>of ${fmtN(v.total)} students</em></div><span class="tagp">Top ${pc}%</span></div>
      <div class="cmp"><span>You</span>${anBar((+v.my_pct||0)/100,'acc')}<b>${+v.my_pct||0}%</b><span>Topper</span>${anBar(topP/100,'na2')}<b>${topP}%</b></div>
-     <button class="btn ghost blk" data-a="ranks">${ic('medal',16)}Open leaderboards</button></div>`))}
-  else o.push(anSec('Rank','',`<div class="card rows"><button class="row" data-a="ranks"><span class="ti g">${ic('medal',20)}</span><span><b>Ranks and leaderboards</b><small>Your rank shows after a ranked test</small></span>${ic('right',18)}</button></div>`));
+     <button class="btn ghost blk" data-a="ranks">${ic('podium',16)}Open leaderboards</button></div>`))}
+  else o.push(anSec('Rank','',`<div class="card rows"><button class="row" data-a="ranks"><span class="ti g">${ic('podium',20)}</span><span><b>Ranks and leaderboards</b><small>Your rank shows after a ranked test</small></span>${ic('right',18)}</button></div>`));
   /* subjects (from the tests) */
   const S0=((AX.ins&&AX.ins.subjects)||[]).filter(s=>(s.correct+s.wrong+(s.skipped||0))>0),Sx=S0.length===1&&S0[0].sec==='General'?[]:S0.map(s=>Object.assign({acc:s.correct+s.wrong?Math.round(s.correct*100/(s.correct+s.wrong)):0},s));
   if(Sx.length){const wk=Sx.filter(s=>s.correct+s.wrong>=3).sort((a,b)=>a.acc-b.acc)[0],bs=Sx.filter(s=>s.correct+s.wrong>=3).sort((a,b)=>b.acc-a.acc)[0];
@@ -1370,7 +1370,7 @@ function anLive(){if(!AX.t)return anSk(3);const o=[];
   const k=AX.mk;if(k&&(k.wrong||k.skipped||k.mastered)){const mx=Math.max(1,...(k.secs||[]).map(x=>+x.n||0));
     o.push(anSec('Mistakes','From your tests',`<div class="card p stack" style="gap:14px"><div class="c3n"><div><b class="${k.wrong?'warn':''}">${N(k.wrong||0)}</b><small>Wrong</small></div><div><b>${N(k.skipped||0)}</b><small>Skipped</small></div><div><b class="good">${N(k.mastered||0)}</b><small>Mastered</small></div></div>
      ${(k.secs||[]).length>1?`<div class="stack" style="gap:10px">${k.secs.map(x=>`<div class="sbl"><span class="sbn">${esc3(x.sec)}</span>${anBar((+x.n||0)/mx,'low')}<b>${fmtN(+x.n||0)}</b></div>`).join('')}</div>`:''}
-     <button class="btn ghost blk" data-a="oldGo" data-h="#/m">${ic('pen',16)}Open the mistake notebook</button></div>`))}
+     <button class="btn ghost blk" data-a="oldGo" data-h="#/m">${ic('mistake',16)}Open the mistake notebook</button></div>`))}
   return o.join('')}
 function anPrac(){return ((AX.qb&&AX.qb.mine)||[]).map(m=>({s:m[0]||'',c:m[1]||'',n:+m[2]||0,r:+m[3]||0})).filter(m=>m.n>0)}
 function anTC(){return ((AX.tc&&AX.tc.chapters)||[]).map(x=>{const at=(+x.correct||0)+(+x.wrong||0);return {s:x.s,c:x.c,n:+x.total||0,r:+x.correct||0,w:+x.wrong||0,sk:+x.skipped||0,t:+x.avg_time||0,acc:at?Math.round((+x.correct||0)*100/at):0}}).filter(m=>m.n>0)}
@@ -1393,7 +1393,7 @@ VIEW.stats=()=>{const R=allRes(),D=anDays(R);
    <div class="c3n"><div><b>${N(D.a30)}</b><small>Active days in 30</small></div><div><b>${N(D.streak)}</b><small>Current streak</small></div><div><b>${N(D.best)}</b><small>Longest streak</small></div></div>
    <button class="btn ghost blk" data-a="oldTracker">${ic('list',16)}Open your study tracker</button></div>`)}
   ${anRecords(R)}
-  ${anSec('More','',`<div class="card rows">${[['trophy','Test history',`${R.length} tests`,'hist',''],['bookmark','Saved questions',`${bmCount()} saved`,'oldGo','#/b'],['cal','Study tracker','Your weekly plans','oldGo','#/t'],['timer','Focus timer','Timed study sessions','focus',''],['gift','Refer and earn','Your code and wallet money','refer','']].map(r=>`<button class="row" data-a="${r[3]}"${r[4]?` data-h="${r[4]}"`:''}><span class="ti">${ic(r[0],20)}</span><span><b>${r[1]}</b><small>${r[2]}</small></span>${ic('right',18)}</button>`).join('')}</div>`)}`};
+  ${anSec('More','',`<div class="card rows">${[['hist','Test history',`${R.length} tests`,'hist',''],['bookmark','Saved questions',`${bmCount()} saved`,'oldGo','#/b'],['tracker','Study tracker','Your weekly plans','oldGo','#/t'],['timer','Focus timer','Timed study sessions','focus',''],['gift','Refer and earn','Your code and wallet money','refer','']].map(r=>`<button class="row" data-a="${r[3]}"${r[4]?` data-h="${r[4]}"`:''}><span class="ti">${ic(r[0],20)}</span><span><b>${r[1]}</b><small>${r[2]}</small></span>${ic('right',18)}</button>`).join('')}</div>`)}`};
 A.per=el=>{AN.per=el.dataset.v;$$('[data-a="per"]').forEach(x=>{const on=x===el;x.classList.toggle('on',on);x.setAttribute('aria-selected',on)});const o=$('#anPer');if(o){o.innerHTML=anPer();countUp(o)}};
 A.anQb=()=>openQB();
 /* every chapter practised, grouped by subject */
@@ -1438,7 +1438,7 @@ function histAfter(){clearInterval(histT);histT=0;if(root.querySelector('[data-c
 const histLeave=()=>{clearInterval(histT);histT=0};
 function histView(){return {t:'Test history',s:`${histGroups().length} tests`,key:'hist',after:histAfter,leave:histLeave,html:()=>{raLoad();
   const G=histGroups(),W=(C().pending||[]).filter(p=>!G.some(g=>g.id===p.test_id&&false)),n=allRes().length;
-  if(!G.length&&!W.length)return `<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>No tests yet</b><p>Your results appear here once you attempt a test.</p></div>`;
+  if(!G.length&&!W.length)return `<div class="card empty"><span class="ti">${ic('hist',22)}</span><b>No tests yet</b><p>Your results appear here once you attempt a test.</p></div>`;
   return `${W.length?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Waiting for result</h2><span class="aside">${W.length}</span></div>${W.map(waitCard).join('')}</section>`:''}
    ${G.length?`<section class="stack" style="gap:10px"><div class="sh" style="margin:0"><h2>Your tests</h2><span class="aside">${n} attempt${n===1?'':'s'}</span></div>
    ${G.slice(0,80).map(g=>`<button class="card hs3-g" data-a="histOpen" data-id="${esc3(g.id||'')}" data-k="${esc3(g.id||('t:'+g.title))}"><div class="hs3-gb"><b>${esc3(g.title)}</b><small>${g.s?esc3(g.s.title)+' · ':''}${dS(g.last.at)}</small>
@@ -2535,7 +2535,7 @@ function trView(){return {t:'Study tracker',get s(){try{return trkW().label}catc
      <div class="trh-t"><button class="trwn" data-a="trRename"><b>${esc3(w.label)}</b>${ic('pen',14)}</button><p><b>${st.done}</b> done · <b>${st.total-st.done}</b> left · <b>${st.total}</b> tasks</p>
       <div class="trday"><span><b>${td}</b> today</span><span><b>${sk}</b> day streak</span></div></div></div>
     <div class="trwk">${wk.map(x=>`<div class="${x.t?'t':''}"><i class="${x.n?'':'z'}" style="--h:${x.n?Math.max(.16,x.n/mx).toFixed(2):.06}"></i><span>${x.l}</span></div>`).join('')}</div>
-    <div class="trq"><button data-a="trGrowth">${ic('chart',17)}<span>Growth</span></button><button data-a="trTargets">${ic('target',17)}<span>Targets</span></button><button data-a="trWeeks">${ic('cal',17)}<span>Weeks</span></button><button data-a="trAddWeek">${ic('spark',17)}<span>New week</span></button></div></section>
+    <div class="trq"><button data-a="trGrowth">${ic('trend',17)}<span>Growth</span></button><button data-a="trTargets">${ic('target',17)}<span>Targets</span></button><button data-a="trWeeks">${ic('cal',17)}<span>Weeks</span></button><button data-a="trAddWeek">${ic('calPlus',17)}<span>New week</span></button></div></section>
    ${tip?`<div class="trtip ${tip[0]}">${ic(tip[0]==='ok'?'trophy':tip[0]==='warn'?'info':'target',18)}<p>${tip[1]}</p></div>`:''}
    <div class="chips trwks">${T.weeks.map((x,i)=>`<button class="${i===T.cur?'on':''}" data-a="trWeek" data-i="${i}">${esc3(x.label)}<small>${trkStats(x).pct}%</small></button>`).join('')}<button data-a="trAddWeek">${ic('spark',14)} Add</button></div>`;
   if(!w.subjects.length)return h+`<div class="card empty"><span class="ti">${ic('book',22)}</span><b>Add your subjects</b><p>Pick one to start, or add your own.</p>
@@ -2631,23 +2631,23 @@ function rkRows(top,me,mine){const rest=top.slice(3,10);
    ${me&&me>Math.min(top.length,10)?`<div class="card rkl"><div class="rkr me"><span class="rkn">${me}</span><span class="rkav sm">${esc3(((AUTH&&AUTH.name)||'Y')[0].toUpperCase())}</span><b>You</b><span class="rkv">${esc3(mine)}</span></div></div>`:''}`}
 function rkOverall(){const b=RK3.ov;
   if(!b)return '<div class="card sk" style="height:180px"></div><div class="card sk" style="height:220px"></div>';
-  if(!b.ok||!b.top||!b.top.length)return `<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>No ranks yet</b><p>Take a test to get your overall rank.</p></div>`;
+  if(!b.ok||!b.top||!b.top.length)return `<div class="card empty"><span class="ti">${ic('podium',22)}</span><b>No ranks yet</b><p>Take a test to get your overall rank.</p></div>`;
   const tot=b.total||1,beat=b.my_rank?(tot>1?Math.round((tot-b.my_rank)*100/(tot-1)):100):null;
-  return `<section class="mkh rkh"><div class="mkh-top"><div><small>OVERALL RANK · AVERAGE OF ALL TESTS</small><b>${b.my_rank?'#'+b.my_rank:'–'}</b><span>${b.my_rank?`Ahead of ${beat}% of ${fmtN(tot)} students`:`${fmtN(tot)} students ranked`}</span></div><span class="ti qbic">${ic('trophy',28)}</span></div>
+  return `<section class="mkh rkh"><div class="mkh-top"><div><small>OVERALL RANK · AVERAGE OF ALL TESTS</small><b>${b.my_rank?'#'+b.my_rank:'–'}</b><span>${b.my_rank?`Ahead of ${beat}% of ${fmtN(tot)} students`:`${fmtN(tot)} students ranked`}</span></div><span class="ti qbic">${ic('podium',28)}</span></div>
     ${b.my_rank?`<span class="bar"><i style="--p:${(beat/100).toFixed(3)}"></i></span><div class="mkh-st"><div><b>${b.my_pct}%</b><small>Your average</small></div><div><b>${b.top[0].pct}%</b><small>Topper</small></div><div><b>${fmtN(tot)}</b><small>Students</small></div></div>`:''}</section>
    ${rkPod(b.top,b.my_rank)}${rkRows(b.top,b.my_rank,(b.my_pct!=null?b.my_pct+'%':''))}`}
 function rkTest(t){const r=LBC[t.id];
   if(!r)return '<div class="card sk" style="height:150px"></div><div class="card sk" style="height:200px"></div>';
   const go=t.attempts||(typeof isClosed==='function'&&isClosed(t))?'':`<button class="btn sm" data-a="test" data-id="${esc3(t.id)}">Attempt now</button>`;
   if(r.ok&&r.hidden)return `<div class="card empty"><span class="ti">${ic('clock',22)}</span><b>Ranks come out later</b><p>Ranks will be shown after ${esc3(fmtWhen(r.result_at))}.</p>${go}</div>`;
-  if(!r.ok||!r.top||!r.top.length)return `<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>No ranks yet</b><p>Nobody has a rank in this test yet.</p>${go}</div>`;
+  if(!r.ok||!r.top||!r.top.length)return `<div class="card empty"><span class="ti">${ic('podium',22)}</span><b>No ranks yet</b><p>Nobody has a rank in this test yet.</p>${go}</div>`;
   const solo=r.total<2;
   return `${r.my_rank?`<section class="mkh rkh"><div class="mkh-top"><div><small>YOUR RANK</small><b>#${r.my_rank}<em> of ${fmtN(r.total)}</em></b><span>${esc3(t.title)}</span></div><span class="ti qbic">${ic('medal',28)}</span></div>
      <div class="mkh-st rk4"><div><b>${r.my_score}</b><small>Your score</small></div><div><b>${solo?'–':r.percentile}</b><small>Percentile</small></div><div><b>${r.avg}</b><small>Average</small></div><div><b>${r.top_score}</b><small>Topper</small></div></div></section>`
     :`<div class="card rkna"><p>${t.attempts?'Only a first attempt submitted on time gets a rank.':'You have not taken this test yet.'}</p>${t.attempts?'':go}</div>`}
    ${rkPod(r.top,r.my_rank)}${rkRows(r.top,r.my_rank,r.my_score)}<p class="hint" style="text-align:center">${fmtN(r.total)} student${r.total===1?'':'s'} ranked · first attempt per student</p>`}
 function rkView(){return {t:'Ranks and leaderboards',s:'Overall and for every test',key:'rank',html:()=>{let T=[];try{T=lbTests()}catch(e){}RK3.i=Math.min(RK3.i,T.length);
-  return `<div class="chips rktabs"><button class="${RK3.i===0?'on':''}" data-a="rkTab" data-i="0">${ic('trophy',14)} Overall</button>${T.map((t,i)=>`<button class="${RK3.i===i+1?'on':''}" data-a="rkTab" data-i="${i+1}">${esc3(t.title)}</button>`).join('')}</div>
+  return `<div class="chips rktabs"><button class="${RK3.i===0?'on':''}" data-a="rkTab" data-i="0">${ic('podium',14)} Overall</button>${T.map((t,i)=>`<button class="${RK3.i===i+1?'on':''}" data-a="rkTab" data-i="${i+1}">${esc3(t.title)}</button>`).join('')}</div>
    <div class="rkbody">${RK3.i===0?rkOverall():rkTest(T[RK3.i-1])}</div>`},
   after:()=>{const a=$('#scrB .rktabs .on');if(a)try{a.parentNode.scrollLeft=a.offsetLeft-a.parentNode.clientWidth/2+a.clientWidth/2}catch(e){}}}}
 async function rkLoad(t){if(!t)return;try{lbStale(t.id)}catch(e){}if(LBC[t.id])return;let r=null;try{r=await rpc('cbt_leaderboard',{p_test:t.id})}catch(e){}LBC[t.id]=r&&r.ok?r:{ok:false}}
@@ -2663,7 +2663,7 @@ V3H.push([/^#\/h$/,()=>A.hist()]);   // the "Result is out" notification opens T
    Waiting · History · Leaderboard · Analysis · Mistakes. The chips on top and a left-right swipe move between them (no
    long page); each segment is a short preview with a button to its full page. Same data as Test history and Ranks. */
 const RH={i:0};
-const RH_SEG=[['wait','Waiting','clock'],['hist','History','hist'],['lb','Leaderboard','trophy'],['ana','Analysis','chart'],['mk','Mistakes','pen']];
+const RH_SEG=[['wait','Waiting','clock'],['hist','History','hist'],['lb','Leaderboard','podium'],['ana','Analysis','chart'],['mk','Mistakes','mistake']];
 function rhWait(){const W=C().pending||[];raLoad();
   if(!W.length)return `<div class="rh-e"><span class="ti">${ic('clock',22)}</span><b>No result is waiting</b><p>When a live test holds its result back, it shows here with a countdown.</p></div>`;
   return `<div class="rh-l">${W.slice(0,3).map(p=>{const ra=p.result_at||0;return `<div class="rh-w"><div class="rh-wt"><b>${esc3(p.title||titleOf(p))}</b>${ra?raBell(p.test_id):''}</div>
@@ -2676,7 +2676,7 @@ function rhHist(){const G=histGroups();
 function rhLb(){const b=RK3.ov;
   if(!b)return '<div class="card sk" style="height:200px"></div>';
   const btn=`<button class="btn ghost blk" data-a="ranks">${ic('medal',16)}Ranks for every test</button>`;
-  if(!b.ok||!b.top||!b.top.length)return `<div class="rh-e"><span class="ti">${ic('trophy',22)}</span><b>No ranks yet</b><p>Take a test to get your overall rank.</p></div>${btn}`;
+  if(!b.ok||!b.top||!b.top.length)return `<div class="rh-e"><span class="ti">${ic('podium',22)}</span><b>No ranks yet</b><p>Take a test to get your overall rank.</p></div>${btn}`;
   const tot=b.total||1;
   return `<div class="rh-big"><div><small>OVERALL RANK</small><b>${b.my_rank?'#'+b.my_rank:'–'}<em> of ${fmtN(tot)}</em></b></div>${b.my_pct!=null?`<span><b>${b.my_pct}%</b><small>Your average</small></span>`:''}</div>
    <div class="rh-l">${b.top.slice(0,3).map((x,i)=>{const r=x.rank||i+1;return `<div class="rh-r rh-p${x.me||r===b.my_rank?' me':''}"><span class="rkn">${r}</span><span><b>${esc3(x.name||x.student||'Student')}</b></span><em>${esc3(rkVal(x))}</em></div>`}).join('')}</div>${btn}`}
@@ -2686,8 +2686,8 @@ function rhAna(){const R=allRes();
   return `<div class="rh-st"><div><b>${R.length}</b><small>Attempts</small></div><div><b>${Math.max(0,avg)}%</b><small>Average</small></div><div><b>${Math.max(0,Math.max(...P))}%</b><small>Best</small></div></div>
    <div class="rh-ch" aria-label="Your last ${L.length} scores">${L.map((p,i)=>`<span style="--h:${Math.max(4,Math.abs(p)/mx*100).toFixed(0)}%"${i===L.length-1?' class="on"':''}><i>${Math.max(0,Math.round(p))}</i></span>`).join('')}</div>
    <button class="btn ghost blk" data-a="tab" data-tab="stats">${ic('chart',16)}Open Analytics</button>`}
-function rhMk(){return `<div class="rh-e"><span class="ti">${ic('pen',22)}</span><b>Mistake notebook</b><p>Every wrong and skipped question from your tests, to revise before the exam.</p></div>
-   <button class="btn ghost blk" data-a="rhMk">${ic('pen',16)}Open Mistake notebook</button>`}
+function rhMk(){return `<div class="rh-e"><span class="ti">${ic('mistake',22)}</span><b>Mistake notebook</b><p>Every wrong and skipped question from your tests, to revise before the exam.</p></div>
+   <button class="btn ghost blk" data-a="rhMk">${ic('mistake',16)}Open Mistake notebook</button>`}
 function rhSync(){const p=$('#scrB .rh-pg');if(!p)return;const k=Math.round(p.scrollLeft/Math.max(1,p.clientWidth));if(k===RH.i)return;RH.i=Math.max(0,Math.min(RH_SEG.length-1,k));
   $('#scrB').querySelectorAll('.rh-tabs button').forEach((b,j)=>{b.classList.toggle('on',j===RH.i);b.setAttribute('aria-selected',String(j===RH.i))});
   const a=$('#scrB .rh-tabs .on');if(a)try{a.parentNode.scrollTo({left:a.offsetLeft-a.parentNode.clientWidth/2+a.clientWidth/2,behavior:RM?'auto':'smooth'})}catch(e){}}
@@ -2797,8 +2797,8 @@ A.menu=()=>{const u=unread();let n=0;const web=!standalone3();
   const nw='<em class="mnew">NEW</em>',gh=t=>`<p class="mgh${n<14?' ma':''}" style="--i:${n++}">${t}</p>`;
   drawer.innerHTML=`<div class="mtop ma" style="--i:${n++}"><button class="mx" data-a="close" aria-label="Close menu">${ic('x',18)}</button>${avatar('mav')}<b>${esc3(stuName())}</b><small>${esc3(stuMeta())}</small><button class="mvp" data-a="m" data-k="profile">View Profile <span aria-hidden="true">→</span></button></div>
   <div class="mlist">${gh('Study')}${mi('home','Home','home',S.tab==='home')}${mi('tests','Test Series','series',S.tab==='test')}${mi('lib','Library','lib',S.tab==='lib')}${mi('pyq','PYQ Analysis','pyq',0,nw)}${mi('qb','Question Bank','qb',0,nw)}${mi('spark','Test Generator','gen',0,nw)}
-   ${gh('My progress')}${mi('trophy','Results & Ranks','ranks')}${mi('hist','Test History','history')}${mi('pen','Mistake Notebook','mistakes')}${mi('bookmark','Saved Questions','saved')}${mi('cal','Study Tracker','tracker')}
-   ${gh('Explore')}${mi('layers','Store','store')}${mi('gift','Refer & Earn','refer')}${mi('bell','Notifications','notif',0,u?`<em class="mcnt">${u}</em>`:'')}${mi('target','Exam Countdown','cd')}
+   ${gh('My progress')}${mi('podium','Results & Ranks','ranks')}${mi('hist','Test History','history')}${mi('mistake','Mistake Notebook','mistakes')}${mi('bookmark','Saved Questions','saved')}${mi('tracker','Study Tracker','tracker')}
+   ${gh('Explore')}${mi('store','Store','store')}${mi('gift','Refer & Earn','refer')}${mi('bell','Notifications','notif',0,u?`<em class="mcnt">${u}</em>`:'')}${mi('hourglass','Exam Countdown','cd')}
    ${gh('Help & settings')}${mi('sun','Theme Settings','theme',0,`<em class="mval">${THEMES[resolveMode(TH.mode)].name}</em>`)}${mi('gear','Settings','settings')}${mi('info','About Us','about')}${mi('mail','Contact Us','contact')}
    ${web?gh('Policies')+mi('file','Terms & Conditions','terms')+mi('file','Privacy Policy','privacy')+mi('file','Refund Policy','refund'):''}
    ${socH()?gh('Follow us')+`<div class="msoc" style="--i:${n++}">${socH()}</div>`:''}
