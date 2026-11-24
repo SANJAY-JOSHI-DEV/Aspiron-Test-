@@ -1,0 +1,160 @@
+-- =====================================================================
+--  v100: One account, one test at a time, on one device.
+--
+--  Before: a session belonged to the account only. The same student could start the same test on phone A and on
+--  phone B, and both attempts stayed open. Saving or submitting from one device did not stop the other.
+--  Now:
+--    • a session records the device that started it (sessions.device)
+--    • only one open (not submitted) session per student at a time, across all tests and devices
+--    • cbt_start / cbt_save / cbt_submit answer "running_elsewhere" for any other device (the attempt stays on its own device)
+--    • a student who opens the same test on another device sees the running attempt, nothing is started twice
+--  Nothing else changes. Re-running this file is safe.
+--
+--  Run ONCE in Supabase → SQL Editor → New query → paste → Run, after v99. Then run supabase_check_installed.sql (row 40).
+-- =====================================================================
+do $$ begin
+  if to_regclass('cbt_private.sessions') is null then
+    raise exception 'sessions table not found. Run the earlier files first.';
+  end if;
+end $$;
+
+alter table cbt_private.sessions add column if not exists device text not null default '';
+
+-- at most one open attempt per student (every test, every device)
+create unique index if not exists sessions_one_open
+  on cbt_private.sessions (student_id) where not submitted;
+
+-- the device of the open attempt, or null
+create or replace function cbt_private.open_device(p_sid uuid) returns text
+language sql stable security definer set search_path = cbt_private, pg_temp as $$
+  select device from sessions where student_id = p_sid and not submitted order by started_at desc limit 1
+$$;
+revoke all on function cbt_private.open_device(uuid) from public, anon, authenticated;
+
+-- ---------- cbt_save: only from the device that started the attempt ----------
+create or replace function public.cbt_save(p_mobile text, p_code text, p_device text, p_test uuid, p_answers jsonb, p_client_id text)
+returns jsonb language plpgsql security definer set search_path = cbt_private, pg_temp as $$
+declare a jsonb; sid uuid; t bigint := now_ms(); sess cbt_private.sessions%rowtype;
+begin
+  a := auth(p_mobile,p_code,p_device);
+  if not (a->>'ok')::boolean then return a; end if;
+  sid := (a->>'id')::uuid;
+  if jsonb_typeof(p_answers) is distinct from 'object' or length(p_answers::text) > 60000 then
+    return jsonb_build_object('ok',false,'error','bad_request');
+  end if;
+  select * into sess from sessions where student_id = sid and test_id = p_test and not submitted for update;
+  if not found then return jsonb_build_object('ok',false,'error','no_session'); end if;
+  if sess.device <> '' and sess.device <> p_device then
+    return jsonb_build_object('ok',false,'error','running_elsewhere');
+  end if;
+  if t > sess.ends_at + 120000 then return jsonb_build_object('ok',false,'error','over'); end if;
+  update sessions set answers = p_answers, client_id = left(p_client_id, 80), saved_at = now() where id = sess.id;
+  return jsonb_build_object('ok',true);
+end $$;
+grant execute on function public.cbt_save(text, text, text, uuid, jsonb, text) to anon;
+
+-- ---------- cbt_start: one open attempt per student, on one device ----------
+-- the v68 start function with the device rule added (every other condition is unchanged)
+create or replace function public.cbt_start(p_mobile text, p_code text, p_device text, p_test uuid)
+returns jsonb language plpgsql security definer set search_path = cbt_private, pg_temp as $function$
+declare
+  a jsonb; sid uuid; t bigint := now_ms();
+  x record; sess record; qs jsonb; allowed boolean; lg text; other sessions%rowtype;
+begin
+  a := auth(p_mobile,p_code,p_device);
+  if not (a->>'ok')::boolean then return a; end if;
+  sid := (a->>'id')::uuid;
+
+  -- v100: an attempt already open on another device blocks everything (start, resume, other tests)
+  select * into other from sessions where student_id = sid and not submitted and ends_at > t - 120000 limit 1;
+  if found and other.device <> '' and other.device <> p_device then
+    return jsonb_build_object('ok',false,'error','running_elsewhere','test_id',other.test_id,'ends_at',other.ends_at,'now',t);
+  end if;
+
+  select tt.*, sr.is_free as s_free, sr.active as s_active into x
+  from tests tt join series sr on sr.id = tt.series_id where tt.id = p_test;
+  if not found or not x.active or not x.s_active then
+    return jsonb_build_object('ok',false,'error','not_found');
+  end if;
+
+  -- v77: the first test of every series is free
+  allowed := x.s_free or x.free_preview or x.id = cbt_private.first_test(x.series_id)
+             or exists(select 1 from series_access ac where ac.student_id = sid and ac.series_id = x.series_id);
+  if not allowed then return jsonb_build_object('ok',false,'error','locked'); end if;
+
+  if x.closes_at is not null and x.result_at is not null and t > x.closes_at and t < x.result_at
+     and not exists(select 1 from sessions where student_id = sid and test_id = p_test and not submitted and ends_at > t) then
+    return jsonb_build_object('ok',false,'error','closed','closes_at',x.closes_at,'result_at',x.result_at,'now',t);
+  end if;
+
+  if x.opens_at is not null and t < x.opens_at
+     and not exists(select 1 from sessions where student_id = sid and test_id = p_test and not submitted) then
+    return jsonb_build_object('ok',false,'error','not_open','opens_at',x.opens_at,'now',t);
+  end if;
+
+  perform autosubmit(sid, p_test);
+  update sessions set submitted = true
+   where student_id = sid and test_id = p_test and not submitted and ends_at < t - 120000;
+
+  select * into sess from sessions where student_id = sid and test_id = p_test and not submitted;
+  if not found and not x.practice and coalesce(x.result_at, x.closes_at) is not null
+     and t < coalesce(x.result_at, x.closes_at)
+     and exists(select 1 from results where student_id = sid and test_id = p_test) then
+    return jsonb_build_object('ok',false,'error','attempted','result_at',coalesce(x.result_at, x.closes_at),'now',t);
+  end if;
+  if not found then
+    if not rate_ok(sid, 'start', 30) then return jsonb_build_object('ok',false,'error','busy'); end if;
+    insert into sessions(student_id,test_id,started_at,ends_at,lang,device)
+    values (sid,p_test,t,
+            case when x.closes_at is not null and t < x.closes_at then least(t + x.duration::bigint*60000, x.closes_at)
+                 else t + x.duration::bigint*60000 end,lang_for(sid,p_test),p_device) returning * into sess;
+  end if;
+
+  select jsonb_agg(case when x.practice and coalesce(x.result_at, x.closes_at, 0) <= t
+      then jsonb_build_object('q',e.v->'q','options',e.v->'options','img',e.v->'img','oimg',e.v->'oimg','sec',e.v->'sec',
+             'answer',e.v->'answer','explanation',coalesce(e.v->'explanation','""'::jsonb),'eimg',e.v->'eimg')
+      else jsonb_build_object('q',e.v->'q','options',e.v->'options','img',e.v->'img','oimg',e.v->'oimg','sec',e.v->'sec') end order by e.n)
+  into qs from jsonb_array_elements(x.data) with ordinality as e(v,n);
+
+  lg := case when sess.lang = 'hi' and exists(select 1 from test_hi h where h.test_id = p_test
+                and jsonb_array_length(h.data) = jsonb_array_length(coalesce(qs,'[]'::jsonb))) then 'hi' else 'en' end;
+  qs := qs_lang(qs, p_test, lg);
+
+  return jsonb_build_object('ok',true,'now',t,
+    'session',jsonb_build_object('id',sess.id,'started_at',sess.started_at,'ends_at',sess.ends_at,'lang',lg),
+    'test',jsonb_build_object('id',x.id,'title',x.title,'duration',x.duration,'correct',x.correct_marks,
+            'wrong',x.wrong_marks,'lock_back',x.lock_back,'practice',x.practice,'lang',lg,'questions',coalesce(qs,'[]'::jsonb)));
+end $function$;
+grant execute on function public.cbt_start(text, text, text, uuid) to anon;
+
+notify pgrst, 'reload schema';
+
+-- ---------- cbt_submit: only from the device that started the attempt (the rest of v81 is unchanged) ----------
+-- Wrapper: the other device gets "running_elsewhere" before anything is graded. The original body is kept
+-- as cbt_private.cbt_submit__v81 so grading and limits stay exactly as they were.
+do $$ begin
+  if to_regprocedure('cbt_private.cbt_submit__v81(text,text,text,uuid,jsonb,text)') is null then
+    alter function public.cbt_submit(text, text, text, uuid, jsonb, text) rename to cbt_submit__v81_tmp;
+    execute 'alter function public.cbt_submit__v81_tmp(text,text,text,uuid,jsonb,text) set schema cbt_private';
+    execute 'alter function cbt_private.cbt_submit__v81_tmp(text,text,text,uuid,jsonb,text) rename to cbt_submit__v81';
+  end if;
+end $$;
+
+create or replace function public.cbt_submit(p_mobile text, p_code text, p_device text, p_test uuid, p_answers jsonb, p_client_id text)
+returns jsonb language plpgsql security definer set search_path = cbt_private, pg_temp as $$
+declare a jsonb; sid uuid; od text;
+begin
+  a := auth(p_mobile,p_code,p_device);
+  if not (a->>'ok')::boolean then return a; end if;
+  sid := (a->>'id')::uuid;
+  select device into od from sessions where student_id = sid and test_id = p_test and not submitted limit 1;
+  if od is not null and od <> '' and od <> p_device then
+    return jsonb_build_object('ok',false,'error','running_elsewhere');
+  end if;
+  return cbt_private.cbt_submit__v81(p_mobile,p_code,p_device,p_test,p_answers,p_client_id);
+end $$;
+revoke all on function public.cbt_submit(text, text, text, uuid, jsonb, text) from public, authenticated;
+grant execute on function public.cbt_submit(text, text, text, uuid, jsonb, text) to anon;
+revoke all on function cbt_private.cbt_submit__v81(text, text, text, uuid, jsonb, text) from public, anon, authenticated;
+
+notify pgrst, 'reload schema';

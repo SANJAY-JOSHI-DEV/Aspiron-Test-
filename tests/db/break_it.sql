@@ -11,6 +11,11 @@ grant all on t to anon;
 grant all on sequence t_n_seq to anon;
 create function pg_temp.chk(p_name text, p_ok boolean, p_info text default '') returns void language sql as
   $$ insert into t (name, ok, info) values (p_name, coalesce(p_ok, false), coalesce(p_info, '')) $$;
+create function pg_temp.close_open(p_mobile text) returns void language sql security definer as $$
+  update cbt_private.sessions set submitted = true
+   where not submitted and student_id = (select id from cbt_private.students where mobile = p_mobile);
+$$;
+grant execute on function pg_temp.close_open(text) to anon;
 grant execute on function pg_temp.chk(text, boolean, text) to anon;
 select set_config('request.headers', '{"x-real-ip":"203.0.113.10"}', false);
 -- v62: the admin-key check of the sign-in is tested in section 27; the other sections sign in without it
@@ -64,8 +69,10 @@ insert into cbt_private.tests (id, series_id, title, duration, data, question_co
 select 'aaaaaaaa-0000-0000-0000-000000000077', series_id, 'Paid second', duration, data, question_count, 5
   from cbt_private.tests where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 set role anon;
+select pg_temp.close_open('9000000002');
 select pg_temp.chk('3a start: no answer / explanation in the questions',
   not ((public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-000000000002')->'test'->'questions')::text ~ '"(answer|explanation)"'));
+select pg_temp.close_open('9000000001');
 select pg_temp.chk('3b start: a paid test is locked for a free student',
   public.cbt_start('9000000001','AAAA1111','dev-aaaaaaaa','aaaaaaaa-0000-0000-0000-000000000077')->>'error' = 'locked');
 select pg_temp.chk('3c files: a paid series file is locked for a free student',
@@ -90,6 +97,7 @@ select pg_temp.chk('5 A opens B''s result: not found',
   public.cbt_review('9000000001','AAAA1111','dev-aaaaaaaa',((:'held')::jsonb->'result'->>'id')::uuid)->>'error' = 'not_found');
 
 -- ===== 6. a score sent by the browser is ignored =====
+select pg_temp.close_open('9000000001');
 select public.cbt_start('9000000001','AAAA1111','dev-aaaaaaaa','aaaaaaaa-0000-0000-0000-000000000004')->>'ok';
 select pg_temp.chk('6 tampered score: {"score":999} ignored, graded on the server',
   (public.cbt_submit('9000000001','AAAA1111','dev-aaaaaaaa','aaaaaaaa-0000-0000-0000-000000000004','{"score":999,"max":999,"0":3}','tamper-1')->'result'->>'score')::numeric = 4);
@@ -99,6 +107,7 @@ select pg_temp.chk('6c answers cannot be changed after submit',
   public.cbt_save('9000000001','AAAA1111','dev-aaaaaaaa','aaaaaaaa-0000-0000-0000-000000000004','{"0":0}','tamper-1')->>'error' = 'no_session');
 
 -- ===== 7. expired timer =====
+select pg_temp.close_open('9000000002');
 select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-000000000004')->>'ok';
 reset role;
 update cbt_private.sessions set started_at = started_at - 2400000, ends_at = ends_at - 2400000
@@ -117,6 +126,7 @@ insert into cbt_private.tests(id,series_id,title,duration,data,question_count,ac
   ('aaaaaaaa-0000-0000-0000-000000000005','22222222-2222-2222-2222-222222222222','Live 9PM',180,'[{"q":"LQ","options":["a","b","c","d"],"answer":1}]',1,true,false,
    (extract(epoch from now())*1000)::bigint+120000,(extract(epoch from now())*1000)::bigint+3600000);
 set role anon;
+select pg_temp.close_open('9000000001');
 select public.cbt_start('9000000001','AAAA1111','dev-aaaaaaaa','aaaaaaaa-0000-0000-0000-000000000005')::text as live \gset
 reset role;
 select pg_temp.chk('8 start 2 min before Live ends: the attempt ends at Live ends',
@@ -127,6 +137,7 @@ insert into cbt_private.rate_hits(student_id, kind) select 'bbbbbbbb-0000-0000-0
 insert into cbt_private.tests(id,series_id,title,duration,data,question_count,active,practice) values
   ('aaaaaaaa-0000-0000-0000-000000000006','22222222-2222-2222-2222-222222222222','Another',30,'[{"q":"A","options":["a","b","c","d"],"answer":0}]',1,true,false);
 set role anon;
+select pg_temp.close_open('9000000002');
 select pg_temp.chk('9 the 31st new attempt in an hour is refused (busy)',
   public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-000000000006')->>'error' = 'busy');
 reset role;
@@ -236,6 +247,7 @@ insert into cbt_private.tests(id,series_id,title,duration,data,question_count,ac
    '[{"q":"KQ","options":["a","b","c","d"],"answer":2,"explanation":"KEY"}]',1,true,false,(extract(epoch from now())*1000)::bigint+3600000,null)
   on conflict (id) do nothing;
 set role anon;
+select pg_temp.close_open('9000000002');
 select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000000f1')->>'ok';
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000000f1','{"0":2}','r1-live') as r1 \gset
 select pg_temp.chk('17a R1 only "Live ends": no answer key or score at submit',
@@ -322,6 +334,7 @@ insert into cbt_private.tests(id,series_id,title,duration,data,question_count,ac
    '[{"q":"PQ","options":["a","b","c","d"],"answer":1,"explanation":"PKEY"}]',1,true,true,(extract(epoch from now())*1000)::bigint+3600000,null)
   on conflict (id) do nothing;
 set role anon;
+select pg_temp.close_open('9000000002');
 select pg_temp.chk('18c R5 practice + "Live ends" ahead: no answer key at the start',
   not (public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000000f5')::text ~ '"answer"|PKEY'));
 select pg_temp.chk('18d R5 practice + "Live ends" ahead: no answer key at submit',
@@ -1036,6 +1049,7 @@ select id, 'aaaaaaaa-0000-0000-0000-000000000068', 'Ended live', 8, 8, 2, 0, 0, 
 insert into cbt_private.test_pdfs (test_id, url) values ('aaaaaaaa-0000-0000-0000-000000000068', 'https://drive.google.com/file/d/abc/view')
   on conflict (test_id) do update set url = excluded.url;
 set role anon;
+select pg_temp.close_open('9000000002');
 select pg_temp.chk('33a re-attempt: "Live ends" passed with no result time -> the test opens again',
   (public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-000000000068')->>'ok')::boolean);
 select pg_temp.chk('33b answer-key PDF: given once the result time (here "Live ends") has passed',
@@ -1274,6 +1288,7 @@ insert into cbt_private.test_pdfs (test_id, url) values ('aaaaaaaa-0000-0000-000
   on conflict (test_id) do update set url = excluded.url;
 set role anon;
 select public.cbt_catalog('9000000001','AAAA1111','dev-aaaaaaaa') as c77 \gset
+select pg_temp.close_open('9000000001');
 select pg_temp.chk('34a free student: the first test of a paid series is free, the next one locked (catalog and start)',
   (select not (x->>'locked')::boolean from jsonb_array_elements(:'c77'::jsonb->'tests') x where x->>'id' = 'aaaaaaaa-0000-0000-0000-000000000001')
   and (select (x->>'locked')::boolean from jsonb_array_elements(:'c77'::jsonb->'tests') x where x->>'id' = 'aaaaaaaa-0000-0000-0000-000000000077')
@@ -1293,6 +1308,7 @@ insert into cbt_private.series_access (student_id, series_id)
 select id, '11111111-1111-1111-1111-111111111111' from cbt_private.students where mobile = '9000000001' on conflict do nothing;
 update cbt_private.tests set result_at = cbt_private.now_ms() - 1000 where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 set role anon;
+select pg_temp.close_open('9000000001');
 select pg_temp.chk('34d paid student: every test, file, announcement and answer-key PDF opens',
   (public.cbt_start('9000000001','AAAA1111','dev-aaaaaaaa','aaaaaaaa-0000-0000-0000-000000000077')->>'ok')::boolean
   and (public.cbt_file_part('9000000001','AAAA1111','dev-aaaaaaaa','ffffffff-0000-0000-0000-000000000001',0)->>'ok')::boolean
@@ -1461,21 +1477,38 @@ select ('aaaaaaaa-0000-0000-0000-0000000008a' || g)::uuid, '22222222-2222-2222-2
 on conflict (id) do nothing;
 select count(*) as r0 from cbt_private.results \gset
 set role anon;
-select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb',('aaaaaaaa-0000-0000-0000-0000000008a' || g)::uuid)->>'ok' from generate_series(1, 5) g;
+
+set role anon;
+select pg_temp.close_open('9000000002');
+select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a1');
 -- a normal submit, as the app sends it (answers + times), with fields a student must never set
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a1',
   '{"0":1,"1":2,"2":0,"_t":{"0":30,"1":40,"2":50},"score":999,"correct":999,"rank":1,"paid":true,"isAdmin":true,"role":"admin"}', 'v1-normal') as v1a \gset
+select pg_temp.close_open('9000000002');
+select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a2');
 -- too big (over 60,000 characters) and not an object
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a2',
   (select jsonb_object_agg(g::text, 1) from generate_series(1, 9000) g), 'v1-big') as v1b \gset
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a2', '[1,2,3]', 'v1-array') as v1c \gset
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a2', '"text"', 'v1-string') as v1c2 \gset
+set role postgres;
+select pg_temp.chk('41b V1 answers over 60,000 characters are refused and nothing is saved (the attempt stays open)',
+  :'v1b'::jsonb->>'error' = 'bad_request' and not exists (select 1 from cbt_private.results where client_id = 'v1-big')
+  and exists (select 1 from cbt_private.sessions s join cbt_private.students st on st.id = s.student_id
+               where st.mobile = '9000000002' and s.test_id = 'aaaaaaaa-0000-0000-0000-0000000008a2' and not s.submitted));
+set role anon;
+select pg_temp.close_open('9000000002');
+select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a3');
 -- under the limit but full of answers for questions the test does not have, negative and wrong-type values
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a3',
   (select jsonb_object_agg(g::text, 1) from generate_series(3, 4000) g) || '{"0":1,"1":-7,"2":"3","00":1,"-1":2,"_t":{"0":-5,"1":99999,"2":"x","7":10,"99":10}}', 'v1-extra') as v1d \gset
+select pg_temp.close_open('9000000002');
+select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a4');
 -- a 100,000-character client id: cut to 80, and sending it again gives the same result (no second row)
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a4', '{"0":1}', repeat('z', 100000)) as v1e \gset
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a4', '{"0":1}', repeat('z', 100000)) as v1e2 \gset
+select pg_temp.close_open('9000000002');
+select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a5');
 -- no answers at all still submits (every question skipped)
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a5', null, 'v1-null') as v1f \gset
 -- another student's number with this student's code
@@ -1485,10 +1518,6 @@ select pg_temp.chk('41a V1 a normal submit is graded by the server: score 999 / 
   :'v1a'::jsonb->>'ok' = 'true' and (:'v1a'::jsonb->'result'->>'score')::numeric = 7 and (:'v1a'::jsonb->'result'->>'correct')::int = 2
   and (select answers = '{"0":1,"1":2,"2":0}'::jsonb and times = '{"0":30,"1":40,"2":50}'::jsonb from cbt_private.results where client_id = 'v1-normal')
   and not exists (select 1 from cbt_private.results where client_id = 'v1-normal' and score = 999));
-select pg_temp.chk('41b V1 answers over 60,000 characters are refused and nothing is saved (the attempt stays open)',
-  :'v1b'::jsonb->>'error' = 'bad_request' and not exists (select 1 from cbt_private.results where client_id = 'v1-big')
-  and exists (select 1 from cbt_private.sessions s join cbt_private.students st on st.id = s.student_id
-               where st.mobile = '9000000002' and s.test_id = 'aaaaaaaa-0000-0000-0000-0000000008a2' and not s.submitted));
 select pg_temp.chk('41c V1 answers that are a list or a text are refused (wrong type)',
   :'v1c'::jsonb->>'error' = 'bad_request' and :'v1c2'::jsonb->>'error' = 'bad_request'
   and not exists (select 1 from cbt_private.results where client_id in ('v1-array', 'v1-string')));
@@ -2488,6 +2517,38 @@ do $$ begin
   exception when insufficient_privilege then perform pg_temp.chk('57f anon cannot close a week', true); end;
 end $$;
 reset role;
+
+-- ===== 58. v100 one open test per account, on one device =====
+reset role;
+insert into cbt_private.tests (id, series_id, title, duration, data, question_count, active, practice) values
+  ('aaaaaaaa-0000-0000-0000-000000000958','22222222-2222-2222-2222-222222222222','Device test A',30,'[{"q":"Q1","options":["a","b","c","d"],"answer":1}]',1,true,false),
+  ('aaaaaaaa-0000-0000-0000-000000000959','22222222-2222-2222-2222-222222222222','Device test B',30,'[{"q":"Q1","options":["a","b","c","d"],"answer":1}]',1,true,false)
+on conflict (id) do nothing;
+update cbt_private.students set fail_count = 0, locked_until = 0, devices = '{}', max_devices = 2 where mobile = '9000000002';
+update cbt_private.students set devices = array['dev-phonea','dev-phoneb'] where mobile = '9000000002';
+select public.cbt_login('9000000002','BBBB2222','dev-phonea')->>'token' as tka58 \gset
+select public.cbt_login('9000000002','BBBB2222','dev-phoneb')->>'token' as tkb58 \gset
+set role anon;
+select pg_temp.close_open('9000000002');
+select public.cbt_start('9000000002',:'tka58','dev-phonea','aaaaaaaa-0000-0000-0000-000000000958')->>'ok' as s58a \gset
+select pg_temp.chk('58a second phone: the same test is refused while the first phone runs it',
+  public.cbt_start('9000000002',:'tkb58','dev-phoneb','aaaaaaaa-0000-0000-0000-000000000958')->>'error' = 'running_elsewhere');
+select pg_temp.chk('58b second phone: another test is refused too (one open attempt per account)',
+  public.cbt_start('9000000002',:'tkb58','dev-phoneb','aaaaaaaa-0000-0000-0000-000000000959')->>'error' = 'running_elsewhere');
+reset role;
+select pg_temp.chk('58c second phone: save and submit are refused, nothing is saved',
+  public.cbt_save('9000000002',:'tkb58','dev-phoneb','aaaaaaaa-0000-0000-0000-000000000958','{"0":1}'::jsonb,'b58')->>'error' = 'running_elsewhere'
+  and public.cbt_submit('9000000002',:'tkb58','dev-phoneb','aaaaaaaa-0000-0000-0000-000000000958','{"0":1}'::jsonb,'b58s')->>'error' = 'running_elsewhere'
+  and not exists (select 1 from cbt_private.results where client_id = 'b58s'));
+set role anon;
+select pg_temp.chk('58d first phone keeps working: resume and save',
+  public.cbt_start('9000000002',:'tka58','dev-phonea','aaaaaaaa-0000-0000-0000-000000000958')->>'ok' = 'true'
+  and public.cbt_save('9000000002',:'tka58','dev-phonea','aaaaaaaa-0000-0000-0000-000000000958','{"0":1}'::jsonb,'a58')->>'ok' = 'true');
+reset role;
+select pg_temp.chk('58e only one open attempt per account at any time',
+  (select count(*) from cbt_private.sessions s join cbt_private.students st on st.id = s.student_id
+    where st.mobile = '9000000002' and not s.submitted) = 1);
+set role anon;
 
 -- ===== report =====
 \t off
