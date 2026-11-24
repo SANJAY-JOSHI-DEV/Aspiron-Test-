@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=111;
+const V3VER=112;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -313,7 +313,7 @@ try{if(window.visualViewport){const vv=visualViewport;let kbUp=false,last=-1;
 /* ---------- full-screen pages; the phone's back button closes them ---------- */
 let STK=[],scr,undT=0;
 const top=()=>STK[STK.length-1],scrOpen=()=>STK.length>0;
-function drawScr(dir){const v=top();if(!v)return;$('#scrT').textContent=v.t;$('#scrS').textContent=v.s||'';$('#scrR').innerHTML=v.right?v.right():'';
+function drawScr(dir){const v=top();if(!v)return;scr.classList.toggle('bleed',!!v.bleed);scr.classList.remove('solid');$('#scrT').textContent=v.t;$('#scrS').textContent=v.s||'';$('#scrR').innerHTML=v.right?v.right():'';
   $('#scrB').innerHTML=`<div class="scr-in${dir?' '+dir:''}">${v.html()}</div>`;v.after&&v.after();entr($('#scrB'))}
 /* Entrance: a tap (open a page, change a tab or a group) arms it; the first drawn content (no skeleton) within 2 s plays it
    once: cards rise one after another (the first 8 on screen), a series tab slides in from its side. Data that arrives
@@ -2842,7 +2842,7 @@ const skIc={done:'flame',shield:'shield',broke:'x',miss:'',today:'',next:'',none
 function skWeek(m){const W=m.week||[],td=(new Date(nowMs()).getDay()+6)%7;return `<div class="skw">${SKD.map((d,i)=>{const s=W[i]||'next';return `<span class="skd ${s}${i===td?' td':''}" style="--i:${i}"><small>${d}</small><i>${skIc[s]?ic(skIc[s],s==='done'?18:15):''}</i></span>`}).join('')}</div>`}
 function skCard(m){const t=m.today||{},prog=t.done?1:Math.min(1,(t.qs||0)/SKGOAL),sh=m.shields||0,on=(m.streak||0)>0;
   return `<button class="card skc${on?' on':''}" data-a="skOpen" aria-label="Streak ${m.streak||0} days, open details">
-   <div class="skc-t"><span class="skf${t.done?' lit':''}">${ic('flame',30)}</span><div><b><span data-cu="${m.streak||0}">${fmtN(m.streak||0)}</span> day${m.streak===1?'':'s'}</b><small>${t.done?'Today is done. See you tomorrow!':on?'Do today\'s goal to keep it':'Start a streak today'}</small></div>
+   <div class="skc-t"><span class="skf${t.done?' lit':''}">${ic('flame',20)}</span><div><b><span data-cu="${m.streak||0}">${fmtN(m.streak||0)}</span> day streak</b><small>${t.done?'Today’s goal done':on?'Do today\'s goal to keep it':'Start a streak today'}</small></div>
     <span class="skc-sh" aria-label="${sh} Streak Shield${sh===1?'':'s'}">${[0,1].map(k=>`<i class="${k<sh?'on':''}">${ic('shield',15)}</i>`).join('')}</span></div>
    ${skWeek(m)}
    <div class="skg"><span class="bar"><i style="--p:${prog.toFixed(3)}"></i></span><small>${t.done?`Goal done · ${fmtN(t.qs||0)} questions today`:`Today: ${Math.min(SKGOAL,t.qs||0)}/${SKGOAL} questions`}</small></div></button>`}
@@ -2949,19 +2949,21 @@ const cdTo=ms=>{const s=Math.max(0,ms-nowMs())/1000,d=Math.floor(s/86400),h=Math
 const lgEnds=()=>XP3.L&&XP3.L.ok?XP3.L.ends_at:weekStart()+7*DAY;
 const lgMine=()=>{const L=XP3.L;return L&&L.ok&&L.in?(L.members||[]).find(x=>x.me)||null:null};
 /* the two keys to the next level: its XP Mark (total XP) and a Climb-zone finish in this week's league */
-function lvKeys(m,L,r){if(L.nextMark==null)return `<div class="lvh-g top"><small>TOP LEVEL</small><b>${ic('steth',15)}You are an Aspiron Doctor. Keep your league place and your streak.</b></div>`;
-  const xp=m.xp||0,mk=L.nextMark,okM=xp>=mk,okC=!!(r&&(r.zone==='up'||r.zone==='ready'));
-  return `<div class="lvh-g"><small>NEXT: LEVEL ${L.n+1} · ${esc3(L.nextName).toUpperCase()}${L.n+1===10?' · Dr.':''}</small><div class="lvh-k">
-   <div class="lvh-q${okM?' ok':''}"><i>${ic(okM?'check':'spark',14)}</i><span><b>XP Mark</b><small>${fmtN(Math.min(xp,mk))} / ${fmtN(mk)}</small></span><span class="lvh-qb"><i style="--p:${Math.min(1,xp/mk).toFixed(3)}"></i></span></div>
-   <span class="lvh-plus">+</span>
-   <div class="lvh-q${okC?' ok':''}"><i>${ic(okC?'check':'zup',14)}</i><span><b>Climb zone</b><small>${r?`#${r.rank} now · top ${XP3.L.third||0}`:'Top third this week'}</small></span><span class="lvh-qb"><i style="--p:${okC?1:r&&XP3.L.n>1?Math.max(.05,1-(r.rank-1)/(XP3.L.n-1)).toFixed(3):0}"></i></span></div></div>
-   <p>${okM&&okC?'Both keys are in your hand. Hold on till Sunday night to climb.':okM?'XP Mark done. Now finish in the top third of your league.':okC?`You are in the Climb zone. ${fmtN(mk-xp)} more XP to reach the XP Mark.`:`${fmtN(mk-xp)} XP to the mark, and a top-third finish in your league.`}</p></div>`}
+/* v112: the hero is a full-bleed poster (like the Tests page): quiet type, thin bars, no boxes */
+function lvKeys(m,L,r){if(L.nextMark==null)return `<div class="lvk top">${ic('steth',14)}<span>Top level reached. Keep your league place and your streak.</span></div>`;
+  const xp=m.xp||0,mk=L.nextMark,okM=xp>=mk,okC=!!(r&&(r.zone==='up'||r.zone==='ready')),pc=okC?1:r&&XP3.L.n>1?Math.max(.04,1-(r.rank-1)/(XP3.L.n-1)):0;
+  const row=(ok,lab,val,p)=>`<div class="lvk-r${ok?' ok':''}"><span class="lvk-l">${ok?ic('check',13):'<i></i>'}${lab}</span><span class="lvk-v">${val}</span><span class="lvk-b"><i style="--p:${Math.min(1,p).toFixed(3)}"></i></span></div>`;
+  return `<div class="lvk"><small>Next · Level ${L.n+1} ${esc3(L.nextName)}</small>
+   ${row(okM,'XP Mark',`${fmtN(Math.min(xp,mk))} / ${fmtN(mk)}`,xp/mk)}${row(okC,'Climb zone',r?`#${r.rank} · top ${XP3.L.third||0}`:'Top third',pc)}</div>`}
 function lvHero(m){const L=myLv(),r=lgMine();
-  return `<section class="lvh" style="--c1:${L.c1};--c2:${L.c2}"><i class="lvh-o"></i><div class="lvh-t"><button class="lvh-cr" data-a="lvRoad" aria-label="See all levels">${crest(L.i,104,{cls:'float'})}</button>
-    <div class="lvh-x"><small>LEVEL ${L.n} OF ${LVL3.length}</small><b class="lvh-n">${esc3(L.name)}</b><span class="lvh-xp"><b data-cu="${m.week_xp||0}">${fmtN(m.week_xp||0)}</b> XP this week</span></div></div>
-   <button class="lvh-z ${r?r.zone:'none'}" data-a="xpBoard" data-p="lg"><span>${r?`${ic(ZN3[r.zone][1],15)}<b>#${r.rank}</b> of ${XP3.L.n} · ${ZN3[r.zone][0]}`:XP3.lOff?`${ic('clock',15)}Weekly leagues start soon`:`${ic('trophy',15)}${(m.week_xp||0)>0?'Open your league':'Earn XP to join this week’s league'}`}</span><em>${ic('clock',13)}${cdTo(lgEnds())}</em></button>
+  const lg=r?`<b class="z-${r.zone}">${ZN3[r.zone][0]}</b> · #${r.rank} of ${XP3.L.n}`:XP3.lOff?'Weekly leagues start soon':(m.week_xp||0)>0?'Open your league':'Earn XP to join this week’s league';
+  return `<section class="lvh2" style="--c1:${L.c1};--c2:${L.c2}"><i class="lvh2-gl"></i>
+   <div class="lvh2-t"><button class="lvh2-cr" data-a="lvRoad" aria-label="See all levels">${crest(L.i,92,{cls:'float'})}</button>
+    <div class="lvh2-x"><small>Level ${L.n} of ${LVL3.length}</small><h1>${L.i===DR3?'<span class="drp">Dr.</span> ':''}${esc3(L.name)}</h1>
+     <span><b data-cu="${m.xp||0}">${fmtN(m.xp||0)}</b> XP total · ${fmtN(m.week_xp||0)} this week</span></div></div>
+   <button class="lvh2-lg" data-a="xpBoard" data-p="lg"><span>${lg}</span><em>${ic('clock',12)}${cdTo(lgEnds())}${ic('right',14)}</em></button>
    ${lvKeys(m,L,r)}
-   <div class="lvh-st"><button data-a="xpBoard" data-p="lg"><b>${r?'#'+r.rank:'–'}</b><small>League</small></button><button data-a="xpBoard" data-p="all"><b>${fmtN(m.xp||0)}</b><small>Total XP</small></button><button data-a="lvAw"><b>${awCount(m)}/${AW3.length}</b><small>Awards</small></button></div></section>`}
+   <nav class="lvh2-n">${[['How it works','lvHow',''],['How to climb','lvHow','6'],['Earn XP','lvHow','2'],[`Awards ${awCount(m)}/${AW3.length}`,'lvAw','']].map(x=>`<button data-a="${x[1]}"${x[2]?` data-s="${x[2]}"`:''}>${x[0]}</button>`).join('')}</nav></section>`}
 function lvParts(m){const p=m.parts||{},L=[['Live tests',p.live,'#ef7a73'],['First attempts',p.first,'#6c86f5'],['Re-attempts',p.re,'#b9bbc1'],['Full test bonus',p.bonus,'#f0c24f'],['Practice questions',p.practice,'#4cc8bf']],tot=Math.max(1,L.reduce((a,x)=>a+(x[1]||0),0));
   return `<section class="card lvw"><div class="lvw-h"><div><small>THIS WEEK</small><b><span data-cu="${m.week_xp||0}">${fmtN(m.week_xp||0)}</span> XP</b></div><button class="btn sm ghost" data-a="xpBoard" data-p="lg">${ic('trophy',15)}My league</button></div>
    <small class="lvw-k">Where your ${fmtN(m.xp||0)} XP came from</small><div class="lvw-bar">${L.map(x=>x[1]?`<i style="--w:${(x[1]/tot*100).toFixed(2)}%;background:${x[2]}"></i>`:'').join('')}</div>
@@ -2988,11 +2990,9 @@ function lvZones(){const L=myLv();return `<section class="sec"><div class="sh"><
    <p class="hint">Level 1 has no Drop zone and Level 10 has no Climb zone. The golden Dr. title stays once you reach Level 10.</p></div></section>`}
 function lvWays(){return `<section class="sec"><div class="sh"><h2>How to earn XP</h2></div><div class="card lvx">${XPWAYS.map((x,i)=>`<div class="lvx-i" style="--i:${i}"><span class="ti">${ic(x[0],18)}</span><div><b>${x[1]}</b><small>${x[3]}</small></div><em>${x[2]}</em></div>`).join('')}
    <p class="hint">Right answers only. XP from a live test shows once its result is out. Tests flagged for cheating give no XP.</p></div></section>`}
-function levelView(){return {t:'Level Up',s:'League, streak, levels and awards',key:'lvl',right:()=>`<button class="ib" data-a="xpBoard" data-p="lg" aria-label="My league">${ic('trophy',20)}</button>`,
-  html:()=>{const m=xpMe();return `<div class="stack lvp">${lvHero(m)}
-   <div class="lvq">${[['info','How it works','lvHow',''],['zup','How to climb','lvHow','6'],['spark','Earn XP','lvHow','2'],['flame','Streak','skOpen','']].map((x,i)=>`<button data-a="${x[2]}"${x[3]?` data-s="${x[3]}"`:''} style="--i:${i}"><span>${ic(x[0],18)}</span><small>${x[1]}</small></button>`).join('')}</div>
-   ${skCard(m)}${lvRoad(m)}${lvAwards(m)}</div>`},
-  after:()=>{const b=$('#scrB');carSync({lvCar:'.lrc.cur',awCar:'.awc.nx'});if(!XP3.cu){XP3.cu=1;cuRun(b);if(!lsGet('cbt_v3_lvintro',0))setTimeout(()=>{if(top()&&top().key==='lvl'&&!STY)lvStory()},650)}}}}
+function levelView(){return {t:'Level Up',s:'',key:'lvl',bleed:1,right:()=>`<button class="ib" data-a="xpBoard" data-p="lg" aria-label="My league">${ic('trophy',20)}</button>`,
+  html:()=>{const m=xpMe();return `<div class="stack lvp">${lvHero(m)}${skCard(m)}${lvRoad(m)}${lvAwards(m)}</div>`},
+  after:()=>{const b=$('#scrB');if(!b.dataset.bl){b.dataset.bl=1;b.addEventListener('scroll',()=>scr.classList.toggle('solid',!!(top()&&top().bleed)&&b.scrollTop>150),{passive:true})}carSync({lvCar:'.lrc.cur',awCar:'.awc.nx'});if(!XP3.cu){XP3.cu=1;cuRun(b);if(!lsGet('cbt_v3_lvintro',0))setTimeout(()=>{if(top()&&top().key==='lvl'&&!STY)lvStory()},650)}}}}
 function openLevel(){closeLayer();XP3.cu=0;CARS={};if(!(top()&&top().key==='lvl'))push(levelView());else redraw();xpLoad(true);lgLoad()}
 A.lvl=()=>openLevel();
 A.lvRoad=()=>{const s=$('#lvRoadS');s&&s.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})};
