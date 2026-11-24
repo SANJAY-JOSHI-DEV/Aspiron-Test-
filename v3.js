@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=104;
+const V3VER=105;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -47,7 +47,7 @@ const dur=m=>m>=60?`${Math.floor(m/60)} h${m%60?` ${m%60} min`:''}`:`${m} min`;
 const fmtN=n=>Number(n||0).toLocaleString('en-IN');
 const day0=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
 const dayWord=t=>{const k=Math.round((day0(t)-day0(nowMs()))/DAY);return k===0?'Today':k===1?'Tomorrow':k===-1?'Yesterday':fD(t,{weekday:'short',day:'numeric',month:'short'})};
-const P={tear:'<path d="M12 3C12 3 18 9.5 18 14.2A6 6 0 0 1 6 14.2C6 9.5 12 3 12 3Z"/><path d="M9.2 15a2.9 2.9 0 0 0 2.6 2.6"/>',eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',folder:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/>',star:'<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.4 5.9.9a.6.6 0 0 1 .3 1l-4.3 4.2 1 5.9a.6.6 0 0 1-.8.6L12 17.6l-5.3 2.8a.6.6 0 0 1-.8-.6l1-5.9-4.3-4.2a.6.6 0 0 1 .3-1l5.9-.9z"/>',
+const P={flame:'<path d="M12 3c.5 3 3.5 4.6 4.6 7.4A6 6 0 1 1 6.3 13c.5-1.6 1.6-2.6 2.6-3.2.2 1.6 1 2.7 2.1 3.2C10.6 9.6 11 5.8 12 3z"/>',tear:'<path d="M12 3C12 3 18 9.5 18 14.2A6 6 0 0 1 6 14.2C6 9.5 12 3 12 3Z"/><path d="M9.2 15a2.9 2.9 0 0 0 2.6 2.6"/>',eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',folder:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/>',star:'<path d="M11.5 2.3a.6.6 0 0 1 1 0l2.6 5.4 5.9.9a.6.6 0 0 1 .3 1l-4.3 4.2 1 5.9a.6.6 0 0 1-.8.6L12 17.6l-5.3 2.8a.6.6 0 0 1-.8-.6l1-5.9-4.3-4.2a.6.6 0 0 1 .3-1l5.9-.9z"/>',
  home:'<path class="f" d="M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2h-4v-6a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v6H5a2 2 0 0 1-2-2z"/>',
  tests:'<path class="f" d="M7 3h6.5L19 8.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M13 3v4a1.5 1.5 0 0 0 1.5 1.5H19"/><path d="m8.6 14.6 2.2 2.2 4.6-4.6"/>',
  tools:'<rect class="f" x="3.5" y="3.5" width="7" height="7" rx="2"/><rect class="f" x="13.5" y="3.5" width="7" height="7" rx="2"/><rect class="f" x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4"/><path d="M13.8 17h6.4"/>',
@@ -483,8 +483,19 @@ function softRender(){if(!document.body.classList.contains('v3on')||document.bod
    the series name in a white pill (tap = switch) and Upgrade plan. Both labels share one style; faint lines in the background. */
 const HB_BG=`<svg class="hb-bg" viewBox="0 0 400 220" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><path d="M120 230C190 150 250 120 410 96"/><path d="M160 232C222 166 286 140 410 128"/><path d="M200 234C254 182 318 160 410 160"/><path d="M60 -10C150 40 260 40 410 8"/><path d="M20 -14C130 60 270 70 410 40"/></g></svg>`;
 let HBO=(()=>{try{return localStorage.getItem('cbt_v3_qd_open')==='1'}catch(e){return false}})();
-function hbQd(){qdLoad();const G=QD.ok?qdGroups():[];if(!G.length)return '';const all=QD.items.length,dn=QD.items.filter(x=>x.done).length;
-  return `<div class="hb-q${QD.fresh?' pop':''}${HBO?' open':''}" id="qdBox"><div class="hb-h" data-a="qdTg"><small class="hb-k">QUESTIONS OF THE DAY</small>
+/* v105: while the questions of the day are folded, the top line shows small numbers (XP, streak, questions practised,
+   refer wallet) instead of the title; opening swaps them for the title, then the row of subjects slides down. */
+let HBRF=null,HBRL=false;   // refer wallet for the top line: loaded once per app start
+function hbRefLoad(){if(HBRL)return;HBRL=true;try{rfLoad(false).then(r=>{if(r&&r.ok){HBRF=r;try{if(S.tab==='home'&&!scrOpen())softRender()}catch(e){}}}).catch(()=>{})}catch(e){}}
+/* XP is worked out on the phone from what the student did: 10 per test, 2 per right answer, 5 per question of the day answered today */
+function hbStats(){let R=[];try{R=allRes()}catch(e){}const st=stats(R),qd=QD.ok?QD.items.filter(x=>x.done).length:0;hbRefLoad();
+  const xp=R.length*10+(st.cor||0)*2+qd*5,k=n=>n>=10000?(Math.round(n/100)/10)+'k':fmtN(n);
+  const L=[['xp','spark',k(xp),'XP','XP points: '+fmtN(xp)],['streak','flame',st.streak||0,'day'+((st.streak||0)===1?'':'s'),(st.streak||0)+' day streak'],['prac','target',k(st.tot||0),'Qs',fmtN(st.tot||0)+' questions practised']];
+  if(HBRF&&HBRF.ok)L.push(['ref','gift',rfInr(HBRF.balance||0),'','Refer wallet: '+rfInr(HBRF.balance||0)]);
+  return `<span class="hb-st" role="list">${L.map((x,i)=>`<button class="hb-sc" role="listitem" data-a="hbGo" data-k="${x[0]}" style="--i:${i}" aria-label="${esc3(x[4])}">${ic(x[1],14)}<b>${esc3(String(x[2]))}</b>${x[3]?`<small>${x[3]}</small>`:''}</button>`).join('')}</span>`}
+A.hbGo=el=>{const k=el.dataset.k;if(k==='ref')openRefer();else if(k==='prac')A.hist();else go('stats')};
+function hbQd(){qdLoad();const G=QD.ok?qdGroups():[];if(!G.length)return `<div class="hb-q" id="hbTop"><div class="hb-h nq"><span class="hb-hl">${hbStats()}</span></div></div>`;const all=QD.items.length,dn=QD.items.filter(x=>x.done).length;
+  return `<div class="hb-q${QD.fresh?' pop':''}${HBO?' open':''}" id="qdBox"><div class="hb-h" data-a="qdTg"><span class="hb-hl"><small class="hb-k">QUESTIONS OF THE DAY</small>${hbStats()}</span>
     <button class="hb-tg${HBO?' on':''}${dn<all?' new':''}" data-a="qdTg" aria-expanded="${HBO}" aria-controls="hbS" aria-label="${HBO?'Hide':'Show'} the questions of the day">${ic('down',16)}</button></div>
    <div class="hb-s${HBO?' on':''}" id="hbS"><div class="hb-si"><div class="qd-row hb-row" role="list">${G.map((g,i)=>`<button class="qd-c${g.done===g.L.length?' seen':''}" style="--i:${i}" role="listitem" data-a="qdOpen" data-s="${esc3(g.s)}" aria-label="${esc3(qbSub(g.s))}, ${g.done} of ${g.L.length} answered"${HBO?'':' tabindex="-1"'}><span class="qd-r"><span class="qd-i">${ic(QD_IC[g.s]||'book',24)}</span></span><span class="qd-l">${esc3(qbSub(g.s))}</span><small>${g.done}/${g.L.length}</small></button>`).join('')}</div></div></div>
    </div>`}

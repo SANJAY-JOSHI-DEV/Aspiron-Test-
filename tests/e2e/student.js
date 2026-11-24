@@ -529,7 +529,8 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
     let t = await qdOpen({ w: 390, h: 844, mode: 'light' }, pg => pg.route(SUPA + '/rest/v1/rpc/cbt_qotd_today', r => r.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"not found"}' })));
     ok(!(await t.sr(r => !!r.querySelector('#qdBox'))) && !t.er.length && (await t.sr(r => !!r.querySelector('#serBox') && !!r.querySelector('#qkBox') && !r.querySelector('.net3') && !!r.querySelector('.zgrid'))), 'stories: SQL not installed → no row, no errors, and Home (band, tiles, study zone) is intact ' + t.er.join('|')); await t.c.close();
     t = await qdOpen({ w: 390, h: 844, mode: 'light' });
-    ok(!(await t.sr(r => !!r.querySelector('#qdBox'))) && !t.er.length, 'stories: nothing set for today → no row ' + t.er.join('|')); await t.c.close();
+    ok(!(await t.sr(r => !!r.querySelector('#qdBox'))) && !t.er.length, 'stories: nothing set for today → no row ' + t.er.join('|'));
+    ok(await t.sr(r => !!r.querySelector('#serBox #hbTop .hb-sc[data-k="xp"]') && !r.querySelector('#hbTop .hb-tg')), 'top card: without questions of the day the small numbers still show, with no fold button'); await t.c.close();
   }
   await q(`insert into cbt_private.qbank (id, subject, q, options, answer, explanation) values
     ($1, 'phy', 'QD-P1 <img src=x onerror=window.__xss=1>', '["a1","b1","c1","d1"]', 1, 'KEY-P1'), ($2, 'phy', 'QD-P2', '["a2","b2","c2","d2"]', 2, 'KEY-P2'), ($3, 'bio', 'QD-B1', '["a3","b3","c3","d3"]', 0, 'KEY-B1')`, QI);
@@ -545,6 +546,12 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
       await t.sr(r => r.querySelector('#qdBox .hb-tg').click()); await t.pg.waitForTimeout(900);
       const st1 = await t.sr(r => { const s = r.querySelector('#hbS'), b = r.querySelector('#qdBox .hb-tg'); return { open: s.classList.contains('on'), h: Math.round(s.getBoundingClientRect().height), ex: b.getAttribute('aria-expanded'), op: getComputedStyle(r.querySelector('#hbS .qd-c')).opacity }; });
       ok(st1.open && st1.h > 60 && st1.ex === 'true' && st1.op === '1', `${cfg.n}: the small button opens the circles inside the card ` + JSON.stringify(st1));
+      // v105: folded = small numbers instead of the title; open = the title; the picture behind keeps its size
+      const vis = r => { const k = r.querySelector('#qdBox .hb-k'), st = r.querySelector('#qdBox .hb-st'), b = r.querySelector('#serBox'), cs = getComputedStyle(b), sv = r.querySelector('#serBox .hb-bg');
+        return { k: getComputedStyle(k).opacity, st: getComputedStyle(st).opacity, chips: [...st.querySelectorAll('.hb-sc')].map(x => x.dataset.k).join(','), bs: cs.backgroundSize, svh: sv ? Math.round(sv.getBoundingClientRect().height) : 0, bh: Math.round(b.getBoundingClientRect().height) }; };
+      const o1 = await t.sr(vis); await t.sr(r => r.querySelector('#qdBox .hb-tg').click()); await t.pg.waitForTimeout(900); const c1 = await t.sr(vis);
+      ok(o1.k === '1' && o1.st === '0' && c1.k === '0' && c1.st === '1' && /^xp,streak,prac/.test(c1.chips) && c1.bs === o1.bs && c1.svh === o1.svh && o1.bh > c1.bh + 40, `${cfg.n}: folded shows XP / streak / practised in place of the title, open shows the title; the picture keeps its size ` + JSON.stringify([c1, o1]));
+      await t.sr(r => r.querySelector('#qdBox .hb-tg').click()); await t.pg.waitForTimeout(900);
       if (cfg.flow) {
         await t.pg.reload(); await t.pg.waitForTimeout(3500);
         ok(await t.sr(r => r.querySelector('#hbS').classList.contains('on')), 'stories: the open card is remembered after a reload');
