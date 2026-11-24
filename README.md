@@ -287,6 +287,11 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   level; **Drop zone** (bottom third) → one level down. Level 1 has no Drop zone, level 10 no Climb zone; a small league uses
   thirds of its size, so a student alone cannot climb. So level 10 takes at least 9 good weeks. A week is closed the first time
   anyone opens the app after it ends (no scheduled job). No XP in a week = not in that league, level kept.
+- **Two keys per level** (`supabase_v99_xp_marks.sql`): a student goes up only with BOTH the next level's **XP Mark** (total XP:
+  Seeker 250 · Scholar 750 · Achiever 1,500 · Ranker 2,500 · Topper 4,000 · Elite 6,000 · Legend 9,000 · Mastermind 13,000 ·
+  Aspiron Doctor 20,000) AND a **Climb-zone** finish that week. Climb zone without the mark = **Ready to climb**: the level stays and
+  the student climbs in a later week once the mark is reached. So Dr. needs 20,000 XP and at least 9 good weeks. The Level Up page
+  shows both keys with their progress; the level road shows each XP Mark; league rows show an "XP Mark" lock.
 - **10 levels:** Aspirant · Seeker · Scholar · Achiever · Ranker · Topper · Elite · Legend · Mastermind · **Aspiron Doctor**, each with
   its own crest. At level 10 the name shows a shining golden **Dr.** in front and the Golden Stethoscope badge after it (menu,
   profile, leagues, leaderboard); the title stays for good. Names and colours: `LVL3` in `v3.js`.

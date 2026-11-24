@@ -2423,7 +2423,8 @@ delete from cbt_private.results where test_id in ('aaaaaaaa-0000-0000-0000-00000
 
 -- ===== 57. v98 weekly leagues: climb / hold / drop, the edges, nothing to read directly =====
 insert into cbt_private.tests (id, series_id, title, duration, data, question_count) values
-  ('aaaaaaaa-0000-0000-0000-000000000981','11111111-1111-1111-1111-111111111111','League test',30,'[]',200);
+  ('aaaaaaaa-0000-0000-0000-000000000981','11111111-1111-1111-1111-111111111111','League test',30,'[]',200),
+  ('aaaaaaaa-0000-0000-0000-000000000982','11111111-1111-1111-1111-111111111111','Older test',30,'[]',400);
 insert into cbt_private.students (id, name, mobile, status)
 select ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, 'League ' || k || ' Kid', '98100000' || lpad(k::text, 2, '0'), 'approved'
   from generate_series(1, 10) k;
@@ -2439,6 +2440,23 @@ insert into cbt_private.league_member (week, student_id, level, grp, joined_at)
 select cbt_private.xp_week() - 7, ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, case when k <= 6 then 2 when k <= 9 then 1 else 10 end, 900,
        now() - interval '10 days' + (k || ' seconds')::interval
   from generate_series(1, 10) k;
+-- v99 XP Marks: the two climbers of the level-2 league have 750+ total XP (an older test two weeks ago);
+-- a level-5 league of 3 where the winner has only 800 total XP (mark for level 6 is 4,000) → "ready", stays at 5
+insert into cbt_private.results (student_id, test_id, test_title, score, max_score, correct, wrong, skipped, created_at)
+select ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, 'aaaaaaaa-0000-0000-0000-000000000982', 'Older test', 0, 0, 200, 0, 200,
+       ((cbt_private.xp_week() - 11)::timestamp at time zone 'Asia/Kolkata') + interval '10 hours'
+  from unnest(array[1, 3]) k;
+insert into cbt_private.students (id, name, mobile, status)
+select ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, 'League ' || k || ' Kid', '98100000' || lpad(k::text, 2, '0'), 'approved'
+  from generate_series(11, 13) k;
+insert into cbt_private.results (student_id, test_id, test_title, score, max_score, correct, wrong, skipped, created_at)
+select ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, 'aaaaaaaa-0000-0000-0000-000000000981', 'League test', 0, 0,
+       (array[400, 60, 50])[k - 10], 0, 500, ((cbt_private.xp_week() - 4)::timestamp at time zone 'Asia/Kolkata') + interval '10 hours'
+  from generate_series(11, 13) k;
+insert into cbt_private.league_level (student_id, level, best) select ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, 5, 5 from generate_series(11, 13) k;
+insert into cbt_private.league_member (week, student_id, level, grp, joined_at)
+select cbt_private.xp_week() - 7, ('bbbbbbbb-0000-0000-0098-' || lpad(k::text, 12, '0'))::uuid, 5, 900, now() - interval '10 days' + (k || ' seconds')::interval
+  from generate_series(11, 13) k;
 select cbt_private.league_tick();
 select pg_temp.chk('57a league of 6 at level 2: top third climbs (needs 100+ XP), bottom third drops, the middle holds',
   (select string_agg(m.zone || ':' || l.level, ',' order by m.rank) from cbt_private.league_member m join cbt_private.league_level l on l.student_id = m.student_id
@@ -2447,6 +2465,9 @@ select pg_temp.chk('57b level 1 has no drop zone; level 10 has no climb zone; Dr
   not exists (select 1 from cbt_private.league_member where week = cbt_private.xp_week() - 7 and grp = 900 and level = 1 and zone = 'down')
   and (select zone from cbt_private.league_member where student_id = 'bbbbbbbb-0000-0000-0098-000000000010' and week = cbt_private.xp_week() - 7) = 'stay'
   and (select best from cbt_private.league_level where student_id = 'bbbbbbbb-0000-0000-0098-000000000010') = 10);
+select pg_temp.chk('57g v99: Climb zone without the XP Mark = "ready", the level stays',
+  (select m.zone || ':' || l.level from cbt_private.league_member m join cbt_private.league_level l on l.student_id = m.student_id
+    where m.student_id = 'bbbbbbbb-0000-0000-0098-000000000011' and m.week = cbt_private.xp_week() - 7) = 'ready:5');
 select pg_temp.chk('57c a top-third student under 100 XP does not climb',
   (select zone from cbt_private.league_member where student_id = 'bbbbbbbb-0000-0000-0098-000000000007' and week = cbt_private.xp_week() - 7) <> 'up'
   and (select level from cbt_private.league_level where student_id = 'bbbbbbbb-0000-0000-0098-000000000007') = 1);

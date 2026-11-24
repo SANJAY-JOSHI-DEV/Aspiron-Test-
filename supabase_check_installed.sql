@@ -127,5 +127,10 @@ select 38, 'supabase_v98_leagues.sql', case when to_regclass('cbt_private.league
   and to_regprocedure('public.cbt_league(text,text,text)') is not null
   and pg_get_functiondef(to_regprocedure('cbt_private.xp_save(uuid)')) like '%league_join%' then 'ok'
   else 'MISSING — run this file (after v97)' end
+union all
+-- v99: 'ok' when a climb needs the XP Mark too (zone "ready")
+select 39, 'supabase_v99_xp_marks.sql', case when to_regprocedure('cbt_private.lv_mark(integer)') is not null
+  and pg_get_functiondef(to_regprocedure('cbt_private.league_close(date)')) like '%lv_mark%' then 'ok'
+  else 'MISSING — run this file (after v98)' end
 ) x
 order by n;

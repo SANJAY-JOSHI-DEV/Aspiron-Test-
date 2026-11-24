@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=109;
+const V3VER=110;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -2707,20 +2707,21 @@ A.rhMk=()=>openMistakes();
    end of the week the top third climbs a level (100+ XP that week), the bottom third drops one, the middle holds.
    Level 10 is Aspiron Doctor: a golden "Dr." before the name, kept for good. Before v98 is run everyone shows level 1
    and the league says "starts soon"; before v97 the test XP is worked out here (xpLocal). */
-const LVL3=[ // [weeks needed at least, name, line, colour 1, colour 2]
+const LVL3=[ // [XP Mark (total XP needed), name, line, colour 1, colour 2]
  [0,'Aspirant','Every topper started here','#c99366','#7a4a26'],
- [1,'Seeker','Curious and showing up','#a9b4c8','#5a6680'],
- [2,'Scholar','Basics getting stronger','#f0c24f','#a8731a'],
- [3,'Achiever','Scores are climbing','#4cc8bf','#1d6f73'],
- [4,'Ranker','In the rank race now','#a07cf0','#5634ad'],
- [5,'Topper','Among the best of the batch','#f07cb6','#a3336f'],
- [6,'Elite','Discipline few can match','#6c86f5','#2b3aa3'],
- [7,'Legend','Others follow your lead','#8fd15a','#3d7a1d'],
- [8,'Mastermind','One step from the white coat','#6fd3f5','#2272b3'],
- [9,'Aspiron Doctor','The golden Dr. title and the Stethoscope','#ffe08a','#b27a1c']];
+ [250,'Seeker','Curious and showing up','#a9b4c8','#5a6680'],
+ [750,'Scholar','Basics getting stronger','#f0c24f','#a8731a'],
+ [1500,'Achiever','Scores are climbing','#4cc8bf','#1d6f73'],
+ [2500,'Ranker','In the rank race now','#a07cf0','#5634ad'],
+ [4000,'Topper','Among the best of the batch','#f07cb6','#a3336f'],
+ [6000,'Elite','Discipline few can match','#6c86f5','#2b3aa3'],
+ [9000,'Legend','Others follow your lead','#8fd15a','#3d7a1d'],
+ [13000,'Mastermind','One step from the white coat','#6fd3f5','#2272b3'],
+ [20000,'Aspiron Doctor','The golden Dr. title and the Stethoscope','#ffe08a','#b27a1c']];
 const DR3=LVL3.length-1,LG_MIN=100;
-const lvAt=n=>{const i=Math.max(0,Math.min(DR3,(+n||1)-1)),L=LVL3[i],N=LVL3[i+1];return {i,n:i+1,name:L[1],line:L[2],c1:L[3],c2:L[4],nextName:N?N[1]:null}};
-const ZN3={up:['Climb zone','zup','Finish here to go one level up'],stay:['Hold zone','shield','Finish here to keep your level'],down:['Drop zone','zdn','Finish here and you go one level down']};
+const lvAt=n=>{const i=Math.max(0,Math.min(DR3,(+n||1)-1)),L=LVL3[i],N=LVL3[i+1];return {i,n:i+1,name:L[1],line:L[2],c1:L[3],c2:L[4],mark:L[0],nextName:N?N[1]:null,nextMark:N?N[0]:null}};
+const ZN3={up:['Climb zone','zup','Finish here to go one level up'],stay:['Hold zone','shield','Finish here to keep your level'],down:['Drop zone','zdn','Finish here and you go one level down'],ready:['Ready to climb','lock','In the Climb zone, but the XP Mark is not reached yet']};
+const zSec=z=>z==='ready'?'up':z;   // "ready" rows sit in the Climb zone part of the list
 /* awards: [key, name, what to do, tier 1 bronze · 2 silver · 3 gold · 4 platinum, icon, [have, need]] */
 const AW3=[
  ['first','First Step','Submit your first test',1,'play',m=>[m.tests,1]],
@@ -2802,7 +2803,7 @@ function xpRedraw(){try{const v=top();if(v&&(v.key==='lvl'||v.key==='xpb'))qbKee
 /* what happened since the last look: last week's league result (climb = celebration, drop = a sheet, hold = a line),
    else the XP gained (+N pill). The first look only remembers. */
 function xpSeen(m){const k=xpKey(),was=lsGet(k,null),xp=m.xp||0,lw=m.last&&m.last.week||'';lsSet(k,{xp,wk:lw,lv:m.level||1});if(!was)return;
-  if(lw&&lw!==was.wk){const z=m.last.zone;if(z==='up')lvWhenFree(()=>lvCelebrate(lvAt(m.last.to).i,m.last));else if(z==='down')lvWhenFree(()=>lgDropSheet(m.last));else lvWhenFree(()=>toast3(`Last week: #${m.last.rank} in your league. You hold Level ${m.last.to}.`));return}
+  if(lw&&lw!==was.wk){const z=m.last.zone;if(z==='up')lvWhenFree(()=>lvCelebrate(lvAt(m.last.to).i,m.last));else if(z==='down')lvWhenFree(()=>lgDropSheet(m.last));else if(z==='ready')lvWhenFree(()=>toast3(`Climb zone last week (#${m.last.rank})! Reach the XP Mark to climb next time.`));else lvWhenFree(()=>toast3(`Last week: #${m.last.rank} in your league. You hold Level ${m.last.to}.`));return}
   if(xp>was.xp)lvWhenFree(()=>xpPill(xp-was.xp))}
 let LVW=null;
 function lvWhenFree(fn){const t0=Date.now();clearInterval(LVW);const ok=()=>{try{return document.visibilityState==='visible'&&!layer&&!OB.el&&!(typeof INTEST!=='undefined'&&INTEST)&&!document.body.classList.contains('intest')&&!root.querySelector('.lvc,.ob3,.qs')}catch(e){return false}};
@@ -2869,10 +2870,19 @@ const XPWAYS=[['live','Live test','3 XP','for every right answer'],['play','Firs
 const cdTo=ms=>{const s=Math.max(0,ms-nowMs())/1000,d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d?`${d}d ${h}h`:h?`${h}h ${m}m`:`${m}m`};
 const lgEnds=()=>XP3.L&&XP3.L.ok?XP3.L.ends_at:weekStart()+7*DAY;
 const lgMine=()=>{const L=XP3.L;return L&&L.ok&&L.in?(L.members||[]).find(x=>x.me)||null:null};
+/* the two keys to the next level: its XP Mark (total XP) and a Climb-zone finish in this week's league */
+function lvKeys(m,L,r){if(L.nextMark==null)return `<div class="lvh-g top"><small>TOP LEVEL</small><b>${ic('steth',15)}You are an Aspiron Doctor. Keep your league place and your streak.</b></div>`;
+  const xp=m.xp||0,mk=L.nextMark,okM=xp>=mk,okC=!!(r&&(r.zone==='up'||r.zone==='ready'));
+  return `<div class="lvh-g"><small>NEXT: LEVEL ${L.n+1} · ${esc3(L.nextName).toUpperCase()}${L.n+1===10?' · Dr.':''}</small><div class="lvh-k">
+   <div class="lvh-q${okM?' ok':''}"><i>${ic(okM?'check':'spark',14)}</i><span><b>XP Mark</b><small>${fmtN(Math.min(xp,mk))} / ${fmtN(mk)}</small></span><span class="lvh-qb"><i style="--p:${Math.min(1,xp/mk).toFixed(3)}"></i></span></div>
+   <span class="lvh-plus">+</span>
+   <div class="lvh-q${okC?' ok':''}"><i>${ic(okC?'check':'zup',14)}</i><span><b>Climb zone</b><small>${r?`#${r.rank} now · top ${XP3.L.third||0}`:'Top third this week'}</small></span><span class="lvh-qb"><i style="--p:${okC?1:r&&XP3.L.n>1?Math.max(.05,1-(r.rank-1)/(XP3.L.n-1)).toFixed(3):0}"></i></span></div></div>
+   <p>${okM&&okC?'Both keys are in your hand. Hold on till Sunday night to climb.':okM?'XP Mark done. Now finish in the top third of your league.':okC?`You are in the Climb zone. ${fmtN(mk-xp)} more XP to reach the XP Mark.`:`${fmtN(mk-xp)} XP to the mark, and a top-third finish in your league.`}</p></div>`}
 function lvHero(m){const L=myLv(),r=lgMine();
   return `<section class="lvh" style="--c1:${L.c1};--c2:${L.c2}"><i class="lvh-o"></i><div class="lvh-t"><button class="lvh-cr" data-a="lvRoad" aria-label="See all levels">${crest(L.i,104,{cls:'float'})}</button>
     <div class="lvh-x"><small>LEVEL ${L.n} OF ${LVL3.length}</small><b class="lvh-n">${esc3(L.name)}</b><span class="lvh-xp"><b data-cu="${m.week_xp||0}">${fmtN(m.week_xp||0)}</b> XP this week</span></div></div>
    <button class="lvh-z ${r?r.zone:'none'}" data-a="xpBoard" data-p="lg"><span>${r?`${ic(ZN3[r.zone][1],15)}<b>#${r.rank}</b> of ${XP3.L.n} · ${ZN3[r.zone][0]}`:XP3.lOff?`${ic('clock',15)}Weekly leagues start soon`:`${ic('trophy',15)}${(m.week_xp||0)>0?'Open your league':'Earn XP to join this week’s league'}`}</span><em>${ic('clock',13)}${cdTo(lgEnds())}</em></button>
+   ${lvKeys(m,L,r)}
    <div class="lvh-st"><button data-a="xpBoard" data-p="lg"><b>${r?'#'+r.rank:'–'}</b><small>League</small></button><button data-a="xpBoard" data-p="all"><b>${fmtN(m.xp||0)}</b><small>Total XP</small></button><button data-a="lvAw"><b>${awCount(m)}/${AW3.length}</b><small>Awards</small></button></div></section>`}
 function lvParts(m){const p=m.parts||{},L=[['Live tests',p.live,'#ef7a73'],['First attempts',p.first,'#6c86f5'],['Re-attempts',p.re,'#b9bbc1'],['Full test bonus',p.bonus,'#f0c24f'],['Practice questions',p.practice,'#4cc8bf']],tot=Math.max(1,L.reduce((a,x)=>a+(x[1]||0),0));
   return `<section class="card lvw"><div class="lvw-h"><div><small>THIS WEEK</small><b><span data-cu="${m.week_xp||0}">${fmtN(m.week_xp||0)}</span> XP</b></div><button class="btn sm ghost" data-a="xpBoard" data-p="lg">${ic('trophy',15)}My league</button></div>
@@ -2890,11 +2900,13 @@ function lvRoad(m){const cur=myLv().i;
    ${carH('lvCar',LVL3.map((L,i)=>{const st=i<cur?'done':i===cur?'cur':'lock';
      return `<div class="lrc ${st}${i===DR3?' dr':''}" style="--c1:${L[3]};--c2:${L[4]}">${st==='cur'?'<i class="lrc-beam"></i>':''}<span class="lrc-c">${crest(i,i===DR3?86:74)}</span>
        <small>LEVEL ${i+1}</small><b>${i===DR3?'<span class="drp">Dr.</span> ':''}${esc3(L[1])}</b><p>${esc3(L[2])}</p>
-       <em>${st==='cur'?'You are here':st==='done'?`${ic('check',13)}Passed`:i===cur+1?'Next: climb this week':`${i-cur} climbs away`}</em><span class="lrc-pd"></span></div>`}).join(''))}
-   <p class="hint">One level per week at most: finish in the Climb zone of your league. Level 10 takes at least 9 good weeks.</p></section>`}
-function lvZones(){const L=myLv();return `<section class="sec"><div class="sh"><h2>How leagues work</h2></div><div class="card lgw">
+       <span class="lrc-m${(m.xp||0)>=L[0]?' ok':''}">${ic((m.xp||0)>=L[0]?'check':'spark',12)}${i?fmtN(L[0])+' XP':'Start'}</span>
+       <em>${st==='cur'?'You are here':st==='done'?`${ic('check',13)}Passed`:i===cur+1?((m.xp||0)>=L[0]?'Climb this week':`${fmtN(L[0]-(m.xp||0))} XP to the mark`):`${i-cur} climbs away`}</em><span class="lrc-pd"></span></div>`}).join(''))}
+   <p class="hint">Each level needs two keys: its XP Mark (total XP) and a Climb-zone finish in your weekly league. One level per week at most, so Dr. needs 20,000 XP and at least 9 good weeks.</p></section>`}
+function lvZones(){const L=myLv();return `<section class="sec"><div class="sh"><h2>How you climb</h2></div><div class="card lgw">
+   <div class="lgw-k"><div><span>${ic('spark',18)}</span><b>XP Mark</b><small>Total XP from tests and practice. Each level has its mark.</small></div><em>+</em><div><span>${ic('zup',18)}</span><b>Climb zone</b><small>Top third of your weekly league with ${LG_MIN}+ XP.</small></div></div>
    <p>Every Monday you play in a league of up to 45 students at your level, from every Aspiron test series. You join with your first XP of the week. On Sunday night the league is ranked by the XP earned in the week:</p>
-   ${['up','stay','down'].map(z=>`<div class="lgw-z ${z}"><span>${ic(ZN3[z][1],18)}</span><div><b>${ZN3[z][0]}</b><small>${z==='up'?`Top third (15 of 45) with ${LG_MIN}+ XP: next week one level up`:z==='stay'?'The middle third: same level next week':'Bottom third (15 of 45): one level down'}</small></div></div>`).join('')}
+   ${['up','ready','stay','down'].map(z=>`<div class="lgw-z ${z}"><span>${ic(ZN3[z][1],18)}</span><div><b>${ZN3[z][0]}</b><small>${z==='up'?`Top third (15 of 45), ${LG_MIN}+ XP and the XP Mark reached: next week one level up`:z==='ready'?'Top third, but the XP Mark is not reached yet: you keep your level and climb once you have it':z==='stay'?'The middle third: same level next week':'Bottom third (15 of 45): one level down'}</small></div></div>`).join('')}
    <p class="hint">Level 1 has no Drop zone and Level 10 has no Climb zone. The golden Dr. title stays once you reach Level 10.</p></div></section>`}
 function lvWays(){return `<section class="sec"><div class="sh"><h2>How to earn XP</h2></div><div class="card lvx">${XPWAYS.map((x,i)=>`<div class="lvx-i" style="--i:${i}"><span class="ti">${ic(x[0],18)}</span><div><b>${x[1]}</b><small>${x[3]}</small></div><em>${x[2]}</em></div>`).join('')}
    <p class="hint">Right answers only. XP from a live test shows once its result is out. Tests flagged for cheating give no XP.</p></div></section>`}
@@ -2917,9 +2929,9 @@ async function lgLoad(force){if(XP3.lOff||typeof AUTH==='undefined'||!AUTH)retur
   else{XP3.L=r&&r.ok?r:(XP3.L&&XP3.L.ok?XP3.L:{ok:false});if(r&&r.ok&&r.me){XP3.me=Object.assign({},XP3.me||{},r.me);lsSet('cbt_v3_xp',XP3.me);xpSeen(XP3.me)}}
   xpRedraw()}
 function lgRow(x){return `<button class="lgr ${x.zone}${x.me?' me':''}" data-a="lgOpen" data-r="${x.rank}" style="--i:${Math.min(x.rank,14)}"><span class="lgr-n">${x.rank<=3?`<i class="lgr-m m${x.rank}">${x.rank}</i>`:x.rank}</span>
-   <span class="lgr-a">${esc3(((x.name||'S')[0]||'S').toUpperCase())}</span><span class="lgr-t"><b>${nmH(x.name,x.dr)}${x.me?' <em class="lgr-y">You</em>':''}</b><small>${x.series?`<span>${esc3(x.series)}</span>`:''}${x.streak?`<span class="lgr-s">${ic('flame',12)}${x.streak}</span>`:''}</small></span>
+   <span class="lgr-a">${esc3(((x.name||'S')[0]||'S').toUpperCase())}</span><span class="lgr-t"><b>${nmH(x.name,x.dr)}${x.me?' <em class="lgr-y">You</em>':''}</b><small>${x.zone==='ready'?`<span class="lgr-k">${ic('lock',11)}XP Mark</span>`:''}${x.series?`<span>${esc3(x.series)}</span>`:''}${x.streak?`<span class="lgr-s">${ic('flame',12)}${x.streak}</span>`:''}</small></span>
    <span class="lgr-v"><b>${fmtN(x.xp)}</b><small>XP</small></span></button>`}
-const lgSep=(z,lv)=>`<div class="lgs ${z}"><span>${ic(ZN3[z][1],14)}${ZN3[z][0]}</span><small>${z==='up'?`Level ${Math.min(10,lv+1)} next week`:z==='down'?`Level ${Math.max(1,lv-1)} next week`:`Stay at Level ${lv}`}</small></div>`;
+const lgSep=(z,lv,mk)=>`<div class="lgs ${z}"><span>${ic(ZN3[z][1],14)}${ZN3[z][0]}</span><small>${z==='up'?`Level ${Math.min(10,lv+1)} next week${mk?` · needs ${fmtN(mk)} XP`:''}`:z==='down'?`Level ${Math.max(1,lv-1)} next week`:`Stay at Level ${lv}`}</small></div>`;
 function lgBody(){const b=XP3.L;
   if(XP3.lOff)return `<div class="card empty"><span class="ti">${ic('trophy',22)}</span><b>Weekly leagues start soon</b><p>They open as soon as the update is switched on. Your XP and streak are already counting.</p><button class="btn sm" data-a="xbPer" data-p="all">See all students</button></div>`;
   if(!b)return '<div class="card sk" style="height:200px"></div><div class="card sk" style="height:320px"></div>';
@@ -2929,10 +2941,10 @@ function lgBody(){const b=XP3.L;
      <button class="ib lgh-h" data-a="lgHist" aria-label="Past weeks">${ic('hist',18)}</button></div>
     ${b.in?`<div class="lgh-m"><div><b>#${me?me.rank:'–'}</b><small>of ${n}</small></div><div><b>${fmtN(me?me.xp:0)}</b><small>XP this week</small></div><div class="${me?me.zone:''}"><b>${me?ic(ZN3[me.zone][1],18):''}</b><small>${me?ZN3[me.zone][0]:''}</small></div></div>
      <div class="lgz"><i class="up" style="--w:${n?up/n:0}"></i><i class="stay" style="--w:${n?(n-up-dn)/n:1}"></i><i class="down" style="--w:${n?dn/n:0}"></i>${me&&n>1?`<b class="lgz-k" style="--x:${((me.rank-1)/(n-1)).toFixed(3)}"></b>`:''}</div>
-     <p class="lgh-f">${me&&me.zone==='up'?'Great! Keep it up to climb on Sunday night.':me&&me.zone==='down'?`Earn more XP to get out of the Drop zone.`:up&&me&&me.xp<LG_MIN?`Climbing needs a top-${up} finish and ${LG_MIN}+ XP this week.`:up?`Top ${up} climb to Level ${lv.n+1} on Sunday night.`:'Hold your place: the top level has no Climb zone.'}</p>`
+     <p class="lgh-f">${me&&me.zone==='ready'?`Climb zone, but you need ${fmtN(Math.max(0,(b.next_mark||0)-(xpMe().xp||0)))} more total XP (the XP Mark) to climb.`:me&&me.zone==='up'?'Both keys ready! Keep it up to climb on Sunday night.':me&&me.zone==='down'?`Earn more XP to get out of the Drop zone.`:up&&me&&me.xp<LG_MIN?`Climbing needs a top-${up} finish and ${LG_MIN}+ XP this week.`:up?`Top ${up} climb to Level ${lv.n+1} on Sunday night.`:'Hold your place: the top level has no Climb zone.'}</p>`
     :`<p class="lgh-f">You join this week’s league with your first XP. Take a test or practise a few questions.</p><button class="btn blk" data-a="skGo">${ic('play',16)}Start now</button>`}</section>`;
   if(!b.in)return head;
-  let z0='',rows='';M.forEach(x=>{if(x.zone!==z0){rows+=lgSep(x.zone,lv.n);z0=x.zone}rows+=lgRow(x)});
+  let z0='',rows='';M.forEach(x=>{const z=zSec(x.zone);if(z!==z0){rows+=lgSep(z,lv.n,b.next_mark);z0=z}rows+=lgRow(x)});
   return `${head}<div class="card lgl">${rows}</div><p class="hint" style="text-align:center">${fmtN(n)} student${n===1?'':'s'} in your league · every Aspiron test series · new leagues every Monday</p>`}
 function xbRow(x){return `<button class="xbr${x.me?' me':''}" data-a="xbOpen" data-r="${x.rank}" style="--i:${Math.min(x.rank,12)}"><span class="xbn">${x.rank}</span><span class="xbc">${crest(lvAt(x.level).i,34)}</span>
    <span class="xbt"><b><span>${nmH(x.name,x.dr)}${x.me?' (you)':''}</span>${x.series?`<em>${esc3(x.series)}</em>`:''}</b><small>${fmtN((x.attempted||0)+(x.practice||0))} Qs · ${awCount(x)} awards${x.streak?` · ${ic('flame',12)}${x.streak}`:''}</small></span>
