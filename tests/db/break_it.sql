@@ -1293,6 +1293,10 @@ insert into cbt_private.series_access (student_id, series_id)
 select id, '11111111-1111-1111-1111-111111111111' from cbt_private.students where mobile = '9000000001' on conflict do nothing;
 update cbt_private.tests set result_at = cbt_private.now_ms() - 1000 where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 set role anon;
+-- v100: one open attempt per account at a time: the earlier open test is submitted first, then the paid test starts
+reset role;
+update cbt_private.sessions set submitted = true where student_id = (select id from cbt_private.students where mobile = '9000000001') and not submitted;
+set role anon;
 select pg_temp.chk('34d paid student: every test, file, announcement and answer-key PDF opens',
   (public.cbt_start('9000000001','AAAA1111','dev-aaaaaaaa','aaaaaaaa-0000-0000-0000-000000000077')->>'ok')::boolean
   and (public.cbt_file_part('9000000001','AAAA1111','dev-aaaaaaaa','ffffffff-0000-0000-0000-000000000001',0)->>'ok')::boolean
@@ -1461,7 +1465,13 @@ select ('aaaaaaaa-0000-0000-0000-0000000008a' || g)::uuid, '22222222-2222-2222-2
 on conflict (id) do nothing;
 select count(*) as r0 from cbt_private.results \gset
 set role anon;
-select public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb',('aaaaaaaa-0000-0000-0000-0000000008a' || g)::uuid)->>'ok' from generate_series(1, 5) g;
+-- v100: one open attempt per account: each test is started and then submitted before the next one
+do $$ declare g int; begin
+  for g in 1..5 loop
+    perform public.cbt_start('9000000002','BBBB2222','dev-bbbbbbbb',('aaaaaaaa-0000-0000-0000-0000000008a' || g)::uuid);
+    update cbt_private.sessions set submitted = true where student_id = (select id from cbt_private.students where mobile = '9000000002') and not submitted;
+  end loop;
+end $$;
 -- a normal submit, as the app sends it (answers + times), with fields a student must never set
 select public.cbt_submit('9000000002','BBBB2222','dev-bbbbbbbb','aaaaaaaa-0000-0000-0000-0000000008a1',
   '{"0":1,"1":2,"2":0,"_t":{"0":30,"1":40,"2":50},"score":999,"correct":999,"rank":1,"paid":true,"isAdmin":true,"role":"admin"}', 'v1-normal') as v1a \gset
