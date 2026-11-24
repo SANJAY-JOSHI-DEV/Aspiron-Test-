@@ -51,7 +51,7 @@ begin
   update sessions set answers = p_answers, client_id = left(p_client_id, 80), saved_at = now() where id = sess.id;
   return jsonb_build_object('ok',true);
 end $$;
-grant execute on function public.cbt_save(text, text, text, uuid, jsonb, text) to anon, authenticated;
+grant execute on function public.cbt_save(text, text, text, uuid, jsonb, text) to anon;
 
 -- ---------- cbt_start: one open attempt per student, on one device ----------
 -- the v68 start function with the device rule added (every other condition is unchanged)
@@ -77,7 +77,8 @@ begin
     return jsonb_build_object('ok',false,'error','not_found');
   end if;
 
-  allowed := x.s_free or x.free_preview
+  -- v77: the first test of every series is free
+  allowed := x.s_free or x.free_preview or x.id = cbt_private.first_test(x.series_id)
              or exists(select 1 from series_access ac where ac.student_id = sid and ac.series_id = x.series_id);
   if not allowed then return jsonb_build_object('ok',false,'error','locked'); end if;
 
@@ -124,7 +125,7 @@ begin
     'test',jsonb_build_object('id',x.id,'title',x.title,'duration',x.duration,'correct',x.correct_marks,
             'wrong',x.wrong_marks,'lock_back',x.lock_back,'practice',x.practice,'lang',lg,'questions',coalesce(qs,'[]'::jsonb)));
 end $function$;
-grant execute on function public.cbt_start(text, text, text, uuid) to anon, authenticated;
+grant execute on function public.cbt_start(text, text, text, uuid) to anon;
 
 notify pgrst, 'reload schema';
 
@@ -152,6 +153,8 @@ begin
   end if;
   return cbt_private.cbt_submit__v81(p_mobile,p_code,p_device,p_test,p_answers,p_client_id);
 end $$;
-grant execute on function public.cbt_submit(text, text, text, uuid, jsonb, text) to anon, authenticated;
+revoke all on function public.cbt_submit(text, text, text, uuid, jsonb, text) from public, authenticated;
+grant execute on function public.cbt_submit(text, text, text, uuid, jsonb, text) to anon;
+revoke all on function cbt_private.cbt_submit__v81(text, text, text, uuid, jsonb, text) from public, anon, authenticated;
 
 notify pgrst, 'reload schema';
