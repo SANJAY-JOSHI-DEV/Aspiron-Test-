@@ -45,7 +45,7 @@ select 25, 'supabase_v82_cron_key.sql', case when exists (select 1 from cbt_priv
 union all
 -- v81 changes an existing function: 'ok' when submitting a test has the size limits (review V1)
 select 26, 'supabase_v81_submit_limits.sql', case when to_regprocedure('public.cbt_submit(text,text,text,uuid,jsonb,text)') is not null
-  and pg_get_functiondef(to_regprocedure('public.cbt_submit(text,text,text,uuid,jsonb,text)')) like '%v81: the same limit%' then 'ok' else 'MISSING — run this file' end
+  and pg_get_functiondef(coalesce(to_regprocedure('cbt_private.cbt_submit__v81(text,text,text,uuid,jsonb,text)'), to_regprocedure('public.cbt_submit(text,text,text,uuid,jsonb,text)'))) like '%v81: the same limit%' then 'ok' else 'MISSING — run this file' end
 union all
 -- v83 changes existing functions: 'ok' when both push functions have the owner check (review V2)
 select 27, 'supabase_v83_push_owner.sql', case when to_regprocedure('public.cbt_push_save(text,text,text,jsonb,boolean)') is not null
