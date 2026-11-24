@@ -2638,6 +2638,9 @@ sup,sub{font-size:.72em;line-height:0}
 .hb-sc b{font-weight:700;font-variant-numeric:tabular-nums}
 .hb-sc small{font-size:11px;font-weight:600;color:var(--heroMut);letter-spacing:.02em}
 .hb-sc[data-k="streak"] .i{color:#ffb35c}
+.hb-sc[data-k="xp"] .i{color:#ffd60a}
+.hb-sc[data-k="prac"] .i{color:#ffa500}
+.hb-sc[data-k="ref"] .i{color:#3b9bff}
 :host([data-art]) .hb-sc{background:color-mix(in srgb,var(--hero2) 70%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .hb-h.nq{min-height:36px}
 /* the subjects wait for the swap above, then slide down */
