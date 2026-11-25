@@ -427,7 +427,7 @@ async function resync(btn) {
 function layout(el) {
   const m = can();
   if (!v32()) return AX.set(el, h`<div class="card">${UI.empty({ tone: 'lock', icon: 'db', title: 'One-time setup for sections and NEET / JEE', text: 'Open Supabase → SQL Editor → New query, paste supabase_v32_store_layout.sql and press Run. Then refresh this page.' })}</div>`);
-  const G = groups().filter(g => g.items.some(visible)), named = groups().filter(g => g.k);
+  const G = groups().filter(g => g.items.some(visible)), named = G.filter(g => g.k);
   AX.set(el, h`<div class="row wrap between" style="margin-bottom:14px">${courseChips()}<span class="xs mut">${T.cf ? 'Showing what ' + T.cf.toUpperCase() + ' students see.' : 'Showing every series.'}</span></div>
     <div class="callout info sm" style="margin-bottom:16px">${icon('info', 16)}<div>Each <b>section</b> is one row on the store, top to bottom. Inside a row, series show <b>left → right</b> in the order below. Use the arrows to rearrange — changes save at once.</div></div>
     ${G.length ? h`<div class="col gap16">${join(G, g => { const vis = g.items.filter(visible), ni = named.indexOf(g);
@@ -453,7 +453,9 @@ async function move(id, dir) {
   const r = await lay('order', { ids: g.items.map(x => x.id) }); if (!r.ok) layErr(r);
 }
 async function secMove(k, dir) {
-  const list = groups().filter(g => g.k).map(g => g.name), i = list.findIndex(n => n.toLowerCase() === k), j = i + dir; if (i < 0 || j < 0 || j >= list.length) return;
+  // move among the rows that are on screen (NEET / JEE filter may hide others), then swap the same two in the full saved list
+  const shown = groups().filter(g => g.k && g.items.some(visible)), si = shown.findIndex(g => g.k === k), sj = si + dir; if (si < 0 || sj < 0 || sj >= shown.length) return;
+  const list = groups().filter(g => g.k).map(g => g.name), i = list.findIndex(n => n.toLowerCase() === k), j = list.findIndex(n => n.toLowerCase() === shown[sj].k); if (i < 0 || j < 0) return;
   [list[i], list[j]] = [list[j], list[i]]; D().settings.sections = list; T.view.paint();
   const r = await lay('sections', { list }); if (!r.ok) layErr(r);
 }
