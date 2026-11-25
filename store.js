@@ -1,7 +1,8 @@
 /* Store page: the paid test series (managed in the admin console → Store), in the admin console's design: a menu on
    the left on computers, a menu bar at the bottom on phones, and five pages — Home (the series, one row per section),
    Search, Reviews, Help and Profile. Each series has its Explore page (description, schedule, demo tests, reviews).
-   The student gives name + mobile + course (NEET / JEE) once on the welcome screen. Then: Buy now → pay with UPI →
+   The student gives name, mobile, class, exam (NEET / JEE / CBSE / CUET) and city once on the welcome screen, one
+   step at a time (no Google or email sign-in). Then: Buy now → pay with UPI →
    payment details → verify on Telegram / WhatsApp (message + screenshot). Prices, UPI ID and Telegram come only
    from the database. */
 // never run inside someone else's page (stops look-alike sites from framing the real store)
@@ -71,9 +72,11 @@ const meOk=m=>!!m&&String(m.name||'').trim().length>=2&&/^[6-9]\d{9}$/.test(m.mo
 const ME=()=>{const m=LSg('store_me',null);return meOk(m)?m:meOk(MEM)?MEM:null};
 const meCheck=(n,m)=>n.length<2?'Please enter your name.':!/^[6-9]\d{9}$/.test(m)?'Please enter a valid 10-digit mobile number.':'';
 const meRead=(ni,mi)=>[$(ni).value.trim().replace(/\s+/g,' ').slice(0,60),$(mi).value.replace(/\D/g,'').slice(-10)];
-function meSave(n,m,c){
+// x = more details: class (cls) and city; kept from before when not given
+function meSave(n,m,c,x){
   const old=ME(),was=course();if(!old||old.mobile!==m)LSd('store_ord');   // a new number never continues the old number's order
-  MEM={name:n,mobile:m,course:CN[c]?c:was};LSs('store_me',MEM);CRS=MEM.course;
+  const k=x||{},cls=CLS.includes(k.cls)?k.cls:(old&&old.cls)||'',city=k.city!=null?String(k.city).trim().replace(/\s+/g,' ').slice(0,40):(old&&old.city)||'';
+  MEM={name:n,mobile:m,course:CN[c]?c:was,cls,city};LSs('store_me',MEM);CRS=MEM.course;
   document.documentElement.classList.add('has-me');meUi();
   // "You will be notified" belongs to a number: redraw those buttons for the new one
   $$('[data-soon]').forEach(e=>{const x=ST.items.find(i=>i.id===e.dataset.soon);if(x)e.outerHTML=buyBtn(x,e.dataset.k)});
@@ -84,29 +87,82 @@ function meSave(n,m,c){
 function meUi(){
   const m=ME();if(!m)return;
   $$('[data-meini]').forEach(e=>e.textContent=m.name[0].toUpperCase());$$('[data-mename]').forEach(e=>e.textContent=m.name);
-  const s=$('#mesub');if(s)s.textContent=`${CN[course()]} · ${m.mobile}`;
+  const s=$('#mesub');if(s)s.textContent=meLine(m);
   hero();if(VW==='me')meDraw();
 }
-function gateGo(){
-  const [n,m]=meRead('#gn','#gm'),c=gcPick('#gate'),bad=meCheck(n,m)||(c?'':'Please choose your course — NEET or JEE.');
-  if(bad){$('#ger').textContent=bad;shake($('#gate .lg-card'));return}
-  $('#ger').textContent='';const g=$('#gate');if(g.classList.contains('out'))return;g.classList.add('out');
-  setTimeout(()=>{meSave(n,m,c);g.classList.remove('out');appIn();jump()},RM?0:420);
+/* ---------- the welcome: five steps, one at a time — name, mobile, class, exam, city. Each step slides in with its own
+   icon; a class / exam tile moves on by itself; the last step ends with a tick and the store rises in. Filled in from
+   the student app on this phone when it is signed in (same number), so it is mostly tapping Continue. ---------- */
+const CLS=['Class 9','Class 10','Class 11','Class 12','Dropper'];
+const CLSD={'Class 9':['9','Foundation'],'Class 10':['10','Boards year'],'Class 11':['11','Starting the race'],'Class 12':['12','Final year'],'Dropper':['D','Repeat year']};
+const CITIES=['Delhi','Mumbai','Kota','Jaipur','Lucknow','Patna','Indore','Bhopal','Pune','Hyderabad','Kolkata','Chandigarh'];
+const GS={st:0,d:{name:'',mobile:'',cls:'',exam:'',city:''},busy:0};
+const GSTEPS=[['user','Let’s start with your name','We will greet you with it and print it on your order.'],
+  ['phone','Your mobile number','Your test series is unlocked on this number. No OTP, no email.'],
+  ['books','Which class are you in?','Tap one — it moves on by itself.'],
+  ['target','What are you preparing for?','You will see the test series made for this exam.'],
+  ['pin','Which city are you from?','Helps us plan live tests and local help.']];
+function gsFill(){   // the student app on this phone, if signed in: its name, number, class, exam and city
+  try{const a=LSg('cbt_auth',null),mob=a&&String(a.mobile||'').replace(/\D/g,'').slice(-10);if(!mob)return;
+    const p=LSg('cbt_pf_'+mob,{})||{},d=GS.d;d.name=d.name||String(p.name||a.name||'').trim().slice(0,60);d.mobile=d.mobile||mob;
+    d.cls=d.cls||(CLS.includes(p.cls)?p.cls:'');const e=String(p.exam||'').toLowerCase();d.exam=d.exam||(CN[e]?e:'');d.city=d.city||String(p.city||'').trim().slice(0,40)}catch(_){}}
+function gsTile(k,v,big,t,sm,i){const on=GS.d[k]===v;return `<button type="button" class="gs-t${on?' on':''}" role="radio" aria-checked="${on}" data-gpick="${k}" data-v="${esc(v)}" style="--i:${i}">${big}<b>${esc(t)}</b><small>${esc(sm)}</small>${I('check','ck')}</button>`}
+function gsBody(){const d=GS.d;
+  if(GS.st===0)return `<div class="inp-wrap gs-in">${I('user')}<input class="inp" id="gn" autocomplete="name" maxlength="60" placeholder="e.g. Rahul Sharma" value="${esc(d.name)}" aria-label="Full name"></div>`;
+  if(GS.st===1)return `<div class="inp-wrap gs-in gs-mob"><span class="gs-cc">+91</span><input class="inp" id="gm" type="tel" inputmode="numeric" maxlength="14" autocomplete="tel" placeholder="10-digit mobile number" value="${esc(d.mobile)}" aria-label="Mobile number"></div>`;
+  if(GS.st===2)return `<div class="gs-tiles cls" role="radiogroup" aria-label="Your class">${CLS.map((c,i)=>gsTile('cls',c,`<span class="gs-n">${CLSD[c][0]}</span>`,c,CLSD[c][1],i)).join('')}</div>`;
+  if(GS.st===3)return `<div class="gs-tiles" role="radiogroup" aria-label="Your exam">${CRSL.map(([k,ic,t],i)=>gsTile('exam',k,`<i class="gs-ic">${I(ic)}</i>`,CN[k],t,i)).join('')}</div>`;
+  return `<div class="inp-wrap gs-in">${I('pin')}<input class="inp" id="gcity" autocomplete="address-level2" maxlength="40" placeholder="Type your city" value="${esc(d.city)}" aria-label="City" list="gcities"></div><datalist id="gcities">${CITIES.map(c=>`<option value="${c}">`).join('')}</datalist>
+    <div class="gs-chips">${CITIES.slice(0,8).map((c,i)=>`<button type="button" class="chip${d.city===c?' on':''}" data-gcity="${c}" style="--i:${i}">${c}</button>`).join('')}</div>`}
+function gsDraw(dir){
+  const st=$('#gstage');if(!st)return;const [ic,t,sub]=GSTEPS[GS.st],n=GSTEPS.length;
+  st.innerHTML=`<div class="gs-step ${RM?'':dir||''}"><span class="gs-art">${I(ic)}</span><h3 class="gs-h">${GS.st===0?`Welcome to <span>${esc(CFG.SITE_NAME||'Aspiron Education')}</span>`:esc(t)}</h3><p class="gs-s">${GS.st===0?'Tell us a little about you, one step at a time. You will not be asked again.':esc(sub)}</p>${GS.st===0?`<p class="gs-q">${esc(t)}</p>`:''}${gsBody()}</div>`;
+  $('#gcnt').textContent=`Step ${GS.st+1} of ${n}`;$('#gbar').style.width=((GS.st+1)/n*100)+'%';
+  $('#gback').hidden=!GS.st;
+  $('#ggo').innerHTML=GS.st===n-1?`Open the store ${I('next')}`:`Continue ${I('next')}`;
+  $('#ger').textContent='';
+  const f=st.querySelector('input');if(f&&(GS.st||matchMedia('(hover:hover)').matches))setTimeout(()=>{try{f.focus({preventScroll:true})}catch(_){}},RM?0:260);
 }
+// keep what was typed when moving between steps
+function gsRead(){const d=GS.d,v=q=>{const e=$(q);return e?e.value:null};
+  const n=v('#gn');if(n!=null)d.name=n.trim().replace(/\s+/g,' ').slice(0,60);
+  const m=v('#gm');if(m!=null)d.mobile=m.replace(/\D/g,'').slice(-10);
+  const c=v('#gcity');if(c!=null)d.city=c.trim().replace(/\s+/g,' ').slice(0,40)}
+function gsBad(){const d=GS.d;return [d.name.length<2?'Please enter your name.':'',
+  !/^[6-9]\d{9}$/.test(d.mobile)?'Please enter a valid 10-digit mobile number.':'',d.cls?'':'Please choose your class.',
+  CN[d.exam]?'':'Please choose your exam — NEET, JEE, CBSE or CUET.',d.city.length<2?'Please enter your city.':''][GS.st]}
+function gateGo(){
+  if(GS.busy)return;gsRead();const bad=gsBad();
+  if(bad){$('#ger').textContent=bad;shake($('#gate .lg-card'));return}
+  if(GS.st<GSTEPS.length-1){GS.st++;gsDraw('fwd');return}
+  const g=$('#gate');if(g.classList.contains('out'))return;GS.busy=1;
+  const d=GS.d,st=$('#gstage');
+  // the finish: a tick and a hello, then the store comes up
+  st.innerHTML=`<div class="gs-step gs-fin"><span class="gs-ring">${I('check')}</span><h3 class="gs-h">Welcome, ${esc(d.name.split(' ')[0])}!</h3><p class="gs-s">${esc(CN[d.exam])} · ${esc(d.cls)} · ${esc(d.city)}</p></div>`;
+  $('#gbar').style.width='100%';$('#gback').hidden=true;$('#ggo').disabled=true;
+  setTimeout(()=>{g.classList.add('out');setTimeout(()=>{meSave(d.name,d.mobile,d.exam,{cls:d.cls,city:d.city});g.classList.remove('out');$('#ggo').disabled=false;GS.busy=0;appIn();jump()},RM?0:420)},RM?150:1100);
+}
+function gateBack(){if(GS.busy||!GS.st)return;gsRead();GS.st--;gsDraw('bwd')}
+function gatePick(t){const k=t.dataset.gpick;GS.d[k]=t.dataset.v;$('#ger').textContent='';
+  t.parentNode.querySelectorAll('[data-gpick]').forEach(b=>{const on=b===t;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});
+  const at=GS.st;setTimeout(()=>{if(GS.st===at&&!GS.busy)gateGo()},RM?0:430)}
+function gateStart(){GS.st=0;GS.busy=0;GS.d={name:'',mobile:'',cls:'',exam:'',city:''};gsFill();gsDraw('')}
 // the store behind the welcome screen: closed to taps until the student is known, then it rises in
 function appIn(){
   $$('.app,.dock').forEach(e=>e.inert=false);
   requestAnimationFrame(()=>{navUi();railsInit()});
   if(RM)return;document.body.classList.add('boot');setTimeout(()=>document.body.classList.remove('boot'),1200);
 }
-/* ---------- course: NEET or JEE (welcome screen, or Settings → Profile & settings). A series set to NEET or
-   JEE in the admin panel shows only for that course; a series with no course shows for both. ---------- */
-const CN={neet:'NEET',jee:'JEE'},other=c=>c==='jee'?'neet':'jee';
+/* ---------- course = the exam: NEET, JEE, CBSE or CUET (welcome screen, or Settings → Profile & settings). A series
+   set to one exam in the admin panel shows only for it; a series with no course shows for everyone. ---------- */
+const CN={neet:'NEET',jee:'JEE',cbse:'CBSE',cuet:'CUET'},other=c=>c==='neet'?'jee':'neet';
+const meLine=m=>[CN[course()],m.cls,m.city].filter(Boolean).join(' · ')||m.mobile;
 let CRS='';   // the course for this visit if the phone does not allow saving
 const course=()=>{const m=ME(),c=(m&&m.course)||CRS;return CN[c]?c:'neet'};
 const forC=(x,c)=>!x.course||x.course===(c||course());
 const gcPick=box=>{const b=$(box+' [data-gc][aria-checked=true]');return b?b.dataset.gc:''};
-const CRSL=[['neet','steth','Medical'],['jee','atom','Engineering']];
+const CRSL=[['neet','steth','Medical'],['jee','atom','Engineering'],['cbse','books','Board exams'],['cuet','target','University entrance']];
+const crsIc=c=>(CRSL.find(x=>x[0]===c)||CRSL[0])[1];
 // the two course tiles: in a form (a = 'gc', saved with the form) or on Profile (a = 'course', switches at once)
 const crsHtml=(c,a,lid)=>`<div class="crs" role="radiogroup" aria-labelledby="${lid}">${CRSL.map(([k,i,t])=>`<button type="button" class="crsb" role="radio" aria-checked="${k===c}" data-${a}="${k}"><i>${I(i)}</i><span><b>${CN[k]}</b><small>${t}</small></span>${I('check','ck')}</button>`).join('')}</div>`;
 function courseUi(){
@@ -114,13 +170,13 @@ function courseUi(){
   $$('[role=radio][data-course]').forEach(b=>b.setAttribute('aria-checked',b.dataset.course===c));
   $$('[data-cname]').forEach(e=>e.textContent=CN[c]);
   const q=$('#q');if(q){q.placeholder=`Search ${CN[c]} test series`;q.setAttribute('aria-label',`Search ${CN[c]} test series`)}
-  const s=$('#mesub'),m=ME();if(s&&m)s.textContent=`${CN[c]} · ${m.mobile}`;
+  const s=$('#mesub'),m=ME();if(s&&m)s.textContent=meLine(m);
 }
 function setCourse(c){
   if(!CN[c])return;const was=course();CRS=c;
   const m=ME();if(m&&m.course!==c){MEM=Object.assign({},m,{course:c});LSs('store_me',MEM)}
   if(c===was)return courseUi();
-  courseGo(1);if(VW==='me'||VW==='help')toast(`Showing ${CN[c]} test series`,c==='jee'?'atom':'steth');
+  courseGo(1);if(VW==='me'||VW==='help')toast(`Showing ${CN[c]} test series`,crsIc(c));
 }
 // the course changed: redraw the series, the search and the reviews for it
 // fade = the student changed the course: the old list fades out first
@@ -138,13 +194,17 @@ function meSheet(then){
   ovSet(modal({t:'Your details',s:'Your series is unlocked on this mobile number.',cls:'narrow',
    body:`${fld('sn','Full name','user',`autocomplete="name" maxlength="60" value="${esc(m.name||'')}" placeholder="e.g. Rahul Sharma"`)}
     ${fld('sm','Mobile number','phone',`type="tel" inputmode="numeric" maxlength="14" autocomplete="tel" value="${esc(m.mobile||'')}" placeholder="10-digit mobile number"`)}
-    ${then?'':`<div class="fld"><span class="lbl" id="mcl">Your course</span>${crsHtml(course(),'gc','mcl')}</div>`}<div class="err" id="er" role="alert"></div>`,
+    ${then?'':`<div class="fld"><span class="lbl" id="mkl">Your class</span><div class="chips wrap mcls" role="radiogroup" aria-labelledby="mkl">${CLS.map(c=>`<button type="button" class="chip" role="radio" aria-checked="${m.cls===c}" data-mcls="${c}">${c}</button>`).join('')}</div></div>
+    <div class="fld"><span class="lbl" id="mcl">Your exam</span>${crsHtml(course(),'gc','mcl')}</div>
+    ${fld('sc','City','pin',`autocomplete="address-level2" maxlength="40" value="${esc(m.city||'')}" placeholder="Your city"`)}`}<div class="err" id="er" role="alert"></div>`,
    foot:`<button class="btn pri lg block" id="go" data-mesave>${then?`Save &amp; continue ${I('next')}`:`${I('check')}Save`}</button>`}));
 }
+const then0=()=>!!AFTER;
 function meSaveGo(){
   const [n,m]=meRead('#sn','#sm'),bad=meCheck(n,m);
   if(bad){$('#er').textContent=bad;shake($('.ov .modal'));return}
-  meSave(n,m,gcPick('.ov'));const a=AFTER;AFTER=null;
+  const kb=$('.ov [data-mcls][aria-checked=true]'),ci=$('#sc');
+  meSave(n,m,gcPick('.ov'),then0()?null:{cls:kb?kb.dataset.mcls:'',city:ci?ci.value:''});const a=AFTER;AFTER=null;
   if(a)a();else{closeSheet();toast('Details saved')}
 }
 
@@ -969,13 +1029,13 @@ function meDraw(){
   const box=$('#mebox'),m=ME();if(!box||!m)return;
   const c=course(),o=lastOrd(),N=LSg('store_notify',{}),soon=ST.items.filter(x=>N[x.id]===m.mobile&&x.buy_on===false);
   const T=[['','auto','Auto'],['light','sun','Light'],['dark','moon','Dark']],s=themeSaved();
-  box.innerHTML=`<div class="card pf"><span class="av lg">${esc(m.name[0].toUpperCase())}</span><div class="grow"><h2>${esc(m.name)}</h2><p class="mono">${esc(m.mobile)}</p><span class="pill pri">${I(c==='jee'?'atom':'steth')}${CN[c]}</span></div><button class="btn line sm" data-me>${I('edit')}Edit</button></div>
+  box.innerHTML=`<div class="card pf"><span class="av lg">${esc(m.name[0].toUpperCase())}</span><div class="grow"><h2>${esc(m.name)}</h2><p class="mono">${esc(m.mobile)}</p><span class="pill pri">${I(crsIc(c))}${CN[c]}</span>${m.cls?`<span class="pill">${I('books')}${esc(m.cls)}</span>`:''}${m.city?`<span class="pill">${I('pin')}${esc(m.city)}</span>`:''}</div><button class="btn line sm" data-me>${I('edit')}Edit</button></div>
    ${o?`<div class="card ord"><div class="card-h"><span class="hic gold">${I('receipt')}</span><div class="grow"><h3>Your order</h3><p class="sub">Made ${ago(o.at)} · continue within 24 hours</p></div></div>
      <div class="ordb"><div class="grow"><b>${esc(o.title)}</b><span>${inr(o.amount)} · Order code <b class="code">${esc(o.code)}</b></span></div>
      ${o.payer?`<button class="btn pri" data-ordv>${I('shield')}Verify payment</button>`:(o.lang?`<button class="btn pri" data-lid="${esc(o.item)}" data-lang="${esc(o.lang)}">${I('card')}Continue payment</button>`:`<button class="btn pri" data-buy="${esc(o.item)}">${I('card')}Continue payment</button>`)}</div></div>`:''}
    <button class="card rfpro" data-go="refer"><span class="hic gold">${I('gift')}</span><span class="grow"><b>Refer &amp; earn</b><small>Share your link · get money in your wallet for every friend who buys${WAL&&WAL.balance?` · wallet ${inr(WAL.balance)}`:''}</small></span>${I('cr')}</button>
    <div class="pgrid">
-    <div class="card"><div class="card-h"><span class="hic">${I('target')}</span><div class="grow"><h3 id="pcl">Your course</h3><p class="sub">You see the test series of this course.</p></div></div>${crsHtml(c,'course','pcl')}</div>
+    <div class="card"><div class="card-h"><span class="hic">${I('target')}</span><div class="grow"><h3 id="pcl">Your exam</h3><p class="sub">You see the test series of this exam.</p></div></div>${crsHtml(c,'course','pcl')}</div>
     <div class="card"><div class="card-h"><span class="hic vio">${I('auto')}</span><div class="grow"><h3 id="ptl">Theme</h3><p class="sub">Auto follows your phone's setting.</p></div></div>
      <div class="seg tseg" role="radiogroup" aria-labelledby="ptl">${T.map(([k,ic,l])=>`<button type="button" role="radio" class="${k===s?'on':''}" aria-checked="${k===s}" data-theme-set="${k}">${I(ic)}${l}</button>`).join('')}</div></div>
    </div>
@@ -1008,11 +1068,10 @@ function accountWipe(del){
   closeSheet();courseUi();
   const mb=$('#mebox');if(mb)mb.innerHTML='';
   $$('[data-meini],[data-mename]').forEach(e=>e.textContent='');const sb=$('#mesub');if(sb)sb.textContent='';
-  ['#gn','#gm'].forEach(q=>{const e=$(q);if(e)e.value=''});const er=$('#ger');if(er)er.textContent='';
-  $$('#gate [data-gc]').forEach(b=>b.setAttribute('aria-checked','false'));
+  gateStart();
   const g=$('#gate');if(g){g.classList.remove('out');g.scrollTop=0}
   if(LOADED===1)draw(true);
-  setTimeout(()=>{go('home');if(matchMedia('(hover:hover)').matches){const n=$('#gn');if(n)n.focus()}},160);   // after the sheet has given its history entry back
+  setTimeout(()=>{go('home');const n=$('#gn');if(n&&matchMedia('(hover:hover)').matches)n.focus()},160);   // after the sheet has given its history entry back
 }
 
 /* ---------- schedule and demo tests (PDF / photo) ---------- */
@@ -1136,6 +1195,10 @@ document.addEventListener('click',e=>{
   else if('all' in d){const s=t.closest('.sec');if(s){const on=s.classList.toggle('all');t.firstChild.textContent=on?'Show less':'See all';t.setAttribute('aria-expanded',on);railsInit();if(!on)s.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})}}
   else if(d.rl){const r=t.closest('.sec').querySelector('.rail');r.scrollBy({left:(+d.rl)*r.clientWidth*.85,behavior:RM?'auto':'smooth'})}
   else if('gate' in d)gateGo();
+  else if('gback' in d)gateBack();
+  else if(d.gpick)gatePick(t);
+  else if(d.gcity){const i=$('#gcity');if(i)i.value=d.gcity;GS.d.city=d.gcity;$$('#gate [data-gcity]').forEach(b=>b.classList.toggle('on',b===t));setTimeout(()=>{if(GS.st===GSTEPS.length-1)gateGo()},RM?0:300)}
+  else if(d.mcls)t.parentNode.querySelectorAll('[data-mcls]').forEach(b=>b.setAttribute('aria-checked',b===t));
   else if('me' in d)meSheet();
   else if('signout' in d)acctSheet(false);
   else if('delacct' in d)acctSheet(true);
@@ -1212,7 +1275,7 @@ addEventListener('scroll',()=>{
 themeMeta();themeUi();courseUi();meUi();
 captureRef();captureRc();
 {const v=vHash();if(v!=='home'){if(!history.state)under({v:1},'#/'+v);else VH=!!history.state.v}show(v)}   // the page from the link, else Home
-if(!ME()){$$('.app,.dock').forEach(e=>e.inert=true);if(matchMedia('(hover:hover)').matches)setTimeout(()=>{const n=$('#gn');if(n)n.focus()},400)}
+if(!ME()){$$('.app,.dock').forEach(e=>e.inert=true);gateStart()}
 else if(!RM){document.body.classList.add('boot');setTimeout(()=>document.body.classList.remove('boot'),1200)}
 // blocks further down rise into view as the page scrolls to them
 if('IntersectionObserver' in window&&!RM){

@@ -255,6 +255,9 @@ const MINI_PDF = Buffer.from('%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
   ok(/expired/.test(await p.textContent('#er')) && !/error=/.test(p.url()), 'expired email link: clear message on the login screen');
   ok(!errs.length, 'no page errors (expired link) ' + errs.join(' | ')); await c.close();
   // the new design is the default: a student who never chose a design gets it right after signing in
+  // the new design asks for the class and exam first and cannot be skipped (tests/e2e/onboarding.js checks that): these
+  // students have chosen already, on their account, so the checks below start on Home
+  await q(`update cbt_private.students set keep = keep || '{"pf":{"cls":"Class 12","exam":"NEET"}}'::jsonb where mobile in ('9000000001','9000000002')`);
   await q(`update cbt_private.students set fail_count=0, locked_until=0, devices='{}' where mobile = '9000000002'`);
   { const c2 = await br.newContext({ viewport: { width: 390, height: 844 } }); const p2 = await c2.newPage(); const e2 = []; p2.on('pageerror', e => e2.push(e.message));
     await p2.route(u => !u.href.startsWith(BASE) && !u.href.startsWith(SUPA), r => r.abort()); await p2.route(SUPA + '/rest/v1/rpc/**', rpcRoute);

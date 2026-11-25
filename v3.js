@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=113;
+const V3VER=114;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -471,7 +471,7 @@ const stuMeta=()=>{const o=stuProf();return [o.exam,o.cls].filter(Boolean).join(
 let STORE=null,storeBusy=null;
 function loadStore(){if(STORE||storeBusy)return storeBusy;storeBusy=rpc('cbt_store',{},true).then(r=>{STORE=r&&r.ok?(r.items||[]):[];return STORE}).catch(()=>(STORE=[])).finally(()=>{storeBusy=null;if(S.tab==='test')drawT();else if(S.tab==='home')softRender()});return storeBusy}
 const storeUrl=x=>'store.html#p='+encodeURIComponent(x.id);
-const courseOf=x=>x.course==='jee'?'JEE':x.course==='neet'?'NEET':'';
+const courseOf=x=>({neet:'NEET',jee:'JEE',cbse:'CBSE',cuet:'CUET'})[x.course]||'';
 let NOTES=null;
 function loadNotes(){if(typeof annLoad!=='function')return Promise.resolve([]);return annLoad().then(a=>{NOTES=a||[];syncBell();return NOTES}).catch(()=>[])}
 const seenAt=()=>{try{return LS.get('cbt_ann_seen',0)}catch(e){return lsGet('cbt_ann_seen',0)}};
@@ -736,7 +736,7 @@ A.openNote=el=>{const n=(NOTES||[]).find(x=>String(x.id)===el.dataset.id);if(!n)
 async function noteImg(id){try{if(typeof ANNIMG!=='undefined'&&ANNIMG[id])return ANNIMG[id]}catch(e){}let r=null;try{r=await rpc('cbt_notice_img',{p_id:id})}catch(e){}const im=r&&r.ok&&imgOk(r.image)?r.image:null;try{if(im&&typeof ANNIMG!=='undefined')ANNIMG[id]=im}catch(e){}return im}
 
 /* ================= TESTS: store + my test series, the store's own data (photos, descriptions, reviews) ================= */
-const TQ={q:'',f:{e:[],c:[],s:[]},mf:'paid',cat:'all',sf:'all',xt:'d',tile:'',tf:'all',ts:'all',plan:null};
+const TQ={q:'',f:{e:[],c:[],s:[]},mf:'paid',cat:'all',sf:'all',xt:'d',tile:'',tf:'all',ts:'all',plan:null,all:false};
 let XD=null,SRV={},SCHD={},LANGS=new Set(),SMAP={},extrasBusy=null;
 function loadExtras(){if(extrasBusy||XD)return extrasBusy;const q=(fn,auth)=>rpc(fn,{},!auth).catch(()=>null);
   extrasBusy=Promise.all([q('cbt_store_explore'),q('cbt_store_reviews'),q('cbt_store_schedules'),q('cbt_store_langs'),q('cbt_store_map',true)]).then(([x,r,s,l,m])=>{
@@ -753,7 +753,12 @@ const preview=x=>{const sid=seriesOfItem(x.id);return sid&&(C().series||[]).some
 /* "bought" = a paid series that is unlocked for this student, ended or not (the app has no renew path). A free series
    (price 0, everyone is in it) stays in the store. STORE itself is not changed: explore, the locked sheet and Home read it as before. */
 const bought=x=>{const sid=seriesOfItem(x.id),s=sid&&(C().series||[]).find(v=>v.id===sid);return !!(s&&s.unlocked&&!s.is_free)};
-const shop=()=>(STORE||[]).filter(x=>!bought(x));
+const myCat=()=>{const p=stuProf();return {e:PF3.exam.includes(p.exam)?p.exam:'',c:PF3.cls.includes(p.cls)?p.cls:''}};
+const catOk=()=>{const m=myCat();return !!(m.e&&m.c)};
+const catTxt=()=>{const m=myCat();return [m.e,m.c].filter(Boolean).join(' · ')};
+/* a series is for this student when its exam / class tags (Admin → Tests page; none = everyone) include theirs */
+const forMe=x=>{if(TQ.all)return true;const m=myCat(),g=tagsOf(x),has=(L,v)=>!v||!L.length||L.some(t=>String(t).toLowerCase()===v.toLowerCase());return has(g.e,m.e)&&has(g.c,m.c)};
+const shop=()=>(STORE||[]).filter(x=>!bought(x)&&forMe(x));
 const cats=()=>[...new Set(shop().map(x=>String(x.section||'').trim()).filter(Boolean))];
 const rvOf=x=>SRV[x.id]&&SRV[x.id].count?SRV[x.id]:null;
 const starRow=r=>`<span class="stars" aria-label="${(+r.avg).toFixed(1)} out of 5">${ic('star',13).replace('class="i"','class="i fill"')}<b>${(+r.avg).toFixed(1)}</b> <span class="mut">(${fmtN(r.count)})</span></span>`;
@@ -770,7 +775,7 @@ function actH(x){const sid=owned(x),soon=x.buy_on===false;
   return `<a class="btn sm gold" href="${buyHref(x)}">${soon?'Pre-book':x.price?'Buy now':'Get it free'}</a>`}
 
 /* ---------- the Tests page look (Admin → Tests page): poster, and the filter Exam / Class / Subject ---------- */
-const LOOK0={poster:'',link:'',exams:['NEET','JEE'],classes:['Class 11','Class 12','Dropper'],subjects:['Physics','Chemistry','Biology','Maths'],tags:{}};
+const LOOK0={poster:'',link:'',exams:['NEET','JEE','CBSE','CUET'],classes:['Class 9','Class 10','Class 11','Class 12','Dropper'],subjects:['Physics','Chemistry','Biology','Maths'],tags:{}};
 let LOOK=null,lookBusy=null;
 function loadLook(){if(LOOK||lookBusy)return lookBusy;lookBusy=rpc('cbt_store_look',{},true).then(r=>{LOOK=r&&r.ok?Object.assign({},LOOK0,r,{tags:r.tags||{}}):LOOK0}).catch(()=>{LOOK=LOOK0})
   .finally(()=>{lookBusy=null;if(S.tab==='test'&&!scrOpen())reposter()});return lookBusy}
@@ -788,6 +793,23 @@ function spass(x){const w=TQ.q.toLowerCase().split(/\s+/).filter(Boolean),h=[x.t
   const g=tagsOf(x);return ['e','c','s'].every(k=>!TQ.f[k].length||!g[k].length||g[k].some(v=>TQ.f[k].includes(v)))}
 const sorted=L=>L;
 const mpass=s=>{const w=TQ.q.toLowerCase().split(/\s+/).filter(Boolean),h=[s.title,s.description,testsOf(s.id).map(t=>t.title).join(' ')].join(' ').toLowerCase();return w.every(v=>h.includes(v))};
+
+/* ---------- the student's category on the Tests page: "For NEET · Class 12", Change, See all ---------- */
+function catBar(){if(!catOk()||STORE===null)return '';const hid=(STORE||[]).filter(x=>!bought(x)&&!forMe(x)).length;
+  return `<div class="catbar${TQ.all?' all':''}"><span class="ti g">${ic('target',18)}</span><span class="catbar-t"><small>${TQ.all?'Showing every test series':'Test series for you'}${TQ.all?' · <button class="lnk" data-a="catMine">Only mine</button>':hid?` · <button class="lnk" data-a="catAll">See all</button>`:''}</small><b>${esc3(catTxt())}</b></span>
+   <button class="btn sm" data-a="catEdit">${ic('pen',14)}Change</button></div>`}
+A.catAll=()=>{TQ.all=true;drawT()};A.catMine=()=>{TQ.all=false;drawT()};
+/* quick change of class and exam (a sheet): saved in the profile at once, the app redraws for the new category */
+let CATD=null;
+function catSheet(){const d=CATD,chip=(k,v)=>`<button type="button" class="${d[k]===v?'on':''}" aria-pressed="${d[k]===v}" data-a="catPick" data-k="${k}" data-v="${esc3(v)}">${esc3(v)}</button>`;
+  openSheet(`<h2 id="sheetT">Your class and exam</h2><p class="sub">The app shows the test series and tips for this. Change it any time.</p>
+   <div class="fl" style="margin-top:14px"><span>Your class</span><div class="chips wrap">${PF3.cls.map(v=>chip('cls',v)).join('')}</div></div>
+   <div class="fl" style="margin-top:14px"><span>Target exam</span><div class="chips wrap">${PF3.exam.map(v=>chip('exam',v)).join('')}</div></div>
+   <button class="btn blk" style="margin-top:18px" data-a="catSave"${d.cls&&d.exam?'':' disabled'}>${ic('check',16)}Save</button>`)}
+A.catEdit=()=>{const m=myCat();CATD={cls:m.c,exam:m.e};closeLayer();setTimeout(catSheet,RM?0:180)};
+A.catPick=el=>{CATD[el.dataset.k]=el.dataset.v;catSheet()};
+A.catSave=()=>{if(!CATD||!CATD.cls||!CATD.exam)return;try{pfSave(Object.assign({},stuProf(),{cls:CATD.cls,exam:CATD.exam}));if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');return}
+  TQ.all=false;closeLayer();toast3('Now showing '+catTxt());setTimeout(()=>{if(S.tab==='test')drawT();softRender()},300)};
 
 /* ---------- top: the poster from Admin → Tests page, edge to edge, with the search on it and the two big buttons on its bottom ---------- */
 function tabs2(){const c=myCount(),n=shop().filter(x=>x.buy_on!==false).length;
@@ -883,8 +905,8 @@ function storeView(){
    trendRail()+(soon.length?`<section class="sec"><div class="sh"><h2>Coming soon</h2><span class="aside">${soon.length}</span></div><div class="list">${soon.map(iCard).join('')}</div></section>`:'')+
    `<a class="btn lg ghost" href="store.html">${ic('right',16)}Open the full store</a>`}
 
-VIEW.test=()=>poster()+`<div id="tBody" class="stack" style="gap:var(--gap)">${storeView()}</div>`;
-function drawT(){const b=$('#tBody');if(!b)return;b.innerHTML=storeView();entr(b);const n=tfCount(),fb=$('[data-a="tFilter"]');if(fb){fb.className='fb'+(n?' on':'');fb.innerHTML=ic('filter',20)+(n?`<b>${n}</b>`:'')}const x=$('[data-a="tqClear"]');x&&(x.hidden=!TQ.q);const t=$('.tt2');t&&(t.outerHTML=tabs2());autoRail('#tbRail','#tbRailD');reveal(b);lastQ=-1;pstSync()}
+VIEW.test=()=>poster()+`<div id="tBody" class="stack" style="gap:var(--gap)">${catBar()}${storeView()}</div>`;
+function drawT(){const b=$('#tBody');if(!b)return;b.innerHTML=catBar()+storeView();entr(b);const n=tfCount(),fb=$('[data-a="tFilter"]');if(fb){fb.className='fb'+(n?' on':'');fb.innerHTML=ic('filter',20)+(n?`<b>${n}</b>`:'')}const x=$('[data-a="tqClear"]');x&&(x.hidden=!TQ.q);const t=$('.tt2');t&&(t.outerHTML=tabs2());autoRail('#tbRail','#tbRailD');reveal(b);lastQ=-1;pstSync()}
 AFTER.test=()=>{loadMeta();const q=$('#tq');q.addEventListener('input',()=>{TQ.q=q.value;drawT()});autoRail('#tbRail','#tbRailD');loadExtras();loadLook();loadPC();pstSync(true);const pi=$('#pst img');pi&&!pi.complete&&pi.addEventListener('load',()=>pstSync(true),{once:true});
   /* at most one try a minute: with no banners (or no network) the redraw below used to start the next load at once,
      an endless loop of requests and redraws that made the Tests page stutter */
@@ -1628,7 +1650,9 @@ A.prMaster=async el=>{el.disabled=true;const ok=await mkMaster(PR.q[PR.i]);if(ok
 /* ================= PROFILE, SETTINGS, EXAM COUNTDOWN, HELP and SIGN OUT in the new design =================
    The data stays where it always was: profile cbt_pf_<mobile> and countdown cbt_cd_<mobile> on the phone, which the
    app also keeps on the student's account (cbt_keep, v56) on every save; sound cbt_snd; notifications cbt_np. */
-const PF3={cls:['Class 9','Class 10','Class 11','Class 12','Dropper','College'],exam:['NEET','JEE','CUET','Boards','Other'],
+/* the student's category: class and target exam. Asked on the first open (cannot be skipped), changed any time in
+   Profile, Settings → Class and exam, the menu, or the bar on the Tests page. The Tests page shows that category's series. */
+const PF3={cls:['Class 9','Class 10','Class 11','Class 12','Dropper'],exam:['NEET','JEE','CBSE','CUET'],
   f:[['name','Full name','text','Your name','name'],['email','Email','email','name@example.com','email'],['phone','Alternate phone','tel','Optional','tel'],['school','School / Coaching','text','School or coaching name','organization'],['city','City','text','Your city','address-level2']]};
 let PFD=null;
 function pfAv(sz){const o=stuProf();return o.photo&&/^data:image\//.test(o.photo)?`<img src="${esc3(o.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">`:`<b style="font-size:${Math.round(sz*.4)}px">${initial()}</b>`}
@@ -1646,7 +1670,7 @@ function profileView(){return {t:'My profile',s:'Your details and progress',key:
   after:()=>{const f=$('#pfFile');f&&f.addEventListener('change',()=>pfPhoto(f))}}}
 A.profile=()=>{PFD=Object.assign({},stuProf());closeLayer();push(profileView())};
 const pfForm=()=>{const F=$('#pfForm');if(!F)return;PF3.f.forEach(f=>{const i=F.querySelector(`[name="${f[0]}"]`);if(i)PFD[f[0]]=i.value.trim()});const a=F.querySelector('[name=about]');if(a)PFD.about=a.value.trim()};
-A.pfPick=el=>{pfForm();PFD[el.dataset.k]=PFD[el.dataset.k]===el.dataset.v?'':el.dataset.v;redraw()};
+A.pfPick=el=>{pfForm();PFD[el.dataset.k]=el.dataset.v;redraw()};   // class and exam are always set (no tap-to-clear): the app is built around them
 A.pfSave=()=>{pfForm();const o=Object.assign({},stuProf(),PFD);if(AUTH&&o.name===(AUTH.name||'').trim())delete o.name;
   if(o.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.email)){toast3('Please check your email');return}
   try{pfSave(o);if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');return}
@@ -1687,7 +1711,7 @@ const standalone3=()=>{try{return isStandalone()}catch(e){return false}};
 function setRow(i,t,d,a,right){return `<button class="row" data-a="${a}"><span class="ti g">${ic(i,19)}</span><span><b>${t}</b>${d?`<small>${d}</small>`:''}</span>${right||ic('right',18)}</button>`}
 const tgl=on=>`<span class="tgl${on?' on':''}" aria-hidden="true"><i></i></span>`;
 function settingsView(){return {t:'Settings',s:'Your account and the app',key:'set',html:()=>{let c=null;try{c=cdGet()}catch(e){}
-  return `<div class="stack" style="gap:10px"><p class="gh">Account</p><div class="card rows">${setRow('user','Profile','Name, photo, class and target exam','profile')}${setRow('target','Exam countdown',c?esc3(c.name)+', '+dS(c.date):'Set your exam date','cdEdit')}${setRow('sun','Theme and colours',esc3(themeLabel()),'setTheme')}</div></div>
+  return `<div class="stack" style="gap:10px"><p class="gh">Account</p><div class="card rows">${setRow('user','Profile','Name, photo, class and target exam','profile')}${setRow('book','Class and exam',catOk()?esc3(catTxt()):'Not chosen yet','catEdit')}${setRow('target','Exam countdown',c?esc3(c.name)+', '+dS(c.date):'Set your exam date','cdEdit')}${setRow('sun','Theme and colours',esc3(themeLabel()),'setTheme')}</div></div>
   <div class="stack" style="gap:10px"><p class="gh">App</p><div class="card rows">${setRow('bell','Phone notifications',npOn3()?'On, new notices appear on your phone':'Get new notices on your phone','setNp',tgl(npOn3()))}${setRow('mega','Opening sound',sndOn3()?'On, a soft sound with the opening animation':'Off, the app opens silently','setSnd',tgl(sndOn3()))}${standalone3()?'':setRow('dl','Install the app','Open it from your home screen, full screen','setInstall')}</div></div>
   <div class="stack" style="gap:10px"><p class="gh">Help</p><div class="card rows">${setRow('mail','Chat with support','WhatsApp or Telegram','setHelp')}${setRow('info','About us','','setAbout')}${setRow('file','Terms and conditions','','setTerms')}${setRow('file','Privacy policy','','setPrivacy')}${setRow('file','Refund policy','','setRefund')}</div></div>
   <button class="btn lg ghost danger3" data-a="setOut">${ic('out',17)}Sign out</button>`}}}
@@ -3119,36 +3143,56 @@ V3H.push([/^#\/s\/([^/?#]+)$/,m=>openSeriesAny(decodeURIComponent(m[1]),'t')],
   [/^#\/h\/.+$/,()=>A.hist()],[/^#\/(series|my)$/,()=>A.mySeries()],
   [/^#\/lib$/,()=>go('lib')],[/^#\/me$/,()=>go('stats')]);
 
-/* ================= FIRST-TIME SETUP in the new design =================
-   Shown once per student on this phone (cbt_v3_onb_<mobile>) when the profile has no class or target exam yet:
-   welcome, class and target exam (saved in the classic profile cbt_pf_<mobile>, which is kept on the account by
-   cbt_keep), then notifications and install. Skip closes it for good; everything can be changed later in Profile. */
-const OB={st:0,d:null,el:null};
+/* ================= FIRST-TIME SETUP in the new design (cannot be skipped) =================
+   Shown after sign-in while the profile has no class or target exam from the lists in PF3 (cbt_pf_<mobile>, kept on
+   the account by cbt_keep, so a new phone does not ask again). Five steps: welcome, how the app works, class, exam,
+   then "all set" with notifications and install. There is no Skip until the class and exam are saved; on every app
+   open (and on every page) it comes back until they are. Everything can be changed later (Profile, Settings, menu,
+   the bar on the Tests page). */
+const OB={st:0,d:null,el:null,t:0};
 const obKey=()=>'cbt_v3_onb_'+((AUTH&&AUTH.mobile)||'');
-function maybeOnb(){try{if(!AUTH||INTEST||OB.el||lsGet(obKey(),0)||layer||scrOpen()||document.body.classList.contains('v3old'))return;const p=stuProf();if(p.cls&&p.exam){lsSet(obKey(),1);return}openOnb()}catch(e){}}
-function obStep(){const d=OB.d,nm=String((AUTH&&AUTH.name)||'').trim().split(' ')[0]||'there';
-  if(OB.st===0)return `<div class="ob-art">${ic('spark',34)}</div><small class="ob-k">WELCOME</small><h1>Hi ${esc3(nm)}, let’s set up your study space</h1><p>Two quick choices so your tests, schedule and tips fit you. It takes 20 seconds.</p>`;
-  if(OB.st===1)return `<small class="ob-k">STEP 1 OF 2</small><h1>About you</h1><p>We use this to show the right series and tips.</p>
-    <div class="fl"><span>Your class</span><div class="chips wrap">${PF3.cls.map(c=>`<button class="${d.cls===c?'on':''}" aria-pressed="${d.cls===c}" data-ob="cls" data-v="${c}">${c}</button>`).join('')}</div></div>
-    <div class="fl"><span>Target exam</span><div class="chips wrap">${PF3.exam.map(c=>`<button class="${d.exam===c?'on':''}" aria-pressed="${d.exam===c}" data-ob="exam" data-v="${c}">${c}</button>`).join('')}</div></div>`;
+const OBN=5;
+const OBC={'Class 9':['9','Foundation'],'Class 10':['10','Boards year'],'Class 11':['11','Starting the race'],'Class 12':['12','Final year'],'Dropper':['D','Repeat year']};
+const OBE={NEET:['steth','Medical'],JEE:['atom','Engineering'],CBSE:['book','Board exams'],CUET:['target','University entrance']};
+function maybeOnb(){try{clearTimeout(OB.t);if(!AUTH||OB.el||document.body.classList.contains('v3old'))return;
+  if(catOk()){lsSet(obKey(),1);return}
+  /* the profile from the account is still on its way, or a test / page is open: look again a little later */
+  const kb=typeof KEEP!=='undefined'&&KEEP&&KEEP.busy;
+  if(INTEST||kb||layer||scrOpen()){OB.t=setTimeout(maybeOnb,kb?700:1500);return}
+  openOnb()}catch(e){}}
+function obStep(){const d=OB.d,nm=String((AUTH&&AUTH.name)||'').trim().split(' ')[0]||'there',k=`<small class="ob-k">STEP ${OB.st} OF ${OBN-1}</small>`;
+  if(OB.st===0)return `<div class="ob-hero"><span class="ob-orb ob-o1"></span><span class="ob-orb ob-o2"></span><span class="ob-orb ob-o3"></span><div class="ob-art">${ic('spark',38)}</div></div>
+    <small class="ob-k">WELCOME TO ASPIRON</small><h1>Hi ${esc3(nm)}, let’s set up your study space</h1>
+    <p>A quick tour, then two choices: your class and your exam. The app shows the test series, tips and ranks made for you.</p>`;
+  if(OB.st===1)return `${k}<h1>How the app works</h1><p>Everything you need for your exam, in one place.</p>
+    <div class="ob-guide">${[['layers','Test series','Full syllabus, chapter-wise and mock tests in the real exam pattern'],['trophy','Live tests and All-India rank','Attempt with everyone at the same time and see where you stand'],['chart','Result analysis','Score, accuracy and time for each subject, and a mistake notebook'],['pyq','PYQ and question bank','Past year questions, chapter by chapter, to practise any time']].map((g,i)=>`<div class="ob-g" style="--i:${i}"><span class="ti g">${ic(g[0],20)}</span><span><b>${g[1]}</b><small>${g[2]}</small></span></div>`).join('')}</div>`;
+  if(OB.st===2)return `${k}<h1>Which class are you in?</h1><p>Tap one. You can change it later.</p>
+    <div class="ob-tiles cls" role="radiogroup" aria-label="Your class">${PF3.cls.map((c,i)=>`<button role="radio" class="ob-t${d.cls===c?' on':''}" aria-checked="${d.cls===c}" data-ob="cls" data-v="${c}" style="--i:${i}"><span class="ob-n">${OBC[c][0]}</span><b>${c}</b><small>${OBC[c][1]}</small><i class="ob-ck">${ic('check',14)}</i></button>`).join('')}</div>`;
+  if(OB.st===3)return `${k}<h1>What are you preparing for?</h1><p>Your test series and ranks follow this exam.</p>
+    <div class="ob-tiles ex" role="radiogroup" aria-label="Target exam">${PF3.exam.map((c,i)=>`<button role="radio" class="ob-t${d.exam===c?' on':''}" aria-checked="${d.exam===c}" data-ob="exam" data-v="${c}" style="--i:${i}"><span class="ti g">${ic(OBE[c][0],22)}</span><b>${c}</b><small>${OBE[c][1]}</small><i class="ob-ck">${ic('check',14)}</i></button>`).join('')}</div>`;
   const np=npOn3(),inst=standalone3();
-  return `<small class="ob-k">STEP 2 OF 2</small><h1>Never miss a test</h1><p>Get an alert when a test goes live and when your result is out.</p>
+  return `<div class="ob-done"><span class="ob-ring">${ic('check',34)}</span></div><small class="ob-k">ALL SET</small><h1>Your app is ready for ${esc3(d.exam)} · ${esc3(d.cls)}</h1>
+    <p>Turn on alerts so you never miss a live test or a result.</p>
     <div class="card rows ob-rows"><button class="row" data-ob="np"><span class="ti g">${ic('bell',20)}</span><span><b>Phone notifications</b><small>${np?'On. You are all set.':'Test alerts, results and notices'}</small></span><span class="sw${np?' on':''}" aria-hidden="true"></span></button>
      ${inst?'':`<button class="row" data-ob="inst"><span class="ti g">${ic('dl',20)}</span><span><b>Install the app</b><small>Open it from your home screen</small></span>${ic('right',18)}</button>`}</div>`}
-function obDraw(dir){const el=OB.el;if(!el)return;const last=OB.st===2,ok=OB.st!==1||(OB.d.cls&&OB.d.exam);
-  el.innerHTML=`<div class="ob-in"><div class="ob-top"><div class="ob-dots">${[0,1,2].map(i=>`<i class="${i===OB.st?'on':i<OB.st?'done':''}"></i>`).join('')}</div><button class="ob-skip" data-ob="skip">${last?'Close':'Skip'}</button></div>
-   <div class="ob-b ${dir||''}">${obStep()}</div>
-   <div class="ob-ft">${OB.st?'<button class="btn ghost" data-ob="back">Back</button>':''}<button class="btn ${OB.st===0?'gold lg':''}" data-ob="next"${ok?'':' disabled'}>${OB.st===0?'Let’s start':last?'Finish':'Continue'}${ic('right',16)}</button></div></div>`}
-function openOnb(){const p=stuProf();OB.d={cls:p.cls||'',exam:p.exam||''};OB.st=0;
+function obDraw(dir){const el=OB.el;if(!el)return;const last=OB.st===OBN-1,ok=OB.st===2?!!OB.d.cls:OB.st===3?!!OB.d.exam:true;
+  el.innerHTML=`<div class="ob-in"><div class="ob-top"><div class="ob-dots" aria-hidden="true">${[...Array(OBN)].map((_,i)=>`<i class="${i===OB.st?'on':i<OB.st?'done':''}"></i>`).join('')}</div>${last?'<button class="ob-skip" data-ob="skip">Close</button>':'<span class="ob-need">Takes 1 minute</span>'}</div>
+   <div class="ob-b ${dir||''}" aria-live="polite">${obStep()}</div>
+   <div class="ob-ft">${OB.st?'<button class="btn ghost" data-ob="back">Back</button>':''}<button class="btn ${OB.st===0||last?'gold lg':''}" data-ob="next"${ok?'':' disabled'}>${OB.st===0?'Let’s start':last?'Go to my dashboard':OB.st===1?'Got it':'Continue'}${ic('right',16)}</button></div></div>`}
+function obNext(){if(OB.st===2&&!OB.d.cls||OB.st===3&&!OB.d.exam)return;
+  if(OB.st===3){try{pfSave(Object.assign({},stuProf(),{cls:OB.d.cls,exam:OB.d.exam}));if(typeof pfHdr==='function')pfHdr()}catch(err){toast3('Could not save. Please try again.');return}lsSet(obKey(),1);TQ.all=false}
+  if(OB.st===OBN-1){obClose(true);return}OB.st++;obDraw(RM?'':'fwd')}
+function openOnb(){const p=stuProf();OB.d={cls:PF3.cls.includes(p.cls)?p.cls:'',exam:PF3.exam.includes(p.exam)?p.exam:p.exam==='Boards'?'CBSE':''};OB.st=0;
   const el=document.createElement('div');el.className='ob3';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Set up your study space');OB.el=el;root.querySelector('#app3').appendChild(el);obDraw('');
   requestAnimationFrame(()=>el.classList.add('open'));
   el.addEventListener('click',async e=>{const b=e.target.closest('[data-ob]');if(!b)return;const k=b.dataset.ob;
-    if(k==='cls'||k==='exam'){OB.d[k]=b.dataset.v;obDraw('');return}
-    if(k==='skip'){obClose(OB.st===2);return}
+    /* a tile: tick it, then move on by itself after a short beat */
+    if(k==='cls'||k==='exam'){OB.d[k]=b.dataset.v;hap(8);el.querySelectorAll(`[data-ob="${k}"]`).forEach(t=>{const on=t===b;t.classList.toggle('on',on);t.setAttribute('aria-checked',on)});
+      const nx=el.querySelector('[data-ob="next"]');nx&&(nx.disabled=false);const st=OB.st;setTimeout(()=>{if(OB.el&&OB.st===st)obNext()},RM?0:420);return}
+    if(k==='skip'){if(catOk())obClose(true);return}
     if(k==='back'){OB.st=Math.max(0,OB.st-1);obDraw(RM?'':'bwd');return}
-    if(k==='next'){if(OB.st===1){if(!OB.d.cls||!OB.d.exam)return;try{pfSave(Object.assign({},stuProf(),{cls:OB.d.cls,exam:OB.d.exam}));if(typeof pfHdr==='function')pfHdr()}catch(err){}}
-      if(OB.st===2){obClose(true);return}OB.st++;obDraw(RM?'':'fwd');return}
-    if(k==='np'){try{await npToggle()}catch(err){}setTimeout(()=>{if(OB.el&&OB.st===2)obDraw('')},400);return}
+    if(k==='next'){obNext();return}
+    if(k==='np'){try{await npToggle()}catch(err){}setTimeout(()=>{if(OB.el&&OB.st===OBN-1)obDraw('')},400);return}
     if(k==='inst'){try{A.setInstall()}catch(err){}}})}
 /* ================= "TWO QUICK THINGS" on every app open (new design) =================
    Install the app and turn on phone notifications: only what is still missing is shown (the classic setupNeed:
@@ -3166,14 +3210,14 @@ const suAgain=()=>setTimeout(async()=>{try{const n=await setupNeed();if(!n.lengt
 A.suInst=()=>{closeLayer();setTimeout(()=>{A.setInstall()},200)};
 A.suNp=async()=>{let r='denied';try{const N=window.Notification;r=N?N.permission:'denied';if(r==='default')r=await N.requestPermission()}catch(e){}
   if(r==='granted'){try{npEnable()}catch(e){}hap(8);suAgain()}else{closeLayer();setTimeout(()=>npHelp(r==='denied'?'blocked':'ask'),200)}};
-function obClose(done){lsSet(obKey(),1);const el=OB.el;OB.el=null;if(!el)return;setTimeout(maybeSetup,900);el.classList.remove('open');setTimeout(()=>el.remove(),RM?0:420);if(done)toast3('All set. You can change these in your profile.');try{softRender()}catch(e){}}
+function obClose(done){if(!catOk())return;lsSet(obKey(),1);const el=OB.el;OB.el=null;if(!el)return;setTimeout(maybeSetup,900);el.classList.remove('open');setTimeout(()=>el.remove(),RM?0:420);if(done)toast3('All set. You can change these in your profile.');try{softRender()}catch(e){}}
 
 /* ================= MENU: the classic menu's look (profile on top, grouped list, NEW tags, Logout last) =================
    About two thirds of the screen wide, the page behind blurred, and the items come in one after another from the top. */
 A.menu=()=>{const u=unread();let n=0;const web=!standalone3();
   const mi=(i,t,k,on,extra,cls)=>`<button class="mi${on?' on':''}${cls||''}${n<14?' ma':''}" data-a="m" data-k="${k}" style="--i:${n++}">${ic(i)}<span>${t}</span>${extra||''}</button>`;
   const nw='<em class="mnew">NEW</em>',gh=t=>`<p class="mgh${n<14?' ma':''}" style="--i:${n++}">${t}</p>`;
-  drawer.innerHTML=`<div class="mtop ma" style="--i:${n++}"><button class="mx" data-a="close" aria-label="Close menu">${ic('x',18)}</button><span class="mavw${isDr()?' dr':''}">${avatar('mav')}${isDr()?`<i class="mav-st">${ic('steth',16)}</i>`:''}</span><b>${stuNameH()}</b><button class="mlv" data-a="m" data-k="lvl">${crest(myLv().i,18)}Level ${myLv().n} · ${esc3(myLv().name)}</button><small>${esc3(stuMeta())}</small><button class="mvp" data-a="m" data-k="profile">View Profile <span aria-hidden="true">→</span></button></div>
+  drawer.innerHTML=`<div class="mtop ma" style="--i:${n++}"><button class="mx" data-a="close" aria-label="Close menu">${ic('x',18)}</button><span class="mavw${isDr()?' dr':''}">${avatar('mav')}${isDr()?`<i class="mav-st">${ic('steth',16)}</i>`:''}</span><b>${stuNameH()}</b><button class="mlv" data-a="m" data-k="lvl">${crest(myLv().i,18)}Level ${myLv().n} · ${esc3(myLv().name)}</button><button class="mcat" data-a="m" data-k="cat">${esc3(catOk()?catTxt():'Choose class and exam')}${ic('pen',12)}</button><button class="mvp" data-a="m" data-k="profile">View Profile <span aria-hidden="true">→</span></button></div>
   <div class="mlist">${gh('Study')}${mi('home','Home','home',S.tab==='home')}${mi('tests','Test Series','series',S.tab==='test')}${mi('lib','Library','lib',S.tab==='lib')}${mi('pyq','PYQ Analysis','pyq',0,nw)}${mi('qb','Question Bank','qb',0,nw)}${mi('spark','Test Generator','gen',0,nw)}
    ${gh('My progress')}${mi('medal','Level Up & Streak','lvl',0,nw)}${mi('crown','Weekly League','xpb',0,nw)}${mi('podium','Results & Ranks','ranks')}${mi('hist','Test History','history')}${mi('mistake','Mistake Notebook','mistakes')}${mi('bookmark','Saved Questions','saved')}${mi('tracker','Study Tracker','tracker')}
    ${gh('Explore')}${mi('store','Store','store')}${mi('gift','Refer & Earn','refer')}${mi('bell','Notifications','notif',0,u?`<em class="mcnt">${u}</em>`:'')}${mi('hourglass','Exam Countdown','cd')}
@@ -3184,7 +3228,7 @@ A.menu=()=>{const u=unread();let n=0;const web=!standalone3();
   /* the list is built and laid out first; the slide starts on the next frame, so its first frame is never the heavy one */
   drawer.scrollTop=0;void drawer.offsetHeight;if(RM)openLayer(drawer);else requestAnimationFrame(()=>requestAnimationFrame(()=>openLayer(drawer)))};
 A.m=el=>{const k=el.dataset.k;closeLayer();
-  const M={lvl:openLevel,xpb:()=>openXpBoard(),profile:A.profile,theme:openTheme,home:()=>go('home'),series:()=>go('test'),lib:()=>go('lib'),pyq:()=>openPyq(),qb:()=>openQB(),gen:()=>openGen(),ranks:()=>openRanks(),refer:()=>openRefer(),store:()=>{location.href='store'},history:A.hist,mistakes:()=>openMistakes(),saved:()=>openSaved(),tracker:()=>openTracker(),notif:A.bell,cd:A.cdEdit,
+  const M={cat:()=>A.catEdit(),lvl:openLevel,xpb:()=>openXpBoard(),profile:A.profile,theme:openTheme,home:()=>go('home'),series:()=>go('test'),lib:()=>go('lib'),pyq:()=>openPyq(),qb:()=>openQB(),gen:()=>openGen(),ranks:()=>openRanks(),refer:()=>openRefer(),store:()=>{location.href='store'},history:A.hist,mistakes:()=>openMistakes(),saved:()=>openSaved(),tracker:()=>openTracker(),notif:A.bell,cd:A.cdEdit,
    settings:A.settings,about:A.setAbout,terms:A.setTerms,privacy:()=>window.open('privacy','_blank','noopener'),refund:()=>window.open('refund','_blank','noopener'),contact:A.setHelp,
    logout:A.setOut};
   setTimeout(()=>{(M[k]||(()=>{}))()},140)};
@@ -3406,7 +3450,7 @@ route=async function(){
   if(!CAT||Date.now()-CATAT>30000){if(!CAT)main.innerHTML='<div class="card sk" style="height:220px;margin-top:8px"></div><div class="card sk" style="height:160px"></div><div class="card sk" style="height:200px"></div>';
     const ok=await loadCat(!!CAT);if(!ok){if(AUTH)netErr3();return}if(INTEST||!AUTH)return}
   if(NOTES===null)loadNotes();
-  const tab=tabOf(h),changed=tab!==S.tab||!main.children.length||main.querySelector('.sk');S.tab=tab;syncDock();if(changed)scrollTo(0,0);render(changed);if(tab==='home'&&!goThen)setTimeout(maybeOnb,1100);if(tab==='home'&&!goThen)setTimeout(maybeSetup,1700);
+  const tab=tabOf(h),changed=tab!==S.tab||!main.children.length||main.querySelector('.sk');S.tab=tab;syncDock();if(changed)scrollTo(0,0);render(changed);if(!goThen)setTimeout(maybeOnb,tab==='home'?1100:600);if(tab==='home'&&!goThen)setTimeout(maybeSetup,1700);
   if(goThen){const f=goThen;goThen=null;setTimeout(f,0)}};
 if(typeof login==='function'){const _login=login;login=function(){document.body.classList.remove('v3on','v3old');return _login.apply(this,arguments)}}
 if(typeof cdRefresh==='function'){const _cdr=cdRefresh;cdRefresh=function(){const r=_cdr.apply(this,arguments);if(booted&&document.body.classList.contains('v3on')&&!document.body.classList.contains('v3old')&&(S.tab==='home'||S.tab==='tools'))softRender();return r}}

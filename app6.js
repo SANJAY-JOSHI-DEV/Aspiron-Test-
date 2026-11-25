@@ -449,8 +449,8 @@ function openProfile(){
    <div class="kv"><div><b>${P.n}</b><span>Tests</span></div><div><b>${P.avg}%</b><span>Average</span></div><div><b>${P.streak}🔥</b><span>Streak</span></div></div>
    <div class="eyebrow" style="margin:16px 0 4px">Your details <span style="text-transform:none;letter-spacing:0">(all optional)</span></div>
    ${PF_F.map(f=>pfField(f[0],f[1],f[2],f[3],f[0]==='name'?(o.name||nm):o[f[0]])).join('')}
-   ${sel('pf_cls','Class',['Class 9','Class 10','Class 11','Class 12','Dropper','College'],o.cls)}
-   ${sel('pf_exam','Target exam',['NEET','JEE','CUET','Boards','Other'],o.exam)}
+   ${sel('pf_cls','Class',['Class 9','Class 10','Class 11','Class 12','Dropper'],o.cls)}
+   ${sel('pf_exam','Target exam',['NEET','JEE','CBSE','CUET'],o.exam)}
    <label class="pfl">About / goal</label><textarea class="pfi" id="pf_about" rows="2" placeholder="e.g. Aim for 650+ in NEET">${esc(o.about||'')}</textarea>
    <div class="sm mut" style="margin:8px 0 12px">Saved on this phone only.</div>
    <button class="btn block" onclick="pfSaveAll()">${ic('check')} Save profile</button>

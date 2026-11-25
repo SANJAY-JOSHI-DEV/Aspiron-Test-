@@ -132,5 +132,9 @@ union all
 select 39, 'supabase_v99_xp_marks.sql', case when to_regprocedure('cbt_private.lv_mark(integer)') is not null
   and pg_get_functiondef(to_regprocedure('cbt_private.league_close(date)')) like '%lv_mark%' then 'ok'
   else 'MISSING — run this file (after v98)' end
+union all
+-- v100: 'ok' when the store can set a series for CBSE / CUET
+select 40, 'supabase_v100_student_category.sql', case when pg_get_functiondef(to_regprocedure('public.cbt_admin_store_layout(text,text,jsonb)')) like '%cuet%' then 'ok'
+  else 'MISSING — run this file' end
 ) x
 order by n;

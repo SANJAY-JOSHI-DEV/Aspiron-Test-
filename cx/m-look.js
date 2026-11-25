@@ -16,7 +16,7 @@ async function shrink(file) {
   }
   throw new Error('big');
 }
-const LISTS = [['exams', 'e', 'Exam', 'NEET, JEE'], ['classes', 'c', 'Class', 'Class 11, Class 12, Dropper'], ['subjects', 's', 'Subject', 'Physics, Chemistry, Biology, Maths']];
+const LISTS = [['exams', 'e', 'Exam', 'NEET, JEE, CBSE, CUET'], ['classes', 'c', 'Class', 'Class 9, Class 10, Class 11, Class 12, Dropper'], ['subjects', 's', 'Subject', 'Physics, Chemistry, Biology, Maths']];
 // "NEET, JEE ,neet" → ["NEET","JEE"] (trimmed, no repeats, at most 20, each at most 30 characters)
 const split = v => { const out = []; String(v || '').split(',').map(x => x.trim().replace(/[<>"\\]/g, '').slice(0, 30)).filter(Boolean)
   .forEach(x => { if (!out.some(y => y.toLowerCase() === x.toLowerCase())) out.push(x); }); return out.slice(0, 20); };
