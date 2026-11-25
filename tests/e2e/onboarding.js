@@ -2,7 +2,7 @@
 // throw-away test database (tests/db/build.sh). Phone size.
 // Checks: after sign-in the setup opens and cannot be skipped; class and exam tiles move on by themselves; the choice is
 // saved in the profile; the setup does not come back; the Tests page shows only the series of the student's exam /
-// class (with "See all"), and Change switches it. Store: five steps (name, mobile, class, exam, city), wrong input is
+// class (with "See all"), and Change switches it. Store: five steps (name, class, exam, mobile, city), wrong input is
 // refused, Back keeps what was typed, and the details are saved. Run by hand like pyq.js (not in CI, to save minutes):
 //   PGDATABASE=e2e node tests/e2e/onboarding.js   (SHOTS=dir to save screenshots)
 const { chromium } = require('playwright');
@@ -124,15 +124,18 @@ const CB = 'cccccccc-0000-0000-0000-0000000000c1', JE = 'cccccccc-0000-0000-0000
     ok(!/google|email/i.test((await s.textContent('#gstage')) + (await s.getAttribute('#gn', 'placeholder'))), 'store 1b no Google or email sign-in');
     await s.click('#ggo'); ok(/name/.test(await s.textContent('#ger')), 'store 2 an empty name is refused');
     await s.fill('#gn', 'Riya Verma'); await s.keyboard.press('Enter'); await wait(700);
-    await s.fill('#gm', '12345'); await s.click('#ggo'); ok(/mobile/.test(await s.textContent('#ger')), 'store 3 a wrong number is refused');
+    // the order: name, class, exam, mobile, city
+    await s.click('#ggo'); ok(/class/.test(await s.textContent('#ger')) && /Step 2 of 5/.test(await s.textContent('#gcnt')), 'store 3 step 2 is the class, and a class is needed');
     await s.click('#gback'); await wait(700);
     ok((await s.inputValue('#gn')) === 'Riya Verma', 'store 3b Back keeps the name');
-    await s.click('#ggo'); await wait(700); await s.fill('#gm', '9876543210'); await s.click('#ggo'); await wait(700);
-    await s.click('#ggo'); ok(/class/.test(await s.textContent('#ger')), 'store 4 a class is needed');
+    await s.click('#ggo'); await wait(700);
     await s.click('[data-gpick=cls][data-v="Class 11"]'); await wait(1100);
-    ok(/Step 4 of 5/.test(await s.textContent('#gcnt')), 'store 4b a class tile moves on by itself');
+    ok(/Step 3 of 5/.test(await s.textContent('#gcnt')) && /preparing for/.test(await s.textContent('#gstage')), 'store 4 a class tile moves on to the exam');
     await s.click('[data-gpick=exam][data-v="neet"]'); await wait(1100);
-    ok(/Step 5 of 5/.test(await s.textContent('#gcnt')), 'store 5 an exam tile moves on to the city');
+    ok(/Step 4 of 5/.test(await s.textContent('#gcnt')) && await s.isVisible('#gm'), 'store 4b an exam tile moves on to the mobile number');
+    await s.fill('#gm', '12345'); await s.click('#ggo'); ok(/mobile/.test(await s.textContent('#ger')), 'store 5 a wrong number is refused');
+    await s.fill('#gm', '9876543210'); await s.click('#ggo'); await wait(700);
+    ok(/Step 5 of 5/.test(await s.textContent('#gcnt')), 'store 5a then the city');
     await s.click('#ggo'); ok(/city/.test(await s.textContent('#ger')), 'store 5b a city is needed');
     await s.fill('#gcity', 'Kota'); await s.click('#ggo'); await wait(2200);
     const me = await s.evaluate(() => JSON.parse(localStorage.getItem('store_me') || 'null'));

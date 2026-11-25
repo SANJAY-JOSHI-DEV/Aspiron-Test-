@@ -1,7 +1,7 @@
 /* Store page: the paid test series (managed in the admin console → Store), in the admin console's design: a menu on
    the left on computers, a menu bar at the bottom on phones, and five pages — Home (the series, one row per section),
    Search, Reviews, Help and Profile. Each series has its Explore page (description, schedule, demo tests, reviews).
-   The student gives name, mobile, class, exam (NEET / JEE / CBSE / CUET) and city once on the welcome screen, one
+   The student gives name, class, exam (NEET / JEE / CBSE / CUET), mobile and city once on the welcome screen, one
    step at a time (no Google or email sign-in). Then: Buy now → pay with UPI →
    payment details → verify on Telegram / WhatsApp (message + screenshot). Prices, UPI ID and Telegram come only
    from the database. */
@@ -90,32 +90,35 @@ function meUi(){
   const s=$('#mesub');if(s)s.textContent=meLine(m);
   hero();if(VW==='me')meDraw();
 }
-/* ---------- the welcome: five steps, one at a time — name, mobile, class, exam, city. Each step slides in with its own
+/* ---------- the welcome: five steps, one at a time — name, class, exam, mobile, city. Each step slides in with its own
    icon; a class / exam tile moves on by itself; the last step ends with a tick and the store rises in. Filled in from
    the student app on this phone when it is signed in (same number), so it is mostly tapping Continue. ---------- */
 const CLS=['Class 9','Class 10','Class 11','Class 12','Dropper'];
 const CLSD={'Class 9':['9','Foundation'],'Class 10':['10','Boards year'],'Class 11':['11','Starting the race'],'Class 12':['12','Final year'],'Dropper':['D','Repeat year']};
 const CITIES=['Delhi','Mumbai','Kota','Jaipur','Lucknow','Patna','Indore','Bhopal','Pune','Hyderabad','Kolkata','Chandigarh'];
 const GS={st:0,d:{name:'',mobile:'',cls:'',exam:'',city:''},busy:0};
-const GSTEPS=[['user','Let’s start with your name','We will greet you with it and print it on your order.'],
-  ['phone','Your mobile number','Your test series is unlocked on this number. No OTP, no email.'],
-  ['books','Which class are you in?','Tap one — it moves on by itself.'],
-  ['target','What are you preparing for?','You will see the test series made for this exam.'],
-  ['pin','Which city are you from?','Helps us plan live tests and local help.']];
+// the order of the steps: name, class, exam, then mobile and city. [key, icon, heading, line under it]
+const GSTEPS=[['name','user','Let’s start with your name','We will greet you with it and print it on your order.'],
+  ['cls','books','Which class are you in?','Tap one — it moves on by itself.'],
+  ['exam','target','What are you preparing for?','You will see the test series made for this exam.'],
+  ['mobile','phone','Your mobile number','Your test series is unlocked on this number. No OTP, no email.'],
+  ['city','pin','Which city are you from?','Helps us plan live tests and local help.']];
+const gsK=()=>GSTEPS[GS.st][0];
 function gsFill(){   // the student app on this phone, if signed in: its name, number, class, exam and city
   try{const a=LSg('cbt_auth',null),mob=a&&String(a.mobile||'').replace(/\D/g,'').slice(-10);if(!mob)return;
     const p=LSg('cbt_pf_'+mob,{})||{},d=GS.d;d.name=d.name||String(p.name||a.name||'').trim().slice(0,60);d.mobile=d.mobile||mob;
     d.cls=d.cls||(CLS.includes(p.cls)?p.cls:'');const e=String(p.exam||'').toLowerCase();d.exam=d.exam||(CN[e]?e:'');d.city=d.city||String(p.city||'').trim().slice(0,40)}catch(_){}}
 function gsTile(k,v,big,t,sm,i){const on=GS.d[k]===v;return `<button type="button" class="gs-t${on?' on':''}" role="radio" aria-checked="${on}" data-gpick="${k}" data-v="${esc(v)}" style="--i:${i}">${big}<b>${esc(t)}</b><small>${esc(sm)}</small>${I('check','ck')}</button>`}
 function gsBody(){const d=GS.d;
-  if(GS.st===0)return `<div class="inp-wrap gs-in">${I('user')}<input class="inp" id="gn" autocomplete="name" maxlength="60" placeholder="e.g. Rahul Sharma" value="${esc(d.name)}" aria-label="Full name"></div>`;
-  if(GS.st===1)return `<div class="inp-wrap gs-in gs-mob"><span class="gs-cc">+91</span><input class="inp" id="gm" type="tel" inputmode="numeric" maxlength="14" autocomplete="tel" placeholder="10-digit mobile number" value="${esc(d.mobile)}" aria-label="Mobile number"></div>`;
-  if(GS.st===2)return `<div class="gs-tiles cls" role="radiogroup" aria-label="Your class">${CLS.map((c,i)=>gsTile('cls',c,`<span class="gs-n">${CLSD[c][0]}</span>`,c,CLSD[c][1],i)).join('')}</div>`;
-  if(GS.st===3)return `<div class="gs-tiles" role="radiogroup" aria-label="Your exam">${CRSL.map(([k,ic,t],i)=>gsTile('exam',k,`<i class="gs-ic">${I(ic)}</i>`,CN[k],t,i)).join('')}</div>`;
+  const k=gsK();
+  if(k==='name')return `<div class="inp-wrap gs-in">${I('user')}<input class="inp" id="gn" autocomplete="name" maxlength="60" placeholder="e.g. Rahul Sharma" value="${esc(d.name)}" aria-label="Full name"></div>`;
+  if(k==='mobile')return `<div class="inp-wrap gs-in gs-mob"><span class="gs-cc">+91</span><input class="inp" id="gm" type="tel" inputmode="numeric" maxlength="14" autocomplete="tel" placeholder="10-digit mobile number" value="${esc(d.mobile)}" aria-label="Mobile number"></div>`;
+  if(k==='cls')return `<div class="gs-tiles cls" role="radiogroup" aria-label="Your class">${CLS.map((c,i)=>gsTile('cls',c,`<span class="gs-n">${CLSD[c][0]}</span>`,c,CLSD[c][1],i)).join('')}</div>`;
+  if(k==='exam')return `<div class="gs-tiles" role="radiogroup" aria-label="Your exam">${CRSL.map(([k,ic,t],i)=>gsTile('exam',k,`<i class="gs-ic">${I(ic)}</i>`,CN[k],t,i)).join('')}</div>`;
   return `<div class="inp-wrap gs-in">${I('pin')}<input class="inp" id="gcity" autocomplete="address-level2" maxlength="40" placeholder="Type your city" value="${esc(d.city)}" aria-label="City" list="gcities"></div><datalist id="gcities">${CITIES.map(c=>`<option value="${c}">`).join('')}</datalist>
     <div class="gs-chips">${CITIES.slice(0,8).map((c,i)=>`<button type="button" class="chip${d.city===c?' on':''}" data-gcity="${c}" style="--i:${i}">${c}</button>`).join('')}</div>`}
 function gsDraw(dir){
-  const st=$('#gstage');if(!st)return;const [ic,t,sub]=GSTEPS[GS.st],n=GSTEPS.length;
+  const st=$('#gstage');if(!st)return;const [,ic,t,sub]=GSTEPS[GS.st],n=GSTEPS.length;
   st.innerHTML=`<div class="gs-step ${RM?'':dir||''}"><span class="gs-art">${I(ic)}</span><h3 class="gs-h">${GS.st===0?`Welcome to <span>${esc(CFG.SITE_NAME||'Aspiron Education')}</span>`:esc(t)}</h3><p class="gs-s">${GS.st===0?'Tell us a little about you, one step at a time. You will not be asked again.':esc(sub)}</p>${GS.st===0?`<p class="gs-q">${esc(t)}</p>`:''}${gsBody()}</div>`;
   $('#gcnt').textContent=`Step ${GS.st+1} of ${n}`;$('#gbar').style.width=((GS.st+1)/n*100)+'%';
   $('#gback').hidden=!GS.st;
@@ -128,9 +131,9 @@ function gsRead(){const d=GS.d,v=q=>{const e=$(q);return e?e.value:null};
   const n=v('#gn');if(n!=null)d.name=n.trim().replace(/\s+/g,' ').slice(0,60);
   const m=v('#gm');if(m!=null)d.mobile=m.replace(/\D/g,'').slice(-10);
   const c=v('#gcity');if(c!=null)d.city=c.trim().replace(/\s+/g,' ').slice(0,40)}
-function gsBad(){const d=GS.d;return [d.name.length<2?'Please enter your name.':'',
-  !/^[6-9]\d{9}$/.test(d.mobile)?'Please enter a valid 10-digit mobile number.':'',d.cls?'':'Please choose your class.',
-  CN[d.exam]?'':'Please choose your exam — NEET, JEE, CBSE or CUET.',d.city.length<2?'Please enter your city.':''][GS.st]}
+function gsBad(){const d=GS.d;return {name:d.name.length<2?'Please enter your name.':'',
+  mobile:!/^[6-9]\d{9}$/.test(d.mobile)?'Please enter a valid 10-digit mobile number.':'',cls:d.cls?'':'Please choose your class.',
+  exam:CN[d.exam]?'':'Please choose your exam — NEET, JEE, CBSE or CUET.',city:d.city.length<2?'Please enter your city.':''}[gsK()]}
 function gateGo(){
   if(GS.busy)return;gsRead();const bad=gsBad();
   if(bad){$('#ger').textContent=bad;shake($('#gate .lg-card'));return}
