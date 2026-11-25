@@ -120,13 +120,14 @@ const itemPayload = (x, over) => Object.assign({ id: x.id || '', title: x.title,
 
 /* ---------- shared pieces ---------- */
 const cover = (x, cls) => h`<div class="st-cv ${cls || ''}" style="--cc:${hex(x.color)}">${x.image ? h`<img src="${x.image}" alt="" loading="lazy">` : h`<span>${(String(x.title || '?').trim()[0] || '?').toUpperCase()}</span>`}</div>`;
-const courseTxt = c => c === 'neet' ? 'NEET' : c === 'jee' ? 'JEE' : 'NEET + JEE';
+const COURSES = { neet: 'NEET', jee: 'JEE', cbse: 'CBSE', cuet: 'CUET' };
+const courseTxt = c => COURSES[c] || 'Everyone';
 const storeLink = () => h`<div class="card st-link"><div class="row wrap"><span class="st-li">${icon('store', 20)}</span><div class="grow"><b>Your store page</b><div class="xs mut mono ell">${S.storeUrl()}</div></div>
   <div class="row gap6">${UI.copyBtn(S.storeUrl(), 'Copy')}<a class="btn xs ghost" href="store.html" target="_blank" rel="noopener">${icon('external', 13)} Open</a></div></div></div>`;
 function courseChips() {
   if (!v32() || !D().items.length) return '';
   const cnt = c => D().items.filter(x => !c || !x.course || x.course === c).length;
-  return h`<div class="chips" role="tablist" aria-label="Show the series for">${join([['', 'All'], ['neet', 'NEET'], ['jee', 'JEE']], ([k, l]) => h`<button class="chip ${T.cf === k ? 'on' : ''}" data-act="cf" data-v="${k}">${l}<em>${cnt(k)}</em></button>`)}</div>`;
+  return h`<div class="chips" role="tablist" aria-label="Show the series for">${join([['', 'All'], ...Object.entries(COURSES)], ([k, l]) => h`<button class="chip ${T.cf === k ? 'on' : ''}" data-act="cf" data-v="${k}">${l}<em>${cnt(k)}</em></button>`)}</div>`;
 }
 
 /* ---------- page ---------- */
@@ -269,7 +270,7 @@ function preview(x, img) {
 }
 function placeFields(course, section, pre) {
   const S2 = sectionNames();
-  return h`<div class="fld"><label>Show for</label>${AX.f.seg({ name: 'course', value: course || '', options: [{ value: '', label: 'NEET + JEE' }, { value: 'neet', label: 'NEET only' }, { value: 'jee', label: 'JEE only' }] })}</div>
+  return h`<div class="fld"><label>Show for</label>${AX.f.seg({ name: 'course', value: course || '', options: [{ value: '', label: 'Everyone' }, ...Object.entries(COURSES).map(([value, l]) => ({ value, label: l + ' only' }))] })}</div>
     <div class="fld"><label for="${pre}-sec">Section — one row on the store</label><input class="inp" id="${pre}-sec" name="section" maxlength="40" list="${pre}-secl" autocomplete="off" value="${section || ''}" placeholder="e.g. Full syllabus"><datalist id="${pre}-secl">${join(S2, t => h`<option value="${t}">`)}</datalist>
       <div class="chips mt8">${join(S2.slice(0, 10), t => h`<button type="button" class="chip st-sp" data-sec="${t}">${t}</button>`)}</div></div>`;
 }
@@ -356,7 +357,7 @@ function editItem(x0) {
             const id = r.id || x.id; let warn = '';
             if (isNew && pendSched) { const s = await AX.api.rpc('cbt_admin_store_schedule', { p_item: id, p_data: pendSched.data, p_name: pendSched.name }); if (!s.ok) warn = 'Saved — but the schedule could not be uploaded. Open Edit and try again.'; }
             if (fillDesc && T.demos !== null) { const s = await AX.api.call('cbt_admin_store_explore', 'desc', { item: id, description: fillDesc }); if (!s.ok) warn = 'Saved — but the Explore page description could not be saved.'; }
-            if (v32() && (v.course !== (x0 ? x0.course || '' : '') || v.section !== (x0 ? x0.section || '' : ''))) { const s = await lay('place', { item: id, course: v.course || '', section: v.section || '' }); if (!s.ok) warn = s.error === 'missing' ? 'Saved — but run supabase_v32_store_layout.sql once in Supabase to set NEET / JEE and the section' : 'Saved — but NEET / JEE and the section could not be saved. Try again.'; }
+            if (v32() && (v.course !== (x0 ? x0.course || '' : '') || v.section !== (x0 ? x0.section || '' : ''))) { const s = await lay('place', { item: id, course: v.course || '', section: v.section || '' }); if (!s.ok) warn = s.error === 'missing' || s.error === 'course' ? (v.course === 'cbse' || v.course === 'cuet' ? 'Saved — but run supabase_v100_student_category.sql once in Supabase to set CBSE / CUET' : 'Saved — but run supabase_v32_store_layout.sql once in Supabase to set NEET / JEE and the section') : 'Saved — but NEET / JEE and the section could not be saved. Try again.'; }
             if (v.buy_on !== (x0 ? x0.buy_on !== false : true)) { const s = await AX.api.call('cbt_admin_store_launch', 'buy', { item: id, on: v.buy_on }); if (!s.ok) warn = s.error === 'missing' ? 'Saved — but run supabase_v31_store_soon.sql once in Supabase to turn Buy now off' : 'Saved — but Buy now could not be changed. Try again.'; }
             if (!!v.prebook !== (x0 ? x0.prebook === true : false)) { const s = await AX.api.call('cbt_admin_store_launch', 'prebook', { item: id, on: !!v.prebook }); if (!s.ok) warn = s.error === 'action' || s.error === 'missing' ? 'Saved — but run supabase_v54_prebook.sql once in Supabase to turn Pre-booking on' : 'Saved — but Pre-booking could not be changed. Try again.'; }
             close();

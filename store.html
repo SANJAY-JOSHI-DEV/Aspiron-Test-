@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="store.css?v=10">
+<link rel="stylesheet" href="store.css?v=11">
 </head>
 <body>
 <!-- icons: the admin console's line icons (24 grid, 1.8 stroke), plus the WhatsApp / Telegram logos -->
@@ -101,17 +101,14 @@
 <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gt">
   <button class="ibtn line gtheme" data-theme-toggle aria-label="Switch light / dark theme"><svg class="i sun" aria-hidden="true"><use href="#i-sun"/></svg><svg class="i moon" aria-hidden="true"><use href="#i-moon"/></svg></button>
   <div class="gwrap">
-    <div class="lg-card">
-      <img class="lg-mark" src="icon-192.png" alt="">
-      <h2 class="lg-t" id="gt">Welcome to <span data-sname>Aspiron Education</span></h2>
-      <p class="lg-s">Tell us who you are to open the store. You won't be asked again — change anything later in Settings.</p>
-      <div class="fld"><label for="gn">Full name</label><div class="inp-wrap"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg><input class="inp" id="gn" autocomplete="name" maxlength="60" placeholder="e.g. Rahul Sharma"></div></div>
-      <div class="fld"><label for="gm">Mobile number</label><div class="inp-wrap"><svg class="i" aria-hidden="true"><use href="#i-phone"/></svg><input class="inp" id="gm" type="tel" inputmode="numeric" maxlength="14" autocomplete="tel" placeholder="10-digit mobile number"></div></div>
-      <div class="fld"><span class="lbl" id="gcl">Your course</span>
-        <div class="crs" role="radiogroup" aria-labelledby="gcl"><button type="button" class="crsb" role="radio" aria-checked="false" data-gc="neet"><i><svg class="i" aria-hidden="true"><use href="#i-steth"/></svg></i><span><b>NEET</b><small>Medical</small></span><svg class="i ck" aria-hidden="true"><use href="#i-check"/></svg></button><button type="button" class="crsb" role="radio" aria-checked="false" data-gc="jee"><i><svg class="i" aria-hidden="true"><use href="#i-atom"/></svg></i><span><b>JEE</b><small>Engineering</small></span><svg class="i ck" aria-hidden="true"><use href="#i-check"/></svg></button></div></div>
+    <!-- the welcome is five short steps (name, class, exam, mobile, city), one at a time with motion; store.js draws each step in #gstage -->
+    <div class="lg-card gs" id="gcard">
+      <div class="gs-top"><img class="lg-mark" src="icon-192.png" alt=""><div class="gs-pr"><span class="gs-cnt" id="gcnt">Step 1 of 5</span><div class="gs-bar" aria-hidden="true"><i id="gbar"></i></div></div></div>
+      <h2 class="vh" id="gt">Welcome to <span data-sname>Aspiron Education</span></h2>
+      <div class="gs-stage" id="gstage" aria-live="polite"></div>
       <div class="err" id="ger" role="alert"></div>
-      <button class="btn pri lg block" id="ggo" data-gate>Open the store <svg class="i" aria-hidden="true"><use href="#i-next"/></svg></button>
-      <p class="lg-foot"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Your test series is unlocked on this mobile number.</p>
+      <div class="gs-ft"><button class="btn line lg" id="gback" data-gback hidden aria-label="Back"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg></button><button class="btn pri lg block" id="ggo" data-gate>Continue <svg class="i" aria-hidden="true"><use href="#i-next"/></svg></button></div>
+      <p class="lg-foot"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>No Google or email needed. Your test series is unlocked on your mobile number.</p>
       <p class="lg-soc" data-social hidden></p>
     </div>
     <div class="gpts"><span><svg class="i" aria-hidden="true"><use href="#i-target"/></svg>Real exam pattern</span><span><svg class="i" aria-hidden="true"><use href="#i-trophy"/></svg>All-India rank</span><span><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>Safe UPI payment</span></div>
@@ -245,6 +242,6 @@
 <div id="tst" aria-live="polite"></div>
 <script src="config.js?v=14"></script>
 <script src="qrcode.js"></script>
-<script src="store.js?v=41"></script>
+<script src="store.js?v=43"></script>
 </body>
 </html>

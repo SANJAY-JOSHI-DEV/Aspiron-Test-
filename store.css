@@ -610,6 +610,58 @@ html:not(.has-me) body{overflow:hidden}
 .gpts span{display:inline-flex;align-items:center;gap:6px}
 .gpts .i{width:15px;height:15px;color:var(--gold)}
 @media (max-width:420px){.lg-card{padding:26px 20px 20px;border-radius:24px}.lg-t{font-size:26px}}
+/* the welcome in five steps: a progress bar that fills, each step slides in (its icon pops and turns), class / exam
+   tiles rise one by one and pop with a tick when tapped, the finish draws a ring */
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.gs{padding-top:24px}
+.gs-top{display:flex;align-items:center;gap:14px}
+.gs-top .lg-mark{width:46px;height:46px;border-radius:14px;flex:none}
+.gs-pr{flex:1;min-width:0}
+.gs-cnt{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-bottom:7px}
+.gs-bar{height:6px;border-radius:99px;background:var(--line-2);overflow:hidden}
+.gs-bar i{display:block;height:100%;width:20%;border-radius:inherit;background:linear-gradient(90deg,var(--pri-2),var(--pri),var(--gold));transition:width .6s var(--out);box-shadow:0 0 12px var(--pri-line)}
+.gs-stage{position:relative;min-height:300px;margin-top:22px;overflow:hidden;padding:4px 2px}
+.gs-step{display:flex;flex-direction:column}
+.gs-step.fwd{animation:gsf .55s var(--out)}.gs-step.bwd{animation:gsb .55s var(--out)}
+@keyframes gsf{from{opacity:0;transform:translateX(42px) scale(.98);filter:blur(4px)}}
+@keyframes gsb{from{opacity:0;transform:translateX(-42px) scale(.98);filter:blur(4px)}}
+.gs-art{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;color:var(--pri-ink);background:linear-gradient(140deg,var(--pri),var(--pri-2));box-shadow:0 14px 30px -12px var(--pri-2);animation:gsart .7s var(--spring) backwards}
+.gs-art .i{width:26px;height:26px}
+@keyframes gsart{from{opacity:0;transform:scale(.4) rotate(-25deg)}}
+.gs-h{font-family:var(--font-display);font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.15;margin:18px 0 0;animation:rise .55s .08s var(--out) backwards}
+.gs-h span{background:linear-gradient(90deg,var(--pri),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.gs-s{color:var(--mut);font-size:14px;margin:8px 0 18px;animation:rise .55s .14s var(--out) backwards}
+.gs-q{font-weight:700;font-size:15px;margin:-4px 0 10px;animation:rise .55s .18s var(--out) backwards}
+.gs-in{animation:rise .55s .2s var(--out) backwards}
+.gs-in .inp{height:56px;font-size:17px}
+.gs-mob .gs-cc{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--mut);font-size:16px;pointer-events:none}
+.gs-mob .inp{padding-left:56px;letter-spacing:.04em}
+.gs-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.gs-tiles.cls .gs-t:last-child{grid-column:1/-1}
+.gs-t{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:96px;padding:14px;border-radius:18px;border:1.5px solid var(--line-2);background:var(--solid-2);color:var(--tx);text-align:left;
+  transition:border-color var(--std),background var(--std),transform var(--fast),box-shadow var(--std);animation:gstin .5s var(--out) calc(var(--i)*70ms + 120ms) backwards}
+.gs-t:active{transform:scale(.97)}
+.gs-t b{font-size:15px}.gs-t small{font-size:12px;color:var(--mut)}
+.gs-n{font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1;color:var(--pri);margin-bottom:4px}
+.gs-ic{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--pri-soft);color:var(--pri);margin-bottom:6px}
+.gs-t .ck{position:absolute;top:10px;right:10px;width:22px;height:22px;padding:4px;border-radius:50%;background:var(--pri);color:var(--pri-ink);transform:scale(0);transition:transform .35s var(--spring)}
+.gs-t.on{border-color:var(--pri);background:var(--pri-soft);box-shadow:0 12px 26px -16px var(--pri-2);animation:gspop .4s var(--out)}
+.gs-t.on .ck{transform:scale(1)}
+@keyframes gstin{from{opacity:0;transform:translateY(16px) scale(.96)}}
+@keyframes gspop{40%{transform:scale(1.04)}}
+.gs-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.gs-chips .chip{padding:0 14px;animation:gstin .45s var(--out) calc(var(--i)*45ms + 200ms) backwards}
+.gs-ft{display:flex;gap:10px;margin-top:18px}
+.gs-ft .btn.line{flex:none;width:56px;padding:0}
+.gs-fin{align-items:center;text-align:center;padding-top:40px}
+.gs-ring{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;color:var(--pri-ink);background:linear-gradient(140deg,var(--pri),var(--gold));animation:gsring .7s var(--spring),gspulse 1.6s ease-out .6s infinite}
+.gs-ring .i{width:40px;height:40px}
+@keyframes gsring{from{opacity:0;transform:scale(.3) rotate(-40deg)}}
+@keyframes gspulse{from{box-shadow:0 0 0 0 var(--pri-line)}to{box-shadow:0 0 0 22px transparent}}
+@media (prefers-reduced-motion:reduce){.gs-step,.gs-art,.gs-h,.gs-s,.gs-q,.gs-in,.gs-t,.gs-t.on,.gs-chips .chip,.gs-ring{animation:none!important}.gs-bar i{transition:none}}
+@media (max-width:420px){.gs-h{font-size:23px}.gs-stage{min-height:280px}}
+/* the class chips in Edit details */
+.mcls .chip{padding:0 14px}.mcls .chip[aria-checked=true]{background:var(--pri-soft);color:var(--pri);border-color:var(--pri-line)}
 @media (max-height:740px){.gwrap{justify-content:flex-start}.lg-mark{width:52px;height:52px;border-radius:16px}.lg-t{margin-top:14px}}
 
 /* ---------- sheets: a bottom sheet on phones, a dialog on bigger screens ---------- */

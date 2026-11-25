@@ -80,7 +80,7 @@ const shot = async (p, n) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: tru
   const br = await chromium.launch();
   for (const [tag, vw] of [['phone', { width: 390, height: 844 }], ['desktop', { width: 1280, height: 860 }]]) {
     const c = await br.newContext({ viewport: vw });
-    await c.addInitScript(() => { try { localStorage.setItem('cbt_v3', 'true'); ['9000000002', '9000000094'].forEach(m => localStorage.setItem('cbt_v3_onb_' + m, '1')); } catch (e) {} });
+    await c.addInitScript(() => { try { localStorage.setItem('cbt_v3', 'true'); ['9000000002', '9000000094'].forEach(m => { localStorage.setItem('cbt_v3_onb_' + m, '1'); localStorage.setItem('cbt_pf_' + m, JSON.stringify({ cls: 'Class 12', exam: 'NEET' })); }); } catch (e) {} });
     const p = await c.newPage(); const errs = [];
     p.on('pageerror', e => errs.push(e.message));
     await p.route(u => !u.href.startsWith(BASE) && !u.href.startsWith(SUPA), r => r.abort());
@@ -195,7 +195,7 @@ const shot = async (p, n) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: tru
       ('bbbbbbbb-0000-0000-0000-000000000094','Free Student','9000000094','approved','s94',cbt_private.hash_code('s94','FFFF9494')) on conflict do nothing`);
     await q(`update cbt_private.students set fail_count=0, locked_until=0, devices='{}' where mobile = '9000000094'`);
     const c = await br.newContext({ viewport: { width: 390, height: 844 } });
-    await c.addInitScript(() => { try { localStorage.setItem('cbt_v3', 'true'); ['9000000002', '9000000094'].forEach(m => localStorage.setItem('cbt_v3_onb_' + m, '1')); } catch (e) {} });
+    await c.addInitScript(() => { try { localStorage.setItem('cbt_v3', 'true'); ['9000000002', '9000000094'].forEach(m => { localStorage.setItem('cbt_v3_onb_' + m, '1'); localStorage.setItem('cbt_pf_' + m, JSON.stringify({ cls: 'Class 12', exam: 'NEET' })); }); } catch (e) {} });
     const p = await c.newPage(); const errs = [];
     p.on('pageerror', e => errs.push(e.message));
     await p.route(u => !u.href.startsWith(BASE) && !u.href.startsWith(SUPA), r => r.abort());

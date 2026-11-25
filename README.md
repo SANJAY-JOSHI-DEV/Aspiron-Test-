@@ -9,7 +9,7 @@ Static website on GitHub Pages + Supabase (database functions). No build step: u
 |---|---|---|
 | `index.html` | Student app (test series store + My tests, results, mistakes, tracker, PYQ, reviews, Refer & earn) | `config.js`, `app1.js` … `app29.js` (+ `login.css`, `landing.css`), `pyq-syllabus.js`, `v3.js` + `v3.css` (new design, beta, off by default) |
 | `cp-dt764twzf54s5m.html` | Admin panel (needs the private access key + admin password) | `config.js`, `parser.js`, `qrcode.js`, `cx/core.js`, `cx/ui.js`, `cx/amsg.js`, `cx/lang.js`, `cx/m-*.js` (incl. `cx/m-ops.js`: Storage + Billing & costs, needs `supabase_v70_ops.sql`), `cx/shell.js` |
-| `store.html` | Public store, in the admin console's design (menu on the left on computers, menu bar at the bottom on phones): name + mobile + course (NEET / JEE) once; pages Home (the student's course in rows by section — Full syllabus, Subject-wise …, arranged in Store setup), Search, Reviews, Help and Profile & settings (details, course, theme, the last order, Sign out / Delete account — opened from the Settings button in the top bar), Explore page (description, schedule, demo tests, reviews), Coming soon · Notify me, UPI payment, verify on Telegram / WhatsApp (message + payment screenshot), light / dark / auto theme | `store-theme.js`, `store.css`, `config.js`, `qrcode.js`, `store.js` `store.html?ref=CODE` is a promotion link: the visit and the orders made after it are counted in Admin → Store → Promotions. Links: `#/search`, `#/reviews`, `#/help`, `#/me` open a page, `#x=<id>` a series' Explore page |
+| `store.html` | Public store, in the admin console's design (menu on the left on computers, menu bar at the bottom on phones): a welcome in five animated steps, once (name, class 9 / 10 / 11 / 12 / Dropper, exam NEET / JEE / CBSE / CUET, mobile, city; no Google or email; filled in from the student app on the same phone); pages Home (the student's course in rows by section — Full syllabus, Subject-wise …, arranged in Store setup), Search, Reviews, Help and Profile & settings (details, course, theme, the last order, Sign out / Delete account — opened from the Settings button in the top bar), Explore page (description, schedule, demo tests, reviews), Coming soon · Notify me, UPI payment, verify on Telegram / WhatsApp (message + payment screenshot), light / dark / auto theme | `store-theme.js`, `store.css`, `config.js`, `qrcode.js`, `store.js` `store.html?ref=CODE` is a promotion link: the visit and the orders made after it are counted in Admin → Store → Promotions. Links: `#/search`, `#/reviews`, `#/help`, `#/me` open a page, `#x=<id>` a series' Explore page |
 | `admin.html` | Decoy "404" page (the real admin page has a hidden name); looks exactly like `404.html` | – |
 
 Scripts load in number order; a later file adds to or replaces functions of earlier ones.
@@ -67,6 +67,25 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Not built yet** (shown as *Coming soon* in the Library): books reader, handwritten notes and DPPs, mindmaps and flashcards,
   download manager. Syllabus progress needs new data and is not shown (XP, streak and the overall leaderboard: see Level Up below).
 - **To remove it:** delete `v3.js`, `v3.css` and the `<script src="v3.js?v=…">` line in `index.html`.
+
+## Class + exam: first-time setup and test series for each student (`v3.js`, `store.js`, `supabase_v100_student_category.sql`)
+- **Categories:** class Class 9 / Class 10 / Class 11 / Class 12 / Dropper; exam NEET / JEE / CBSE / CUET (`PF3` in `v3.js`,
+  `CLS` and `CN` in `store.js`; the classic profile in `app6.js` uses the same lists).
+- **App, first sign-in:** a full-screen setup in five steps — welcome, *How the app works* (test series, live tests and
+  All-India rank, result analysis, PYQ), class tiles, exam tiles (a tapped tile moves on by itself), *All set* with
+  notifications and install. **There is no Skip:** until the class and exam are saved, the setup opens again on every page
+  and every app open. They are saved in the profile (`cbt_pf_<mobile>`) and on the account (`cbt_keep`), so another phone
+  does not ask again. A student whose old profile has *College*, *Boards* or *Other* is asked once (Boards → CBSE is ticked).
+- **Change any time:** Settings → *Class and exam*, the line under the name in the menu, Profile, or **Change** on the
+  Tests page. The new design only; the classic design keeps its own profile sheet.
+- **Test series for the student:** the Tests page shows only the series tagged (Admin → Tests page) with the student's exam
+  and class, with a bar *Test series for you · NEET · Class 12* — **See all** shows every series, **Change** switches the
+  category. A series with no tags shows for everyone.
+- **Store welcome:** five steps, one at a time with motion (name → class → exam → mobile → city; progress bar, each step
+  slides in, tiles pop with a tick, a finishing ring). No Google or email. Filled in from the student app on the same
+  phone. Saved in `store_me` (`{name, mobile, course, cls, city}`); Profile & settings → Edit changes class and city, the
+  exam tiles switch the store's series. Admin → Store → Edit → *Show for*: Everyone / NEET / JEE / CBSE / CUET only.
+- **Setup:** PENDING.md → 1.18. Test by hand: `PGDATABASE=e2e node tests/e2e/onboarding.js` (not in CI).
 
 ## Landing page before sign-in (`app29.js`, `landing.css`)
 - Anyone not signed in first sees the landing page (not the sign-in form): top bar (☰ menu · logo · **Login / Register**), banners
