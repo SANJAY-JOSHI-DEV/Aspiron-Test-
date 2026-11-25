@@ -48,7 +48,7 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
 - [x] **1.17 Two keys per level (XP Mark + Climb zone):** Supabase → SQL Editor: `supabase_v99_xp_marks.sql` (after v98, nothing after it).
   *Check:* `supabase_check_installed.sql` row 39 says ok; Level Up shows "XP Mark + Climb zone" under your level.
 - [ ] **1.18 Class + exam for every student (CBSE / CUET in the store):** Supabase → SQL Editor: `supabase_v100_student_category.sql` (after v32 and v61, nothing after it).
-  Then Admin → Tests page: har test series ke liye Exam (NEET / JEE / CBSE / CUET) aur Class (9 / 10 / 11 / 12 / Dropper) tick karo.
+  Then Admin → Tests page: Exam list me CBSE, CUET aur Class list me Class 9, Class 10 add karo (agar nahi hain), phir har test series ke liye Exam aur Class tick karo.
   Jis series par koi tag nahi, wo sabko dikhti hai. Admin → Store → Edit → "Show for" me ab CBSE only / CUET only bhi hai.
   *Check:* `supabase_check_installed.sql` row 40 says ok; naya student sign-in karta hai to class aur exam chune bina aage nahi badhta,
   aur Tests page par "Test series for you · NEET · Class 12" dikhta hai.

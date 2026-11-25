@@ -1,15 +1,14 @@
 -- =====================================================================
 --  v100: Student category — Class 9 / 10 / 11 / 12 / Dropper and exam NEET / JEE / CBSE / CUET.
 --  • The store can now set a series for CBSE only or CUET only (before: NEET, JEE or both).
---  • The Tests page filter lists (Admin → Tests page) get the new classes and exams added, if missing.
---    Nothing is removed and no series' tags change.
+--  • The Tests page filter lists are not changed here: add CBSE, CUET, Class 9 and Class 10 in Admin → Tests page.
 --  Run ONCE in Supabase → SQL Editor → New query → paste → Run (after v32 and v61).  Safe to run again.
 --  No new table, no cron, no paid feature.
 -- =====================================================================
 
 -- Admin: 'place' (course + section of one series) · 'order' · 'sections' — as in v32, plus 'cbse' and 'cuet'
 create or replace function public.cbt_admin_store_layout(p_pw text, p_action text, p_data jsonb default '{}'::jsonb)
-returns jsonb language plpgsql security definer set search_path = public as $$
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare a jsonb; v_item uuid; v_course text := lower(btrim(coalesce(p_data->>'course', '')));
 begin
   a := (public.cbt_admin(p_pw, 'ping', '{}'))::text::jsonb;
@@ -44,21 +43,7 @@ begin
   end if;
   return jsonb_build_object('ok', false, 'error', 'action');
 end; $$;
-grant execute on function public.cbt_admin_store_layout(text, text, jsonb) to anon, authenticated;
-
--- Tests page filter lists: add the new exams and classes at the end, keeping what the admin already has
-do $$
-declare v text;
-begin
-  if to_regclass('cbt_private.store_look') is null then return; end if;
-  foreach v in array array['NEET','JEE','CBSE','CUET'] loop
-    update cbt_private.store_look set exams = exams || to_jsonb(v) where id = 1 and jsonb_array_length(exams) < 20
-       and not exists (select 1 from jsonb_array_elements_text(exams) e where lower(e) = lower(v));
-  end loop;
-  foreach v in array array['Class 9','Class 10','Class 11','Class 12','Dropper'] loop
-    update cbt_private.store_look set classes = classes || to_jsonb(v) where id = 1 and jsonb_array_length(classes) < 20
-       and not exists (select 1 from jsonb_array_elements_text(classes) e where lower(e) = lower(v));
-  end loop;
-end $$;
+revoke all on function public.cbt_admin_store_layout(text, text, jsonb) from public, authenticated;
+grant execute on function public.cbt_admin_store_layout(text, text, jsonb) to anon;
 
 notify pgrst, 'reload schema';
