@@ -3558,3 +3558,26 @@ sup,sub{font-size:.72em;line-height:0}
 .fo input[type=date]{appearance:none;-webkit-appearance:none;min-height:54px}
 .fo input::-webkit-calendar-picker-indicator{opacity:.6}
 .fo-g+.btn.lg{position:sticky;bottom:6px;z-index:3;box-shadow:0 -14px 16px 4px var(--surface)}
+
+/* v132: touch and feel
+   1. Small buttons are now 36-38 px tall (they were 30-34), so a thumb does not miss them.
+   2. Every tappable thing shrinks a little under the finger and springs back, even those without their own rule
+      (:where keeps this rule weak, so any button that already has its own press style keeps it).
+   3. No 300 ms tap delay and no double-tap zoom on controls. 4. A soft lift on a mouse hover (computers only).
+   5. The picture on an empty page floats gently. */
+.hb-hl{height:38px}
+.hb-sc{height:36px;padding:0 11px 0 10px}
+.btn.sm{height:38px}
+.th-more{height:36px}
+.trwn{min-height:38px}
+.pflv,.pf3-ed{min-height:38px}
+:where(button,a,summary,[role="button"],[role="tab"]){touch-action:manipulation}
+:where(button,a,[role="button"])[data-a]:not(:disabled,.dock *,.cw){transition:transform .24s var(--spring),background-color .2s,border-color .2s,box-shadow .25s,opacity .2s}
+:where(button,a,[role="button"])[data-a]:not(:disabled,.dock *,.cw):active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){
+  :where(button.card,a.card,.row,.hs3-g,.pal,.artc,.qk-t,.fnt)[data-a]:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 14px 28px -18px rgba(0,0,0,.4)}
+  :where(.btn,.pillbtn,.hb-sc,.th-more):not(:disabled):hover{filter:brightness(1.06)}
+}
+.card.empty .ti{animation:emFloat 4.2s ease-in-out infinite}
+@keyframes emFloat{50%{transform:translateY(-5px)}}
+@media (prefers-reduced-motion:reduce){.card.empty .ti{animation:none}}
