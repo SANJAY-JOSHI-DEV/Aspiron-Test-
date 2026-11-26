@@ -107,6 +107,9 @@ const P={zup:'<path d="m7 12 5-5 5 5"/><path d="m7 18 5-5 5 5"/>',zdn:'<path d="
  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/>'
 };
 
+P.dots='<circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>';
+P.receipt='<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>';
+P.warn='<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>';
 P.drop='<path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/>';
 const ic=(n,w)=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true"${w?` style="width:${w}px;height:${w}px"`:''}>${P[n]||''}</svg>`;
 
@@ -408,7 +411,7 @@ A.dk=el=>({pyq:()=>openPyq(),qb:()=>openQB(),gen:()=>openGen(),ranks:()=>openRan
 /* ================= QUICK SEARCH (Ctrl/⌘ K or "/"): jump to any page, tool, test series or test ================= */
 const CK={el:null,i:0,L:[]};
 function ckAll(){const L=[];NAV.forEach(n=>L.push([n[1],'Page',n[2],()=>go(n[0])]));
-  [['PYQ Analyzer','pyq',()=>openPyq()],['Question bank','qb',()=>openQB()],['Test generator','spark',()=>openGen()],['Ranks and leaderboards','podium',()=>openRanks()],['Test history','hist',()=>A.hist()],['Mistake notebook','mistake',()=>openMistakes()],['Saved questions','bookmark',()=>openSaved()],['Study tracker','tracker',()=>openTracker()],['Notes and PDFs','file',()=>openNotes()],['Notifications','mega',()=>A.bell()],['Refer and earn','gift',()=>openRefer()],['My profile','user',()=>A.profile()],['My test series','layers',()=>A.mySeries()],['Settings','gear',()=>A.settings()],['Theme and colours','sun',()=>openTheme()],['Help and contact','mail',()=>A.setHelp()]].forEach(x=>L.push([x[0],'Page',x[1],x[2]]));
+  [['PYQ Analyzer','pyq',()=>openPyq()],['Question bank','qb',()=>openQB()],['Test generator','spark',()=>openGen()],['Ranks and leaderboards','podium',()=>openRanks()],['Test history','hist',()=>A.hist()],['Mistake notebook','mistake',()=>openMistakes()],['Saved questions','bookmark',()=>openSaved()],['Study tracker','tracker',()=>openTracker()],['Notes and PDFs','file',()=>openNotes()],['Notifications','mega',()=>A.bell()],['Refer and earn','gift',()=>openRefer()],['My profile','user',()=>A.profile()],['My purchases','receipt',()=>A.purchases()],['My test series','layers',()=>A.mySeries()],['Settings','gear',()=>A.settings()],['Theme and colours','sun',()=>openTheme()],['Help and contact','mail',()=>A.setHelp()]].forEach(x=>L.push([x[0],'Page',x[1],x[2]]));
   Object.keys(TOOLS).forEach(k=>TOOLS[k].forEach(t=>L.push([t[2],'Tool',t[1],()=>A.tool({dataset:{k:t[0]}})])));
   try{(C().series||[]).forEach(x=>L.push([x.title,'Test series','layers',()=>openSeriesAny(x.id,'t')]));(C().tests||[]).forEach(t=>L.push([t.title,(sOf(t.series_id)||{}).title||'Test','tests',()=>A.test({dataset:{id:t.id}})]))}catch(e){}
   return L}
@@ -1695,8 +1698,8 @@ const PF3={cls:['Class 9','Class 10','Class 11','Class 12','Dropper'],exam:['NEE
   f:[['name','Full name','text','Your name','name'],['email','Email','email','name@example.com','email'],['phone','Alternate phone','tel','Optional','tel'],['school','School / Coaching','text','School or coaching name','organization'],['city','City','text','Your city','address-level2']]};
 let PFD=null;
 function pfAv(sz){const o=stuProf();return o.photo&&/^data:image\//.test(o.photo)?`<img src="${esc3(o.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">`:`<b style="font-size:${Math.round(sz*.4)}px">${initial()}</b>`}
-function profileView(){return {t:'My profile',s:'Your details and progress',key:'prof',html:()=>{const o=PFD,R=allRes(),st=stats(R),nm=(o.name||(AUTH&&AUTH.name)||'').trim();
-  return `<section class="pfh"><label class="pfa${isDr()?' dr':''}" for="pfFile" aria-label="Change photo">${pfAv(92)}${isDr()?`<i class="pfa-st">${ic('steth',18)}</i>`:''}<span class="pfc">${ic('pen',14)}</span></label><input id="pfFile" type="file" accept="image/*" hidden>
+function profileView(){return {t:'My profile',s:'Your details and progress',key:'prof',bleed:1,right:()=>`<button class="ib" data-a="pfMore" aria-label="More options" aria-haspopup="dialog">${ic('dots',20)}</button>`,html:()=>{const o=PFD,R=allRes(),st=stats(R),nm=(o.name||(AUTH&&AUTH.name)||'').trim();
+  return `<section class="pfh pfh2"><i class="pfh2-gl"></i><label class="pfa${isDr()?' dr':''}" for="pfFile" aria-label="Change photo">${pfAv(92)}${isDr()?`<i class="pfa-st">${ic('steth',18)}</i>`:''}<span class="pfc">${ic('pen',14)}</span></label><input id="pfFile" type="file" accept="image/*" hidden>
     <div class="pfn"><b>${nmH(nm||'Student',isDr())}</b><small>+91 ${esc3(typeof maskMob==='function'&&AUTH?maskMob(AUTH.mobile):'')}</small><button class="pflv" data-a="lvl">${crest(myLv().i,22)}Level ${myLv().n} · ${esc3(myLv().name)}</button>${isDr()?`<span class="pfgs">${ic('steth',14)}Golden Stethoscope</span>`:''}${stuProf().photo?'<button class="lnk" data-a="pfRm">Remove photo</button>':''}</div>
     <div class="pfs"><div><b>${fmtN(xpNow())}</b><small>XP</small></div><div><b>${st.avg!=null?Math.round(st.avg):0}%</b><small>Average</small></div><div><b>${xpMe().streak||0}</b><small>Day streak</small></div></div></section>
    <form class="card pff" id="pfForm" autocomplete="on" onsubmit="return false">
@@ -1705,7 +1708,7 @@ function profileView(){return {t:'My profile',s:'Your details and progress',key:
     <label class="fl"><span>About or goal</span><textarea class="inp" name="about" rows="3" maxlength="300" placeholder="e.g. Aim for 650+ in NEET">${esc3(o.about||'')}</textarea></label>
     <p class="hint" style="margin:0">All optional. Saved to your account, so it comes back on any phone.</p></form>
    <div class="buybar"><span class="mut" style="font-size:13px">Changes are saved when you tap Save</span><button class="btn" data-a="pfSave">${ic('check',16)}Save profile</button></div>`},
-  after:()=>{const f=$('#pfFile');f&&f.addEventListener('change',()=>pfPhoto(f))}}}
+  after:()=>{const f=$('#pfFile');f&&f.addEventListener('change',()=>pfPhoto(f));const b=$('#scrB');if(!b.dataset.bl){b.dataset.bl=1;b.addEventListener('scroll',()=>scr.classList.toggle('solid',!!(top()&&top().bleed)&&b.scrollTop>150),{passive:true})}scr.classList.toggle('solid',!!(top()&&top().bleed)&&b.scrollTop>150)}}}
 A.profile=()=>{PFD=Object.assign({},stuProf());closeLayer();push(profileView())};
 const pfForm=()=>{const F=$('#pfForm');if(!F)return;PF3.f.forEach(f=>{const i=F.querySelector(`[name="${f[0]}"]`);if(i)PFD[f[0]]=i.value.trim()});const a=F.querySelector('[name=about]');if(a)PFD.about=a.value.trim()};
 A.pfSave=()=>{pfForm();const o=Object.assign({},stuProf(),PFD);if(AUTH&&o.name===(AUTH.name||'').trim())delete o.name;
@@ -1748,10 +1751,11 @@ const standalone3=()=>{try{return isStandalone()}catch(e){return false}};
 function setRow(i,t,d,a,right){return `<button class="row" data-a="${a}"><span class="ti g">${ic(i,19)}</span><span><b>${t}</b>${d?`<small>${d}</small>`:''}</span>${right||ic('right',18)}</button>`}
 const tgl=on=>`<span class="tgl${on?' on':''}" aria-hidden="true"><i></i></span>`;
 function settingsView(){return {t:'Settings',s:'Your account and the app',key:'set',html:()=>{let c=null;try{c=cdGet()}catch(e){}
-  return `<div class="stack" style="gap:10px"><p class="gh">Account</p><div class="card rows">${setRow('user','Profile','Name, photo, class and target exam','profile')}${setRow('book','Class and exam',catOk()?esc3(catTxt()):'Not chosen yet','catEdit')}${setRow('target','Exam countdown',c?esc3(c.name)+', '+dS(c.date):'Set your exam date','cdEdit')}${setRow('sun','Theme and colours',esc3(themeLabel()),'setTheme')}</div></div>
+  return `<div class="stack" style="gap:10px"><p class="gh">Account</p><div class="card rows">${setRow('user','Profile','Name, photo, class and target exam','profile')}${setRow('book','Class and exam',catOk()?esc3(catTxt()):'Not chosen yet','catEdit')}${setRow('target','Exam countdown',c?esc3(c.name)+', '+dS(c.date):'Set your exam date','cdEdit')}${setRow('receipt','My purchases','Your orders and receipts','purchases')}${setRow('sun','Theme and colours',esc3(themeLabel()),'setTheme')}</div></div>
   <div class="stack" style="gap:10px"><p class="gh">App</p><div class="card rows">${setRow('bell','Phone notifications',npOn3()?'On, new notices appear on your phone':'Get new notices on your phone','setNp',tgl(npOn3()))}${setRow('mega','Opening sound',sndOn3()?'On, a soft sound with the opening animation':'Off, the app opens silently','setSnd',tgl(sndOn3()))}${standalone3()?'':setRow('dl','Install the app','Open it from your home screen, full screen','setInstall')}</div></div>
   <div class="stack" style="gap:10px"><p class="gh">Help</p><div class="card rows">${setRow('mail','Chat with support','WhatsApp or Telegram','setHelp')}${setRow('info','About us','','setAbout')}${setRow('file','Terms and conditions','','setTerms')}${setRow('file','Privacy policy','','setPrivacy')}${setRow('file','Refund policy','','setRefund')}</div></div>
-  <button class="btn lg ghost danger3" data-a="setOut">${ic('out',17)}Sign out</button>`}}}
+  <div class="stack" style="gap:10px"><p class="gh">Additional settings</p><div class="card rows">${setRow('trash','Account deletion','Remove your account and data permanently','delAcc')}</div></div>
+  <button class="btn lg ghost danger3" data-a="setOut">${ic('out',17)}Log out</button>`}}}
 A.settings=()=>{closeLayer();push(settingsView())};
 A.setTheme=()=>openTheme();
 A.setSnd=()=>{const on=!sndOn3();try{LS.set('cbt_snd',on)}catch(e){}toast3(on?'Opening sound on':'Opening sound off');redraw()};
@@ -1767,8 +1771,83 @@ function legalPage(t,fn){const raw=grabSheet(fn),i=raw.indexOf('<div class="lega
 A.setAbout=()=>legalPage('About us',()=>openAbout());
 A.setTerms=()=>legalPage('Terms and conditions',()=>openTerms());
 A.setHelp=()=>{let b='';try{SUPMSG='';b=supBtns()}catch(e){}openSheet(`<span class="ti g" style="margin-bottom:12px">${ic('mail',22)}</span><h2 id="sheetT">Chat with support</h2><p class="sub">Our student support team replies on chat. Choose where you want to talk.</p><div class="sup3">${b}</div><p class="hint" style="text-align:center">Chat only. Calls are not available.</p>${socH()?`<p class="hsoc-t">Follow us</p><div class="hsoc">${socH()}</div>`:''}`)};
-A.setOut=()=>openSheet(`<span class="ti" style="margin-bottom:12px">${ic('out',22)}</span><h2 id="sheetT">Sign out?</h2><p class="sub">Your tests, results and notes stay on your account. Sign in again with your mobile number any time.</p><div class="sheet-ft"><button class="btn ghost" data-a="close">Cancel</button><button class="btn danger3" data-a="setOutGo">Sign out</button></div>`);
+A.setOut=()=>openSheet(`<span class="ti" style="margin-bottom:12px">${ic('out',22)}</span><h2 id="sheetT">Do you want to log out?</h2><p class="sub">Your tests, results and notes stay on your account. Log in again with your mobile number any time.</p><div class="sheet-ft"><button class="btn ghost" data-a="close">Cancel</button><button class="btn danger3" data-a="setOutGo">Log out</button></div>`);
 A.setOutGo=()=>{closeLayer();unwind(()=>{try{doSignOut()}catch(e){location.reload()}})};
+
+/* ================= MY PURCHASES, RECEIPT and ACCOUNT DELETION (supabase_v101_orders_delete.sql) =================
+   My purchases lists the student's own PAID store orders (free ones too). An order opens as a receipt that "prints"
+   out of a small machine; Download / Share make a picture of the receipt on the phone (nothing is sent anywhere).
+   Account deletion is a REQUEST that the team handles; the app never deletes anything by itself. */
+const PUR={d:null,at:0,busy:0,err:'',sel:-1};
+function purLoad(force){if(PUR.busy||(PUR.d&&!force&&Date.now()-PUR.at<60000))return;PUR.busy=1;
+  rpc('cbt_my_orders',{}).then(r=>{if(r&&r.ok&&r.v101){PUR.d=r;PUR.at=Date.now();PUR.err=''}else PUR.err=r&&r.status===404?'soon':'fail'}).catch(()=>{PUR.err='fail'})
+   .then(()=>{PUR.busy=0;const k=top()&&top().key;if(k==='pur'||k==='del')redraw()})}
+const purD=t=>{try{return new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}};
+const purP=o=>o.amount>0?rupee(o.amount):'Free';
+function purView(){return {t:'My purchases',s:'Your orders and receipts',key:'pur',html:()=>{const d=PUR.d;
+  if(!d)return PUR.err?`<div class="card empty"><span class="ti g">${ic('receipt',22)}</span><b>${PUR.err==='soon'?'Receipts are coming soon':'Could not load your purchases'}</b><p class="mut">${PUR.err==='soon'?'This part is being set up. Please check again later.':'Check your internet and try again.'}</p><button class="btn" data-a="purRetry">Try again</button></div>`
+    :`<div class="stack">${'<div class="card sk" style="height:86px"></div>'.repeat(4)}</div>`;
+  if(!d.orders.length)return `<div class="card empty"><span class="ti g">${ic('receipt',22)}</span><b>No purchases yet</b><p class="mut">Test series you buy or get free from the store show up here, with a receipt for each.</p><a class="btn" href="store">Open the store</a></div>`;
+  return `<div class="stack pur">${d.orders.map((o,i)=>`<button class="card pur-c" data-a="purOpen" data-i="${i}"><span class="pur-i">${ic('receipt',20)}</span><span class="pur-t"><em class="pur-ok">${ic('check',11)}Success</em><b>${esc3(o.title||'Test series')}</b><small>${purD(o.at)} · <span class="${o.amount>0?'':'pur-fr'}">${purP(o)}</span></small></span>${ic('right',18)}</button>`).join('')}</div>`},
+  after:()=>purLoad()}}
+A.purchases=()=>{closeLayer();push(purView())};
+A.purRetry=()=>{PUR.err='';PUR.d=null;redraw();purLoad(true)};
+A.purOpen=el=>{PUR.sel=+el.dataset.i;push(rcpView())};
+const curO=()=>PUR.d&&PUR.d.orders[PUR.sel];
+function rcpView(){return {t:'Order details',s:'',key:'rcp',html:()=>{const o=curO();if(!o)return '<div class="card empty"><b>Order not found</b></div>';
+  const rows=[['Order ID',esc3(o.code)],['Date',purD(o.at)],['Item',esc3(o.title||'Test series')],['Price',o.list>0?rupee(o.list):'Free']];
+  if(o.off>0)rows.push(['Coupon'+(o.coupon?' '+esc3(o.coupon):''),'− '+rupee(o.off)]);if(o.wallet>0)rows.push(['Wallet used','− '+rupee(o.wallet)]);
+  return `<section class="rcp"><div class="rcp-m" aria-hidden="true"><i class="rcp-led"></i><span class="rcp-sl"></span></div>
+   <div class="rcp-win"><div class="rcp-paper"><span class="rcp-ck">${ic('check',26)}</span><b class="rcp-h">Payment successful</b><em class="rcp-amt">${purP(o)}</em>
+    <div class="rcp-rows">${rows.map((r,i)=>`<div style="--i:${i}"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}<div class="tot" style="--i:${rows.length}"><span>Total paid</span><b>${purP(o)}</b></div></div>
+    <p class="rcp-f">Thank you for learning with ${esc3(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education')}</p><i class="rcp-tear"></i></div></div></section>
+   <div class="rcp-b"><button class="btn lg" data-a="rcDl">${ic('dl',17)}Download receipt</button><button class="btn lg ghost" data-a="rcSh">${ic('share',17)}Share receipt</button></div>
+   <div class="card p rcp-help"><div><b>Need help?</b><small>Get in touch with us for support.</small></div><button class="btn sm" data-a="setHelp">Chat with us</button></div>`},
+  after:()=>{if(!RM)setTimeout(()=>{try{if(top()&&top().key==='rcp'&&navigator.vibrate)navigator.vibrate(14)}catch(e){}},1500)}}}
+/* the receipt as a picture, drawn on the phone */
+function rcDraw(o){return new Promise(res=>{const W=720,rows=[['Receipt no.',o.code],['Date',purD(o.at)],['Name',(PUR.d&&PUR.d.name)||(AUTH&&AUTH.name)||''],['Mobile',AUTH?maskMob(AUTH.mobile):''],['Item',o.title||'Test series'],['Price',o.list>0?rupee(o.list):'Free']];
+  if(o.off>0)rows.push(['Coupon'+(o.coupon?' '+o.coupon:''),'- '+rupee(o.off)]);if(o.wallet>0)rows.push(['Wallet used','- '+rupee(o.wallet)]);
+  const H=330+rows.length*62+170,K=2,c=document.createElement('canvas');c.width=W*K;c.height=H*K;const g=c.getContext('2d');g.scale(K,K);
+  const F='-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif';g.fillStyle='#fff';g.fillRect(0,0,W,H);g.fillStyle='#1d1e22';g.fillRect(0,0,W,12);
+  g.textAlign='center';g.fillStyle='#17181b';g.font='700 38px '+F;g.fillText(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education',W/2,92);
+  g.fillStyle='#6b6d73';g.font='500 24px '+F;g.fillText('Payment receipt',W/2,132);
+  g.fillStyle='#e7f6ee';g.beginPath();g.arc(W/2,205,38,0,7);g.fill();g.strokeStyle='#1f9d55';g.lineWidth=7;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(W/2-15,206);g.lineTo(W/2-3,218);g.lineTo(W/2+17,191);g.stroke();
+  g.fillStyle='#17181b';g.font='700 28px '+F;g.fillText('Payment successful',W/2,288);
+  let y=330;g.textAlign='left';rows.forEach(r=>{g.fillStyle='#8a8c92';g.font='500 24px '+F;g.fillText(r[0],48,y+34);g.fillStyle='#17181b';g.font='600 26px '+F;g.textAlign='right';
+    let t=String(r[1]);while(g.measureText(t).width>W-96-200&&t.length>4)t=t.slice(0,-2);if(t!==String(r[1]))t+='…';g.fillText(t,W-48,y+34);g.textAlign='left';
+    g.strokeStyle='#ececea';g.lineWidth=1.5;g.beginPath();g.moveTo(48,y+54);g.lineTo(W-48,y+54);g.stroke();y+=62});
+  y+=18;g.fillStyle='#17181b';g.font='700 30px '+F;g.fillText('Total paid',48,y+30);g.textAlign='right';g.fillText(purP(o),W-48,y+30);g.textAlign='center';
+  g.fillStyle='#8a8c92';g.font='500 22px '+F;g.fillText('Thank you for learning with us.',W/2,y+96);g.fillText('This is a computer generated receipt.',W/2,y+130);
+  c.toBlob(b=>res(b),'image/png')})}
+const rcName=o=>'receipt-'+String(o.code||'order').replace(/[^\w-]/g,'')+'.png';
+A.rcDl=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;try{const b=await rcDraw(o);if(!b)throw 0;const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=rcName(o);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast3('Receipt downloaded')}catch(e){toast3('Could not make the receipt. Please try again.')}el.disabled=false};
+A.rcSh=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;try{const b=await rcDraw(o);if(!b)throw 0;const f=new File([b],rcName(o),{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Payment receipt'})}else A.rcDl({disabled:false})}catch(e){if(!e||e.name!=='AbortError')toast3('Could not share the receipt')}el.disabled=false};
+
+/* ---------- profile: the three-dot menu ---------- */
+A.pfMore=()=>openSheet(`<h2 id="sheetT">More</h2><div class="card rows" style="margin-top:8px">${setRow('receipt','My purchases','Orders and receipts','purchases')}${setRow('target','Exam countdown','','cdEdit')}${setRow('gear','Settings','','settings')}${setRow('mail','Chat with support','','setHelp')}${setRow('trash','Account deletion','','delAcc')}</div><button class="btn lg ghost danger3" data-a="setOut" style="margin-top:12px">${ic('out',17)}Log out</button>`);
+
+/* ---------- account deletion: read the warning, confirm, send the request ---------- */
+const DELW=['I have another account','I no longer need it','Too many notifications','Privacy concerns','Something else'];const DEL={why:'',busy:0};
+function delView(){return {t:'Account deletion',s:'',key:'del',html:()=>{const at=PUR.d&&PUR.d.delete_at;
+  if(at)return `<div class="sp-pane stack"><div class="card p del-c ok"><span class="del-i ok">${ic('check',30)}</span><h2>Request submitted</h2><p>We received your request on ${purD(at)}. Our team will review it and permanently delete your account and data.</p><p class="mut">Changed your mind? You can withdraw it any time before it is done.</p></div>
+    <div class="buybar"><span class="mut" style="font-size:13px">You are still signed in</span><button class="btn ghost" data-a="delCancel">Withdraw request</button></div></div>`;
+  return `<div class="sp-pane stack"><div class="card p del-c"><span class="del-i">${ic('warn',30)}</span><h2>Please read this carefully!</h2><p>You are about to submit a request for us to permanently close your ${esc3(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education')} account and delete your data.</p></div>
+    <div class="del-n">Note: Account closure is a permanent action.</div>
+    <ul class="del-l"><li>Your profile, results, XP, streak and notes will be removed.</li><li>Test series you bought will no longer be available.</li><li>Purchases are not refunded.</li></ul>
+    <div class="buybar del-b"><button class="btn ghost" data-a="delGo">Okay, continue</button><button class="btn" data-a="back">No, cancel</button></div></div>`},after:()=>purLoad()}}
+A.delAcc=()=>{closeLayer();push(delView())};
+A.delGo=()=>{DEL.why='';openSheet(`<span class="ti" style="margin-bottom:12px;color:var(--err)">${ic('warn',22)}</span><h2 id="sheetT">Delete your account?</h2><p class="sub">This cannot be undone once our team completes it. Tell us why you are leaving (optional).</p>
+  <div class="chips wrap">${DELW.map(w=>`<button data-dw="${esc3(w)}">${w}</button>`).join('')}</div>
+  <label class="fl" style="margin-top:14px"><span>Type DELETE to confirm</span><input class="inp" id="delT" autocomplete="off" autocapitalize="characters" placeholder="DELETE"></label>
+  <div class="sheet-ft"><button class="btn ghost" data-a="close">Cancel</button><button class="btn danger3" id="delB" data-a="delSend" disabled>Submit request</button></div>`);
+  sheet.onclick=e=>{const w=e.target.closest('[data-dw]');if(w){DEL.why=DEL.why===w.dataset.dw?'':w.dataset.dw;sheet.querySelectorAll('[data-dw]').forEach(b=>b.classList.toggle('on',b.dataset.dw===DEL.why))}};
+  const t=sheet.querySelector('#delT'),b=sheet.querySelector('#delB');t.addEventListener('input',()=>{b.disabled=t.value.trim().toUpperCase()!=='DELETE'})};
+A.delSend=async el=>{if(DEL.busy||el.disabled)return;DEL.busy=1;el.disabled=true;let r=null;try{r=await rpc('cbt_delete_request',{p_reason:DEL.why})}catch(e){}DEL.busy=0;
+  if(r&&r.ok){PUR.d=Object.assign(PUR.d||{orders:[],v101:true},{delete_at:r.delete_at||Date.now()});closeLayer();toast3('Request submitted');if(top()&&top().key==='del')redraw()}
+  else{el.disabled=false;toast3(r&&r.status===404?'This is not available yet. Please chat with support.':r&&r.error==='busy'?'Please wait a little and try again':'Could not send the request. Please try again.')}};
+A.delCancel=async el=>{if(DEL.busy)return;DEL.busy=1;el.disabled=true;let r=null;try{r=await rpc('cbt_delete_cancel',{})}catch(e){}DEL.busy=0;
+  if(r&&r.ok){if(PUR.d)PUR.d.delete_at=null;toast3('Request withdrawn');if(top()&&top().key==='del')redraw()}else{el.disabled=false;toast3('Could not withdraw. Please try again.')}};
 /* "turn on notifications" help in the new look: the same steps as the classic npHelp (app9.js), shown in a v3 sheet
    while the new design is on screen; the classic one is used everywhere else */
 if(typeof npHelp==='function'){const _nh=npHelp;npHelp=function(kind){
@@ -3280,7 +3359,7 @@ A.menu=()=>{const u=unread();let n=0;const web=!standalone3();
   drawer.innerHTML=`<div class="mtop ma" style="--i:${n++}"><button class="mx" data-a="close" aria-label="Close menu">${ic('x',18)}</button><span class="mavw${isDr()?' dr':''}">${avatar('mav')}${isDr()?`<i class="mav-st">${ic('steth',16)}</i>`:''}</span><b>${stuNameH()}</b><button class="mlv" data-a="m" data-k="lvl">${crest(myLv().i,18)}Level ${myLv().n} · ${esc3(myLv().name)}</button><button class="mcat" data-a="m" data-k="cat">${esc3(catOk()?catTxt():'Choose class and exam')}${ic('pen',12)}</button><button class="mvp" data-a="m" data-k="profile">View Profile <span aria-hidden="true">→</span></button></div>
   <div class="mlist">${gh('Study')}${mi('home','Home','home',S.tab==='home')}${mi('tests','Test Series','series',S.tab==='test')}${mi('lib','Library','lib',S.tab==='lib')}${mi('pyq','PYQ Analysis','pyq',0,nw)}${mi('qb','Question Bank','qb',0,nw)}${mi('spark','Test Generator','gen',0,nw)}
    ${gh('My progress')}${mi('medal','Level Up & Streak','lvl',0,nw)}${mi('crown','Weekly League','xpb',0,nw)}${mi('podium','Results & Ranks','ranks')}${mi('hist','Test History','history')}${mi('mistake','Mistake Notebook','mistakes')}${mi('bookmark','Saved Questions','saved')}${mi('tracker','Study Tracker','tracker')}
-   ${gh('Explore')}${mi('store','Store','store')}${mi('gift','Refer & Earn','refer')}${mi('bell','Notifications','notif',0,u?`<em class="mcnt">${u}</em>`:'')}${mi('hourglass','Exam Countdown','cd')}
+   ${gh('Explore')}${mi('store','Store','store')}${mi('gift','Refer & Earn','refer')}${mi('receipt','My Purchases','purchases')}${mi('bell','Notifications','notif',0,u?`<em class="mcnt">${u}</em>`:'')}${mi('hourglass','Exam Countdown','cd')}
    ${gh('Help & settings')}${mi('sun','Theme Settings','theme',0,`<em class="mval">${THEMES[resolveMode(TH.mode)].name}</em>`)}${mi('gear','Settings','settings')}${mi('info','About Us','about')}${mi('mail','Contact Us','contact')}
    ${web?gh('Policies')+mi('file','Terms & Conditions','terms')+mi('file','Privacy Policy','privacy')+mi('file','Refund Policy','refund'):''}
    ${socH()?gh('Follow us')+`<div class="msoc" style="--i:${n++}">${socH()}</div>`:''}
@@ -3288,7 +3367,7 @@ A.menu=()=>{const u=unread();let n=0;const web=!standalone3();
   /* the list is built and laid out first; the slide starts on the next frame, so its first frame is never the heavy one */
   drawer.scrollTop=0;void drawer.offsetHeight;if(RM)openLayer(drawer);else requestAnimationFrame(()=>requestAnimationFrame(()=>openLayer(drawer)))};
 A.m=el=>{const k=el.dataset.k;closeLayer();
-  const M={cat:()=>A.catEdit(),lvl:openLevel,xpb:()=>openXpBoard(),profile:A.profile,theme:openTheme,home:()=>go('home'),series:()=>go('test'),lib:()=>go('lib'),pyq:()=>openPyq(),qb:()=>openQB(),gen:()=>openGen(),ranks:()=>openRanks(),refer:()=>openRefer(),store:()=>{location.href='store'},history:A.hist,mistakes:()=>openMistakes(),saved:()=>openSaved(),tracker:()=>openTracker(),notif:A.bell,cd:A.cdEdit,
+  const M={cat:()=>A.catEdit(),lvl:openLevel,xpb:()=>openXpBoard(),profile:A.profile,theme:openTheme,home:()=>go('home'),series:()=>go('test'),lib:()=>go('lib'),pyq:()=>openPyq(),qb:()=>openQB(),gen:()=>openGen(),ranks:()=>openRanks(),refer:()=>openRefer(),purchases:A.purchases,store:()=>{location.href='store'},history:A.hist,mistakes:()=>openMistakes(),saved:()=>openSaved(),tracker:()=>openTracker(),notif:A.bell,cd:A.cdEdit,
    settings:A.settings,about:A.setAbout,terms:A.setTerms,privacy:()=>window.open('privacy','_blank','noopener'),refund:()=>window.open('refund','_blank','noopener'),contact:A.setHelp,
    logout:A.setOut};
   setTimeout(()=>{(M[k]||(()=>{}))()},140)};

@@ -52,6 +52,11 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   Jis series par koi tag nahi, wo sabko dikhti hai. Admin → Store → Edit → "Show for" me ab CBSE only / CUET only bhi hai.
   *Check:* `supabase_check_installed.sql` row 40 says ok; naya student sign-in karta hai to class aur exam chune bina aage nahi badhta,
   aur Tests page par "Test series for you · NEET · Class 12" dikhta hai.
+- [ ] **1.19 My purchases (receipts) + Account deletion request:** Supabase → SQL Editor: `supabase_v101_orders_delete.sql` (after v100, nothing after it).
+  Until it is run, My purchases says "coming soon" and the deletion request says "not available yet".
+  Deletion requests arrive in Supabase → Table editor → schema `cbt_private` → `delete_requests` (status `pending`). The app never deletes anything itself:
+  after you check one, delete the student in Admin → Students, then set the request's status to `done`.
+  *Check:* `supabase_check_installed.sql` row 41 says ok; app → Profile → ⋮ → My purchases lists the student's paid and free orders; tap one for the receipt.
 - [ ] **1.9** Backup password aur 2FA recovery codes kagaz par likh kar offline rakho.
 
 ## Phase 2: Brand aur email (pehchaan)
