@@ -3371,3 +3371,6 @@ sup,sub{font-size:.72em;line-height:0}
 .xp-pill.fly b{font-size:17px}
 .xhex{flex:none;display:grid;place-items:center;width:32px;height:36px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:linear-gradient(160deg,#fff08a,#ffb300);color:#4a3200}
 .xp-pill.fly .xhex .i{color:#4a3200;animation:none;fill:#4a3200}
+
+/* the Done button on the 'Test submitted' screen: solid colour, white text, always readable */
+.btn.held-done{color:#fff!important;font-weight:700;opacity:1!important;filter:none!important;background:linear-gradient(180deg,#4a4290,#2f2863)!important;border:1px solid rgba(255,255,255,.22);box-shadow:0 12px 26px -14px rgba(47,40,99,.9),inset 0 1px 0 rgba(255,255,255,.22)}

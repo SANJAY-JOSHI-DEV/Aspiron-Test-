@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=117;
+const V3VER=118;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -1829,7 +1829,7 @@ A.rsBm=async el=>{const i=+el.dataset.i,tid=RS3.rec.test_id,on=!RS3.bm.has(i);on
   clearOld('bm');try{if(typeof BM!=='undefined'&&BM){on?BM.add(tid+':'+i):BM.delete(tid+':'+i)}}catch(e){}toast3(on?'Saved':'Removed from saved')};
 /* the result is not out yet (live tests): when it will be */
 function heldOpen(title,at){push({t:'Test submitted',s:'',key:'held',html:()=>`<section class="rsh held"><span class="ti g">${ic('check',26)}</span><h2>Test submitted</h2>${title?`<p><b>${esc3(title)}</b></p>`:''}<p>Your answers are saved. Your result, rank and answer key will show after</p><b class="held-at">${at?fD(at,{weekday:'short',day:'numeric',month:'short'})+', '+fT(at):'the test closes'}</b></section>
-  <div class="card rs-note">${ic('bell',18)}<span>We will show the result here in Test history as soon as it is out.</span></div><button class="btn lg" data-a="back">Done</button>`})}
+  <div class="card rs-note">${ic('bell',18)}<span>We will show the result here in Test history as soon as it is out.</span></div><button class="btn lg held-done" data-a="back">Done</button>`})}
 /* while answers are being sent, the classic loading page shows: hide the "New design" pill there */
 (function(){const f=window.sendPending;if(typeof f!=='function')return;
   window.sendPending=function(){try{host&&host.setAttribute('data-busy','1')}catch(e){}
