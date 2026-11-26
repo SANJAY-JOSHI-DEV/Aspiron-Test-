@@ -58,6 +58,11 @@ const MOB = '9000000001', CODE = 'AAAA1111';
     ('PUR2','Free Mock Pack',0,'Free Student',$1,'paid',0,null,0,now()),
     ('PUR3','Not paid yet',100,'Free Student',$1,'pending',100,null,0,null),
     ('PUR4','Someone else''s',100,'Paid Student','9000000002','paid',100,null,0,now())`, [MOB]);
+  // a test series the team gave this student for free (Students -> access), given 5 days ago
+  await q(`delete from cbt_private.series_access where student_id = (select id from cbt_private.students where mobile = $1) and series_id = 'aaaaaaaa-0000-0000-0103-0000000000f1'`, [MOB]);
+  await q(`insert into cbt_private.series (id, title) values ('aaaaaaaa-0000-0000-0103-0000000000f1', 'Gifted Mock Series') on conflict (id) do nothing`);
+  await q(`insert into cbt_private.series_access (student_id, series_id) select id, 'aaaaaaaa-0000-0000-0103-0000000000f1' from cbt_private.students where mobile = $1`, [MOB]);
+  await q(`update cbt_private.access_dates set at = now() - interval '5 days' where series_id = 'aaaaaaaa-0000-0000-0103-0000000000f1'`);
   await new Promise(r => server.listen(PORT, '127.0.0.1', r));
   const br = await chromium.launch();
   try {
@@ -101,6 +106,7 @@ const MOB = '9000000001', CODE = 'AAAA1111';
     ok(/NEET Biology Pro Test Series/.test(t) && /Free Mock Pack/.test(t), 'purchases 1 paid orders are listed (paid and free)');
     ok(!/Not paid yet/.test(t) && !/Someone else/.test(t), 'purchases 2 pending orders and other students\' orders are not shown');
     ok(/₹399/.test(t) && /Free/.test(t), 'purchases 3 the amount paid, or Free');
+    ok(/Gifted Mock Series/.test(t) && /FREE ACCESS/i.test(t), 'purchases 4 a series given for free is in the history too, marked Free access');
     await shot(p, 'purchases');
     await click(p, '#scrB [data-a=purOpen]'); await wait(700); await shot(p, 'receipt-a'); await wait(700); await shot(p, 'receipt-b'); await wait(700); await shot(p, 'receipt-c'); await wait(2200);
     t = await scr();
@@ -123,6 +129,16 @@ const MOB = '9000000001', CODE = 'AAAA1111';
     ok(/^receipt-PUR1\.png$/.test(d.suggestedFilename()) && fs.statSync(f).size > 5000, 'receipt 2 Download receipt saves a picture (' + d.suggestedFilename() + ', ' + fs.statSync(f).size + ' bytes)');
     if (SHOTS) fs.copyFileSync(f, path.join(SHOTS, 'receipt-download.png'));
     // settings: Additional settings → Account deletion; the warning, then the request
+    // the free one: its own receipt, in the same style
+    await p.evaluate(() => history.back()); await wait(900);
+    await S(p, 'const b=[...root.querySelectorAll("#scrB [data-a=purOpen]")].find(x=>/Gifted Mock Series/.test(x.innerText));b&&b.click()'); await wait(3300);
+    t = await scr();
+    ok(/Free access added/.test(t) && /Gifted Mock Series/.test(t) && /FREE-[0-9A-F]{6}/.test(t) && /Free/.test(t) && !/Payment successful/.test(t), 'receipt 3 free access has its own receipt (Free access added, FREE- number, Free)');
+    await shot(p, 'receipt-free');
+    const dl2 = p.waitForEvent('download'); await click(p, '#scrB [data-a=rcDl]'); const d2 = await dl2;
+    ok(/^receipt-FREE-[0-9A-F]{6}\.png$/.test(d2.suggestedFilename()), 'receipt 4 the free receipt downloads as a picture too (' + d2.suggestedFilename() + ')');
+    await d2.saveAs(path.join(require('os').tmpdir(), 'rc-free.png')); if (SHOTS) fs.copyFileSync(path.join(require('os').tmpdir(), 'rc-free.png'), path.join(SHOTS, 'receipt-free-download.png'));
+    await p.evaluate(() => history.back()); await wait(500);
     await p.evaluate(() => history.go(-2)); await wait(900);
     await click(p, '#scrR [data-a=pfMore]'); await wait(600); await click(p, '#sheet [data-a=delAcc]'); await wait(1500);
     t = await scr();

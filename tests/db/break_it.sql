@@ -2561,6 +2561,28 @@ do $$ begin
 end $$;
 reset role;
 
+-- ===== v103: free access in My purchases =====
+insert into cbt_private.series (id, title) values
+  ('aaaaaaaa-0000-0000-0103-000000000001', 'Gifted series'), ('aaaaaaaa-0000-0000-0103-000000000002', 'Bought in the store');
+insert into public.cbt_store_items (id, title, price, active, buy_on, series_id) values
+  ('cccccccc-0000-0000-0103-000000000001', 'Store item for the bought series', 100, true, true, 'aaaaaaaa-0000-0000-0103-000000000002');
+insert into public.cbt_store_orders (code, item_id, item_title, amount, name, mobile, status, list_price, paid_at) values
+  ('V103A', 'cccccccc-0000-0000-0103-000000000001', 'Store item for the bought series', 100, 'Order One', '9820000001', 'paid', 100, now());
+insert into cbt_private.series_access (student_id, series_id) values
+  ('bbbbbbbb-0000-0000-0101-000000000001', 'aaaaaaaa-0000-0000-0103-000000000001'),
+  ('bbbbbbbb-0000-0000-0101-000000000001', 'aaaaaaaa-0000-0000-0103-000000000002');
+select public.cbt_my_orders('9820000001', 'ORDE1010', 'dev-or101001') as fr103 \gset
+select pg_temp.chk('60a free access: a series given to the student is listed with a receipt number and the date it was given',
+  jsonb_array_length(:'fr103'::jsonb->'free') = 1 and :'fr103'::jsonb->'free'->0->>'title' = 'Gifted series'
+  and :'fr103'::jsonb->'free'->0->>'code' ~ '^FREE-[0-9A-F]{6}$' and (:'fr103'::jsonb->'free'->0->>'at') is not null);
+select pg_temp.chk('60b free access: a series the student already bought in the store is only listed as the order',
+  not exists (select 1 from jsonb_array_elements(:'fr103'::jsonb->'free') x where x->>'title' = 'Bought in the store')
+  and exists (select 1 from jsonb_array_elements(:'fr103'::jsonb->'orders') x where x->>'code' = 'V103A'));
+select pg_temp.chk('60c free access: another student sees none of it',
+  jsonb_array_length(public.cbt_my_orders('9820000002', 'ORDE2020', 'dev-or101002')->'free') = 0);
+select pg_temp.chk('60d free access: the date table is closed to anon',
+  not has_table_privilege('anon', 'cbt_private.access_dates', 'SELECT'));
+
 -- ===== report =====
 \t off
 \a
