@@ -107,6 +107,7 @@ const P={zup:'<path d="m7 12 5-5 5 5"/><path d="m7 18 5-5 5 5"/>',zdn:'<path d="
  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/>'
 };
 
+P.sdown='<path d="m6 9 6 6 6-6"/>';
 P.dots='<circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>';
 P.receipt='<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>';
 P.warn='<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>';
@@ -1792,18 +1793,46 @@ function purView(){return {t:'My purchases',s:'Your orders and receipts',key:'pu
   after:()=>purLoad()}}
 A.purchases=()=>{closeLayer();push(purView())};
 A.purRetry=()=>{PUR.err='';PUR.d=null;redraw();purLoad(true)};
-A.purOpen=el=>{PUR.sel=+el.dataset.i;push(rcpView())};
+A.purOpen=el=>{PUR.sel=+el.dataset.i;RCP.st='print';RCP.busy=0;RCP.cur=0;push(rcpView())};
 const curO=()=>PUR.d&&PUR.d.orders[PUR.sel];
+/* the receipt: a small machine prints the paper out in one smooth go (the writing is on the paper), a finger shows
+   "swipe down", and the paper tears away into the Download button. State: RCP.st 'print' -> 'gone' (View again prints it again). */
+const RCP={st:'print',busy:0,t:[],cur:0};
+const rcClr=()=>{RCP.t.forEach(clearTimeout);RCP.t=[]};const rcT=(f,ms)=>RCP.t.push(setTimeout(f,ms));
+const P_HAND='<path d="M18 11V6a2 2 0 0 0-4 0v1"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>';
+const rcMach=()=>`<div class="rcp-m" aria-hidden="true"><i class="rcp-led"></i><span class="rcp-sl"></span><i class="rcp-led r"></i></div>`;
 function rcpView(){return {t:'Order details',s:'',key:'rcp',html:()=>{const o=curO();if(!o)return '<div class="card empty"><b>Order not found</b></div>';
   const rows=[['Order ID',esc3(o.code)],['Date',purD(o.at)],['Item',esc3(o.title||'Test series')],['Price',o.list>0?rupee(o.list):'Free']];
   if(o.off>0)rows.push(['Coupon'+(o.coupon?' '+esc3(o.coupon):''),'− '+rupee(o.off)]);if(o.wallet>0)rows.push(['Wallet used','− '+rupee(o.wallet)]);
-  return `<section class="rcp"><div class="rcp-m" aria-hidden="true"><i class="rcp-led"></i><span class="rcp-sl"></span></div>
-   <div class="rcp-win"><div class="rcp-paper"><span class="rcp-ck">${ic('check',26)}</span><b class="rcp-h">Payment successful</b><em class="rcp-amt">${purP(o)}</em>
-    <div class="rcp-rows">${rows.map((r,i)=>`<div style="--i:${i}"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}<div class="tot" style="--i:${rows.length}"><span>Total paid</span><b>${purP(o)}</b></div></div>
-    <p class="rcp-f">Thank you for learning with ${esc3(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education')}</p><i class="rcp-tear"></i></div></div></section>
-   <div class="rcp-b"><button class="btn lg" data-a="rcDl">${ic('dl',17)}Download receipt</button><button class="btn lg ghost" data-a="rcSh">${ic('share',17)}Share receipt</button></div>
+  const gone=RCP.st==='gone';
+  return `<section class="rcp${gone?' gone rdy':''}">${rcMach()}
+   ${gone?`<div class="rcp-note"><span class="rcp-nk">${ic('check',22)}</span><b>Your receipt is in Download</b><small>Tap “Download receipt” to keep it on your phone.</small><button class="lnk" data-a="rcAgain">View receipt again</button></div>`
+   :`<div class="rcp-win"><div class="rcp-paper"><span class="rcp-ck">${ic('check',22)}</span><b class="rcp-h">Payment successful</b><em class="rcp-amt">${purP(o)}</em>
+    <div class="rcp-rows">${rows.map(r=>`<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}<div class="tot"><span>Total paid</span><b>${purP(o)}</b></div></div>
+    <p class="rcp-f">Thank you for learning with ${esc3(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education')}</p><i class="rcp-tear"></i>
+    <span class="rcp-fg" aria-hidden="true"><svg viewBox="0 0 24 24">${P_HAND}</svg></span></div></div>
+    <button class="rcp-tip" data-a="rcFly">${ic('sdown',15)}<span>Swipe down to save</span></button>`}</section>
+   <div class="rcp-b"><button class="btn lg${gone?' got':''}" data-a="rcDl">${ic('dl',17)}Download receipt</button><button class="btn lg ghost" data-a="rcSh">${ic('share',17)}Share receipt</button></div>
    <div class="card p rcp-help"><div><b>Need help?</b><small>Get in touch with us for support.</small></div><button class="btn sm" data-a="setHelp">Chat with us</button></div>`},
-  after:()=>{if(!RM)setTimeout(()=>{try{if(top()&&top().key==='rcp'&&navigator.vibrate)navigator.vibrate(14)}catch(e){}},1500)}}}
+  after:()=>rcpInit(),leave:()=>{rcClr();RCP.busy=0}}}
+function rcpInit(){rcClr();const R=$('.rcp'),P=R&&R.querySelector('.rcp-paper');if(!P||RCP.st==='gone')return;
+  if(RM){R.classList.add('rdy')}else{try{navigator.vibrate&&navigator.vibrate([10,40,10,40,10,40,10,40,10,40,10,40,10,40,16])}catch(e){}rcT(()=>{R.classList.add('rdy')},2900)}
+  let y0=null,dy=0;
+  P.addEventListener('pointerdown',e=>{if(!R.classList.contains('rdy')||RCP.busy)return;y0=e.clientY;dy=0;R.classList.add('drag','used');try{P.setPointerCapture(e.pointerId)}catch(x){}});
+  P.addEventListener('pointermove',e=>{if(y0===null)return;dy=Math.max(0,e.clientY-y0);RCP.cur=dy*.9;P.style.transform=`translateY(${RCP.cur}px) rotate(${Math.min(dy,160)*.02}deg)`});
+  const end=()=>{if(y0===null)return;y0=null;R.classList.remove('drag');if(dy>60)rcFly();else{P.style.transition='transform .45s cubic-bezier(.2,1.3,.4,1)';P.style.transform='';RCP.cur=0;rcT(()=>{P.style.transition=''},470)}};
+  P.addEventListener('pointerup',end);P.addEventListener('pointercancel',end)}
+function rcFly(){const R=$('.rcp'),P=R&&R.querySelector('.rcp-paper'),B=$('[data-a=rcDl]');if(!P||!B||RCP.busy||RCP.st==='gone')return;RCP.busy=1;rcClr();
+  R.classList.add('fly','used','rdy');R.classList.remove('drag');
+  const a=P.getBoundingClientRect(),b=B.getBoundingClientRect(),cur=RCP.cur||0,dx=(b.left+b.width/2)-(a.left+a.width/2),dy=(b.top+b.height/2)-(a.top+a.height/2);
+  try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
+  if(RM){RCP.st='gone';RCP.busy=0;RCP.cur=0;redraw();return}
+  /* a little tug first (the paper tears off the machine), then it flies into the button and shrinks away */
+  P.style.transition='transform .16s ease-out';P.style.transform=`translateY(${cur+10}px) rotate(-3deg)`;
+  rcT(()=>{P.style.transition='transform .8s cubic-bezier(.6,0,.25,1),opacity .8s cubic-bezier(.6,0,1,1)';P.style.transform=`translate(${dx}px,${cur+dy}px) scale(.08) rotate(-12deg)`;P.style.opacity='0'},170);
+  rcT(()=>{RCP.st='gone';RCP.busy=0;RCP.cur=0;redraw();try{navigator.vibrate&&navigator.vibrate([14,30,14])}catch(e){}},1020)}
+A.rcFly=()=>{const R=$('.rcp');if(R&&!R.classList.contains('rdy'))return;rcFly()};
+A.rcAgain=()=>{RCP.st='print';RCP.busy=0;RCP.cur=0;redraw()};
 /* the receipt as a picture, drawn on the phone */
 function rcDraw(o){return new Promise(res=>{const W=720,rows=[['Receipt no.',o.code],['Date',purD(o.at)],['Name',(PUR.d&&PUR.d.name)||(AUTH&&AUTH.name)||''],['Mobile',AUTH?maskMob(AUTH.mobile):''],['Item',o.title||'Test series'],['Price',o.list>0?rupee(o.list):'Free']];
   if(o.off>0)rows.push(['Coupon'+(o.coupon?' '+o.coupon:''),'- '+rupee(o.off)]);if(o.wallet>0)rows.push(['Wallet used','- '+rupee(o.wallet)]);
@@ -1820,7 +1849,7 @@ function rcDraw(o){return new Promise(res=>{const W=720,rows=[['Receipt no.',o.c
   g.fillStyle='#8a8c92';g.font='500 22px '+F;g.fillText('Thank you for learning with us.',W/2,y+96);g.fillText('This is a computer generated receipt.',W/2,y+130);
   c.toBlob(b=>res(b),'image/png')})}
 const rcName=o=>'receipt-'+String(o.code||'order').replace(/[^\w-]/g,'')+'.png';
-A.rcDl=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;try{const b=await rcDraw(o);if(!b)throw 0;const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=rcName(o);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast3('Receipt downloaded')}catch(e){toast3('Could not make the receipt. Please try again.')}el.disabled=false};
+A.rcDl=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;if(RCP.st!=='gone'&&$('.rcp.rdy'))rcFly();try{const b=await rcDraw(o);if(!b)throw 0;const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=rcName(o);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast3('Receipt downloaded')}catch(e){toast3('Could not make the receipt. Please try again.')}el.disabled=false};
 A.rcSh=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;try{const b=await rcDraw(o);if(!b)throw 0;const f=new File([b],rcName(o),{type:'image/png'});
   if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Payment receipt'})}else A.rcDl({disabled:false})}catch(e){if(!e||e.name!=='AbortError')toast3('Could not share the receipt')}el.disabled=false};
 
