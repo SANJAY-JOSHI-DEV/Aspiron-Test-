@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=114;
+const V3VER=115;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -614,13 +614,15 @@ A.heldInfo=el=>{const t=tOf(el.dataset.id),ra=t&&(liveTill(t)||t.result_at||t.cl
    <p class="hint">Your live result and rank stay as they are. Re-attempts are only for practice.</p></div><div class="sheet-ft"><button class="btn lg" style="width:100%" data-a="close">OK</button></div>`)};
 function evCard(x){if(x.st==='held')return evHeld(x);if(['live','prog'].includes(x.st))return evLive(x);
   const t=x.t,t0=nowMs(),op=t.opens_at||t0,today=day0(op)===day0(t0),s=sOf(t.series_id)||{},id=esc3(t.id),st=today?'today':'up';
-  const pill=today?'<span class="evp today"><i></i>LIVE TODAY</span>':'<span class="evp up"><i></i>UPCOMING</span>';
+  const pill=today?'<span class="evD-live"><i></i>LIVE TODAY</span>':'<span class="evD-live up"><i></i>UPCOMING</span>';
   const when=today?`Today, ${fT(op)}`:`${dayWord(op)}, ${fT(op)}`;
-  const meta=[esc3(s.title||''),t.questions?`${t.questions} questions`:'',dur(t.duration||0)].filter(Boolean).join(' · ');
+  const meta=[when,t.questions?`${t.questions} questions`:'',dur(t.duration||0)].filter(Boolean).join(' · ');
   const bell=typeof alOn==='function'?`<button class="evbell${alOn3(t.id)?' on':''}" data-a="alT" data-id="${id}" aria-label="${alOn3(t.id)?'Alert on':'Notify me'}" aria-pressed="${alOn3(t.id)}">${ic('bell',18)}</button>`:'';
-  return `<article class="card evc evA st-${st}"><div class="evc-top">${pill}${xpTag(t)}<span class="evw">${when}</span>${bell}</div>
-   <button class="evc-b" data-a="openSD" data-id="${esc3(t.series_id)}" data-t="t"><b>${esc3(t.title)}</b><small>${meta}</small></button>
-   <div class="evcd"><span>Starts in</span><b data-cd="${op}">${cdTxt(op-t0)}</b></div></article>`}
+  return `<article class="evD evU st-${st}"><i class="evD-glow" aria-hidden="true"></i>
+   <div class="evD-top"><span class="evD-l">${pill}${xpTag(t)}</span>${bell}</div>
+   <button class="evD-b" data-a="openSD" data-id="${esc3(t.series_id)}" data-t="t"><b>${esc3(t.title)}</b><small>${esc3(s.title||'')}</small></button>
+   <div class="evcd"><span>Starts in</span><b data-cd="${op}">${cdTxt(op-t0)}</b></div>
+   <small class="evD-t">${esc3(meta)}</small></article>`}
 function evTick(){const n1=nowMs();const L=root.querySelectorAll('[data-cd]');if(!L.length)return;let due=false;L.forEach(e=>{const ms=+e.dataset.cd-n1;if(ms<=0)due=true;e.textContent=cdTxt(ms)});if(due)softRender()}
 // v80: the heading follows the day: Upcoming Events before the test's day, Live Today on its day, Live Now while it runs
 const evHead=x=>{if(!x)return 'Upcoming Events';if(x.st==='held')return '<span class="evh ok"><i></i>Attempted</span>';const live=['live','prog'].includes(x.st),today=x.t.opens_at&&day0(x.t.opens_at)===day0(nowMs());
@@ -1836,7 +1838,7 @@ function heldOpen(title,at){push({t:'Test submitted',s:'',key:'held',html:()=>`<
 /* after a test is submitted in the new design, show its result (or "result after …") here instead of the classic page */
 (function(){const v3now=()=>document.body.classList.contains('v3on');
   ['showResult','showHeld'].forEach(n=>{const f=window[n];if(typeof f!=='function')return;window[n]=function(){const r=f.apply(this,arguments);
-    if(v3now()){try{const args=arguments,R=(typeof RV!=='undefined'&&RV)||null;toNew();if(typeof loadCat==='function')loadCat(true).then(()=>{if(!scrOpen())softRender();else STALE3=true}).catch(()=>{});
+    if(v3now()){try{const args=arguments,R=(typeof RV!=='undefined'&&RV)||null;toNew();if(typeof loadCat==='function')loadCat(true).then(()=>{try{xpLoad(true)}catch(e){}if(!scrOpen())softRender();else STALE3=true}).catch(()=>{});
       if(n==='showResult'&&R&&R.result){let tt='';try{const T0=(typeof CAT!=='undefined'&&CAT&&CAT.tests||[]).find(x=>x.id===R.result.test_id);tt=T0?T0.title:''}catch(e){}rsOpen(R.result,R.review,tt||(typeof CURPEND!=='undefined'&&CURPEND&&CURPEND.title)||'')}else if(n==='showHeld')heldOpen(args[0],args[1])}catch(e){console.error(e)}}
     return r}})})();
 
@@ -2842,8 +2844,23 @@ function lvWhenFree(fn){const t0=Date.now();clearInterval(LVW);const ok=()=>{try
   if(ok()){setTimeout(fn,500);return}LVW=setInterval(()=>{if(ok()){clearInterval(LVW);setTimeout(fn,500)}else if(Date.now()-t0>180000)clearInterval(LVW)},1200)}
 function cuRun(box){if(!box)return;box.querySelectorAll('[data-cu]').forEach(el=>{const to=+el.dataset.cu||0;if(RM||to<=0){el.textContent=fmtN(to);return}
   const t0=performance.now(),dur=Math.min(1400,500+to/8);const f=t=>{const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.textContent=fmtN(Math.round(to*e));if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)})}
-function xpPill(n){if(!root||n<=0)return;const p=document.createElement('div');p.className='xp-pill';p.innerHTML=`${ic('spark',16)}<b>+${fmtN(n)} XP</b><small>earned</small>`;
-  root.appendChild(p);p.addEventListener('click',()=>{p.remove();openLevel()});setTimeout(()=>p.classList.add('out'),2600);setTimeout(()=>p.remove(),3200)}
+/* XP earned: a pill pops up at the bottom, flies up to the XP number at the top of Home, the number bumps and counts up.
+   It waits until the "Test submitted" screen is closed and Home is showing; without the XP chip it stays a small pill at the top. */
+function xpPill(n,tries){if(!root||n<=0)return;tries=tries||0;
+  const chip=S.tab==='home'&&!scrOpen()&&!layer?root.querySelector('.hb-sc[data-k="xp"]'):null;
+  if(!chip&&tries<150&&(scrOpen()||layer||S.tab!=='home')){setTimeout(()=>xpPill(n,tries+1),1200);return}
+  const p=document.createElement('div');p.className='xp-pill';p.innerHTML=`${ic('spark',16)}<b>+${fmtN(n)} XP</b><small>earned</small>`;
+  root.appendChild(p);p.addEventListener('click',()=>{p.remove();openLevel()});
+  const r=chip&&chip.getBoundingClientRect();
+  if(!chip||RM||!p.animate||r.bottom<0||r.top>innerHeight){setTimeout(()=>p.classList.add('out'),2600);setTimeout(()=>p.remove(),3200);return}
+  p.classList.add('fly');const w=p.offsetWidth,h=p.offsetHeight,x0=innerWidth/2-w/2,y0=innerHeight-150-h,
+    dx=r.left+r.width/2-w/2-x0,dy=r.top+r.height/2-h/2-y0,b=chip.querySelector('b'),to=xpNow(),from=Math.max(0,to-n),
+    k=v=>v>=10000?(Math.round(v/100)/10)+'k':fmtN(v);
+  p.style.left=x0+'px';p.style.top=y0+'px';if(b)b.textContent=k(from);
+  const a=p.animate([{opacity:0,transform:'translate(0,40px) scale(.7)'},{opacity:1,transform:'translate(0,0) scale(1.06)',offset:.18},{opacity:1,transform:'translate(0,0) scale(1)',offset:.42},
+    {opacity:1,transform:`translate(${dx}px,${dy}px) scale(.42)`,offset:.88},{opacity:0,transform:`translate(${dx}px,${dy}px) scale(.2)`}],{duration:1900,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
+  a.onfinish=()=>{p.remove();if(!chip.isConnected)return;chip.classList.add('xp-hit');setTimeout(()=>chip.classList.remove('xp-hit'),900);
+    const t0=performance.now(),d=Math.min(1100,400+n*3),f=t=>{const q=Math.min(1,(t-t0)/d);if(b&&b.isConnected)b.textContent=k(Math.round(from+(to-from)*(1-Math.pow(1-q,3))));if(q<1)requestAnimationFrame(f)};requestAnimationFrame(f)}}
 
 /* ---- climb celebration: rays, the new crest, confetti (not in lite mode / reduced motion) ---- */
 function lvCelebrate(i,last){if(!root)return;const L=lvAt(i+1),dr=i===DR3,lite=document.documentElement.hasAttribute('data-lite');
@@ -2961,7 +2978,9 @@ A.skHow=()=>{closeLayer();setTimeout(streakStory,250)};
 /* XP on a test card: what this student gets for each right answer here */
 function xpTag(t){if(!t)return '';const n=nowMs(),a=t.attempts||0,live=!t.practice&&!!t.closes_at&&n<=t.closes_at;
   const v=live&&!a?3:a===0?2:a===1?1:0;if(!v)return '';
-  return `<span class="xpt${v===3?' hot':''}" title="XP for every right answer">${ic('spark',12)}${v} XP<small>/right</small>${v===3?'<em>Live</em>':''}</span>`}
+  const q=+t.questions||0;   // total XP this test can give = questions x XP per right answer (live 3, first 2, re-attempt 1)
+  if(!q)return `<span class="xpt${v===3?' hot':''}" title="XP for every right answer">${ic('spark',12)}${v} XP<small>/right</small></span>`;
+  return `<span class="xpt${v===3?' hot':''}" title="${q} questions x ${v} XP = ${q*v} XP">${ic('spark',12)}${fmtN(q*v)} XP</span>`}
 
 /* ---- a row that slides left-right, with ‹ › buttons ---- */
 const carH=(id,inner)=>`<div class="car"><div class="car-t" id="${id}" data-noswipe>${inner}</div></div>`;
