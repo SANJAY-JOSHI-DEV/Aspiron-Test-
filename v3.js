@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=116;
+const V3VER=117;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -2849,7 +2849,7 @@ function cuRun(box){if(!box)return;box.querySelectorAll('[data-cu]').forEach(el=
 function xpPill(n,tries){if(!root||n<=0)return;tries=tries||0;
   const chip=S.tab==='home'&&!scrOpen()&&!layer?root.querySelector('.hb-sc[data-k="xp"]'):null;
   if(!chip&&tries<150&&(scrOpen()||layer||S.tab!=='home')){setTimeout(()=>xpPill(n,tries+1),1200);return}
-  const p=document.createElement('div');p.className='xp-pill';p.innerHTML=`${ic('spark',16)}<b>+${fmtN(n)} XP</b><small>earned</small>`;
+  const p=document.createElement('div');p.className='xp-pill';p.innerHTML=`${ic('xp',16)}<b>+${fmtN(n)} XP</b><small>earned</small>`;
   root.appendChild(p);p.addEventListener('click',()=>{p.remove();openLevel()});
   const r=chip&&chip.getBoundingClientRect();
   if(!chip||RM||!p.animate||r.bottom<0||r.top>innerHeight){setTimeout(()=>p.classList.add('out'),2600);setTimeout(()=>p.remove(),3200);return}
@@ -2976,7 +2976,7 @@ function lvStory(start){const L=myLv();
    {c:'#d99a2b',k:'10 LEVELS',h:'From Aspirant to Dr.',p:'Each level has its own crest. At Level 10 a golden <span class="drp">Dr.</span> shines before your name, with the Golden Stethoscope.',
     art:`<div class="sa-crests">${LVL3.map((_,j)=>`<span style="--i:${j}">${crest(j,j===DR3?62:46)}</span>`).join('')}</div>`},
    {c:'#8a63e8',k:'HOW YOU CLIMB',h:'Two keys open the next level',p:'1. Your total XP reaches the level’s <b>XP Mark</b>.<br>2. You finish the week in the <b>Climb zone</b>.<br>Both done on Sunday night = one level up!',
-    art:`<div class="sa-keys"><span class="k1">${ic('spark',26)}<b>XP Mark</b></span><em>+</em><span class="k2">${ic('zup',26)}<b>Climb zone</b></span><i class="sa-eq">${ic('right',18)}</i><span class="k3">${crest(Math.min(DR3,L.i+1),58)}</span></div>`}
+    art:`<div class="sa-keys"><span class="k1">${ic('xp',26)}<b>XP Mark</b></span><em>+</em><span class="k2">${ic('zup',26)}<b>Climb zone</b></span><i class="sa-eq">${ic('right',18)}</i><span class="k3">${crest(Math.min(DR3,L.i+1),58)}</span></div>`}
   ],{label:'How Level Up works',auto:6500,start:start||0,last:'Let’s climb',done:()=>lsSet('cbt_v3_lvintro',1)})}
 A.lvHow=el=>lvStory(+(el&&el.dataset&&el.dataset.s)||0);
 A.skHow=()=>{closeLayer();setTimeout(streakStory,250)};
@@ -2985,8 +2985,8 @@ A.skHow=()=>{closeLayer();setTimeout(streakStory,250)};
 function xpTag(t){if(!t)return '';const n=nowMs(),a=t.attempts||0,live=!t.practice&&!!t.closes_at&&n<=t.closes_at;
   const v=live&&!a?3:a===0?2:a===1?1:0;if(!v)return '';
   const q=+t.questions||0;   // total XP this test can give = questions x XP per right answer (live 3, first 2, re-attempt 1)
-  if(!q)return `<span class="xpt${v===3?' hot':''}" title="XP for every right answer">${ic('spark',12)}${v} XP<small>/right</small></span>`;
-  return `<span class="xpt${v===3?' hot':''}" title="${q} questions x ${v} XP = ${q*v} XP">${ic('spark',12)}${fmtN(q*v)} XP</span>`}
+  if(!q)return `<span class="xpt${v===3?' hot':''}" title="XP for every right answer">${ic('xp',12)}${v} XP<small>/right</small></span>`;
+  return `<span class="xpt${v===3?' hot':''}" title="${q} questions x ${v} XP = ${q*v} XP">${ic('xp',12)}${fmtN(q*v)} XP</span>`}
 
 /* ---- a row that slides left-right, with ‹ › buttons ---- */
 const carH=(id,inner)=>`<div class="car"><div class="car-t" id="${id}" data-noswipe>${inner}</div></div>`;
@@ -3039,7 +3039,7 @@ function lvRoad(m){const cur=myLv().i;
        <em>${st==='cur'?'You are here':st==='done'?`${ic('check',13)}Passed`:i===cur+1?((m.xp||0)>=L[0]?'Climb this week':`${fmtN(L[0]-(m.xp||0))} XP to the mark`):`${i-cur} climbs away`}</em><span class="lrc-pd"></span></div>`}).join(''))}
    <p class="hint">Each level needs two keys: its XP Mark (total XP) and a Climb-zone finish in your weekly league. One level per week at most, so Dr. needs 20,000 XP and at least 9 good weeks.</p></section>`}
 function lvZones(){const L=myLv();return `<section class="sec"><div class="sh"><h2>How you climb</h2></div><div class="card lgw">
-   <div class="lgw-k"><div><span>${ic('spark',18)}</span><b>XP Mark</b><small>Total XP from tests and practice. Each level has its mark.</small></div><em>+</em><div><span>${ic('zup',18)}</span><b>Climb zone</b><small>Top third of your weekly league with ${LG_MIN}+ XP.</small></div></div>
+   <div class="lgw-k"><div><span>${ic('xp',18)}</span><b>XP Mark</b><small>Total XP from tests and practice. Each level has its mark.</small></div><em>+</em><div><span>${ic('zup',18)}</span><b>Climb zone</b><small>Top third of your weekly league with ${LG_MIN}+ XP.</small></div></div>
    <p>Every Monday you play in a league of up to 45 students at your level, from every Aspiron test series. You join with your first XP of the week. On Sunday night the league is ranked by the XP earned in the week:</p>
    ${['up','ready','stay','down'].map(z=>`<div class="lgw-z ${z}"><span>${ic(ZN3[z][1],18)}</span><div><b>${ZN3[z][0]}</b><small>${z==='up'?`Top third (15 of 45), ${LG_MIN}+ XP and the XP Mark reached: next week one level up`:z==='ready'?'Top third, but the XP Mark is not reached yet: you keep your level and climb once you have it':z==='stay'?'The middle third: same level next week':'Bottom third (15 of 45): one level down'}</small></div></div>`).join('')}
    <p class="hint">Level 1 has no Drop zone and Level 10 has no Climb zone. The golden Dr. title stays once you reach Level 10.</p></div></section>`}
