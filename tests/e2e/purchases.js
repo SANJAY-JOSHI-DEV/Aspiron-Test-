@@ -87,10 +87,11 @@ const MOB = '9000000001', CODE = 'AAAA1111';
     // Edit opens a sheet; Update details saves and the page shows it
     await click(p, '#scrB [data-a=pfEdit]'); await wait(700);
     ok(await S(p, 'return !!root.querySelector("#sheet .fo [name=city]")&&/Update details/.test(root.querySelector("#sheet").innerText)'), 'profile 1c Edit opens the sheet with outlined fields and Update details');
+    ok(await S(p, 'const s=root.querySelector("#sheet");return s.querySelectorAll(".fo-2").length>=3&&/\\+91/.test(s.querySelector(".fo-ph").innerText)&&s.querySelectorAll("[data-gd]").length===2&&!!s.querySelector("[name=state][list]")&&!!s.querySelector("[name=dob][type=date]")'), 'profile 1c2 two fields per row, +91 on the number, Male / Female, State and City you can pick or type, date of birth');
     await shot(p, 'profile-edit');
-    await p.evaluate(() => { const r = [...document.querySelectorAll('*')].find(e => e.shadowRoot && e.id === 'v3host').shadowRoot; const i = r.querySelector('#sheet [name=city]'); i.value = 'Jaipur'; });
+    await p.evaluate(() => { const r = [...document.querySelectorAll('*')].find(e => e.shadowRoot && e.id === 'v3host').shadowRoot; const i = r.querySelector('#sheet [name=city]'); i.value = 'Jaipur'; r.querySelector('#sheet [data-gd=Female]').click(); r.querySelector('#sheet [name=dob]').value = '2008-03-05'; r.querySelector('#sheet [name=state]').value = 'Rajasthan'; });
     await click(p, '#sheet [data-a=pfSave]'); await wait(900);
-    ok(/Jaipur/.test(await scr()), 'profile 1d Update details saves and the page shows the new city');
+    const t2 = await scr(); ok(/Jaipur/.test(t2) && /Female/.test(t2) && /05\/03\/2008/.test(t2) && /Rajasthan/.test(t2), 'profile 1d Update details saves; the page shows city, gender, state and the date of birth as DD/MM/YYYY');
     await click(p, '#scrR [data-a=pfMore]'); await wait(700);
     const sh = await S(p, 'return root.querySelector("#sheet").innerText');
     ok(/My purchases/.test(sh) && /Account deletion/.test(sh) && /Log out/.test(sh), 'profile 3 the three-dot menu: My purchases, Account deletion, Log out');

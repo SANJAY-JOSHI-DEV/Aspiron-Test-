@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=130;
+const V3VER=131;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -79,7 +79,7 @@ const P={zup:'<path d="m7 12 5-5 5 5"/><path d="m7 18 5-5 5 5"/>',zdn:'<path d="
  play:'<path d="M7 4.5v15l12.5-7.5z"/>',pause:'<rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/>',
  lock:'<rect x="4" y="11" width="16" height="10.5" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
  spark:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4"/><path d="M21 5h-4"/><path d="M5 17v4"/><path d="M7 19H3"/>',
- pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+ pen:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
  mind:'<circle cx="12" cy="12" r="2.5"/><circle cx="4.5" cy="5.5" r="2"/><circle cx="19.5" cy="5.5" r="2"/><circle cx="4.5" cy="18.5" r="2"/><circle cx="19.5" cy="18.5" r="2"/><path d="m10.2 10.2-4.3-3.3"/><path d="m13.8 10.2 4.3-3.3"/><path d="m10.2 13.8-4.3 3.3"/><path d="m13.8 13.8 4.3 3.3"/>',
  cards:'<rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/>',
  calc:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M16 14v4"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
@@ -1702,6 +1702,7 @@ function pfAv(sz){const o=stuProf();return o.photo&&/^data:image\//.test(o.photo
 /* v130: ONE calm profile page. A dark hero with the photo, name and three plain numbers; the details slide over it as you
    scroll (the hero fades and the photo + name move up into the top bar). Details are read-only; "Edit" opens a sheet. */
 const pfHint='<i class="pf3-no">Not added</i>';
+const pfDob=d=>/^\d{4}-\d\d-\d\d$/.test(d||'')?d.slice(8)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';
 function profileView(){return {t:'My profile',s:'',key:'prof',bleed:1,right:()=>`<button class="ib" data-a="pfMore" aria-label="More options" aria-haspopup="dialog">${ic('dots',20)}</button>`,html:()=>{
   const o=stuProf(),R=allRes(),st=stats(R),nm=(o.name||(AUTH&&AUTH.name)||'').trim()||'Student',v=x=>x?esc3(x):pfHint,row=(k,x)=>`<div class="pf3-r"><span>${k}</span><b>${x}</b></div>`;
   return `<section class="pf3" style="--p:0"><div class="pf3-hero"><i class="pfh2-gl"></i><div class="pf3-in">
@@ -1712,7 +1713,9 @@ function profileView(){return {t:'My profile',s:'',key:'prof',bleed:1,right:()=>
    </div></div>
    <div class="pf3-sheet">
     <div class="pf3-c"><div class="pf3-h"><h3>Personal details</h3><button class="pf3-ed" data-a="pfEdit">${ic('pen',14)}Edit</button></div>
-     ${row('Name',esc3(nm))}${row('Mobile number','+91 '+esc3(AUTH?AUTH.mobile:''))}${row('E-mail',v(o.email))}${row('Alternate phone',v(o.phone))}${row('School / Coaching',v(o.school))}${row('City / Village / Town',v(o.city))}${o.about?row('About or goal',esc3(o.about)):''}</div>
+     ${row('Name',esc3(nm))}${row('Mobile number','+91 '+esc3(AUTH?AUTH.mobile:''))}${row('E-mail',v(o.email))}${row('Gender',v(o.gender))}${row('Date of birth',v(pfDob(o.dob)))}${row('State',v(o.state))}${row('City / Village / Town',v(o.city))}</div>
+    <div class="pf3-c"><div class="pf3-h"><h3>More about you</h3><button class="pf3-ed" data-a="pfEdit">${ic('pen',14)}Edit</button></div>
+     ${row('School / Coaching',v(o.school))}${row('Parent / Guardian',v(o.parent))}${row('Dream college',v(o.dream))}${o.phone?row('Alternate phone',esc3(o.phone)):''}${o.about?row('About or goal',esc3(o.about)):''}</div>
     <div class="pf3-c"><div class="pf3-h"><h3>Exam goal</h3><button class="pf3-ed" data-a="catEdit">${ic('target',14)}Change</button></div>
      ${row('Preparing for',o.exam&&o.cls?esc3(goalName(o.exam)+' · '+o.cls):pfHint)}</div>
     <p class="hint" style="text-align:center">Saved to your account, so it comes back on any phone.</p>
@@ -1726,14 +1729,31 @@ function pfScroll(){const t=top();if(!t||t.key!=='prof')return;const b=$('#scrB'
   const h=$('#scrT');if(h){if(on){const o=stuProf();h.innerHTML=`<span class="pf3-mt">${avatar('pf3-mav')}<b>${esc3((o.name||(AUTH&&AUTH.name)||'Student').trim())}</b></span>`}else h.textContent='My profile'}}
 A.profile=()=>{PFD=Object.assign({},stuProf());closeLayer();PFM.on=false;push(profileView())};
 const pfForm=()=>{};
-A.pfEdit=()=>{const o=stuProf(),nm=(o.name||(AUTH&&AUTH.name)||'').trim();
-  openSheet(`<h2 id="sheetT" style="text-align:center;margin-bottom:14px">Edit profile</h2><div class="fo-g">
-   ${PF3.f.map(f=>`<label class="fo"><span>${f[1]}</span><input name="${f[0]}" type="${f[2]}" placeholder="${f[3]}" autocomplete="${f[4]}" maxlength="80" value="${esc3(f[0]==='name'?nm:(o[f[0]]||''))}"></label>`).join('')}
-   <label class="fo"><span>About or goal</span><textarea name="about" rows="3" maxlength="300" placeholder="e.g. Aim for 650+ in NEET">${esc3(o.about||'')}</textarea></label>
+const IN_ST=['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'];
+const IN_CT=['Agra','Ahmedabad','Ajmer','Aligarh','Allahabad (Prayagraj)','Alwar','Amritsar','Aurangabad','Bareilly','Bengaluru','Bhilai','Bhilwara','Bhopal','Bhubaneswar','Bikaner','Chandigarh','Chennai','Coimbatore','Dehradun','Delhi','Dhanbad','Faridabad','Ghaziabad','Gorakhpur','Guwahati','Gurugram','Gwalior','Hyderabad','Indore','Jabalpur','Jaipur','Jalandhar','Jammu','Jamshedpur','Jhunjhunu','Jodhpur','Kanpur','Kochi','Kolkata','Kota','Kozhikode','Lucknow','Ludhiana','Madurai','Meerut','Mumbai','Mysuru','Nagpur','Nashik','Navi Mumbai','Noida','Patna','Pune','Raipur','Rajkot','Ranchi','Sikar','Srinagar','Surat','Thane','Thiruvananthapuram','Udaipur','Vadodara','Varanasi','Vijayawada','Visakhapatnam'];
+const FOF=(n,l,v,x)=>`<label class="fo"><span>${l}</span><input name="${n}" ${x||''} maxlength="80" value="${esc3(v||'')}"></label>`;
+function pfEditHtml(){const o=stuProf(),nm=(o.name||(AUTH&&AUTH.name)||'').trim(),sp=nm.indexOf(' '),fn=sp<0?nm:nm.slice(0,sp),ln=sp<0?'':nm.slice(sp+1).trim(),g=o.gender||'';
+  return `<h2 id="sheetT" style="text-align:center;margin-bottom:14px">Edit profile</h2><div class="fo-g">
+   <div class="fo-2">${FOF('fn','First name',fn,'autocomplete="given-name" placeholder="First name"')}${FOF('ln','Last name',ln,'autocomplete="family-name" placeholder="Last name"')}</div>
+   ${FOF('email','E-mail',o.email,'type="email" autocomplete="email" placeholder="name@example.com"')}
+   <div class="fo fo-ph"><span>Mobile number</span><div><b>+91</b><em>${esc3(AUTH?AUTH.mobile:'')}</em><button type="button" class="lnk" data-a="setHelp">Change</button></div></div>
+   <div class="fo-gd" role="radiogroup" aria-label="Gender">${['Male','Female'].map(x=>`<button type="button" class="${g===x?'on':''}" role="radio" aria-checked="${g===x}" data-gd="${x}"><i></i>${x}</button>`).join('')}</div>
+   <div class="fo-2">${FOF('state','State',o.state,'list="dlSt" autocomplete="off" placeholder="Choose or type"')}${FOF('city','City',o.city,'list="dlCt" autocomplete="off" placeholder="Choose or type"')}</div>
+   <datalist id="dlSt">${IN_ST.map(x=>`<option value="${x}">`).join('')}</datalist><datalist id="dlCt">${IN_CT.map(x=>`<option value="${x}">`).join('')}</datalist>
+   <label class="fo"><span>Date of birth</span><input name="dob" type="date" min="1960-01-01" max="${new Date().toISOString().slice(0,10)}" value="${esc3(o.dob||'')}"></label>
+   <p class="fo-t">Optional</p>
+   ${FOF('school','School or coaching',o.school,'autocomplete="organization" placeholder="School or coaching name"')}
+   <div class="fo-2">${FOF('parent','Parent / Guardian',o.parent,'placeholder="Name"')}${FOF('dream','Dream college',o.dream,'placeholder="e.g. AIIMS Delhi"')}</div>
+   <label class="fo"><span>About or goal</span><textarea name="about" rows="2" maxlength="300" placeholder="e.g. Aim for 650+ in NEET">${esc3(o.about||'')}</textarea></label>
    ${o.photo?'<button class="lnk" data-a="pfRm" style="align-self:center">Remove photo</button>':''}</div>
-   <button class="btn lg" data-a="pfSave" style="margin-top:16px">Update details</button>`)};
-A.pfSave=()=>{const o=Object.assign({},stuProf());sheet.querySelectorAll('[name]').forEach(i=>{o[i.name]=i.value.trim()});if(!o.name||(AUTH&&o.name===(AUTH.name||'').trim()))delete o.name;
+   <button class="btn lg" data-a="pfSave" style="margin-top:16px">Update details</button>`}
+A.pfEdit=()=>{openSheet(pfEditHtml());
+  sheet.onclick=e=>{const b=e.target.closest('[data-gd]');if(!b)return;const on=b.classList.contains('on');sheet.querySelectorAll('[data-gd]').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-checked','false')});if(!on){b.classList.add('on');b.setAttribute('aria-checked','true')}}};
+A.pfSave=()=>{const o=Object.assign({},stuProf());sheet.querySelectorAll('input[name],textarea[name]').forEach(i=>{o[i.name]=i.value.trim()});
+  const g=sheet.querySelector('[data-gd].on');o.gender=g?g.dataset.gd:'';
+  o.name=((o.fn||'')+' '+(o.ln||'')).trim();delete o.fn;delete o.ln;if(!o.name||(AUTH&&o.name===(AUTH.name||'').trim()))delete o.name;
   if(o.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.email)){toast3('Please check your email');return}
+  if(o.dob&&(o.dob>new Date().toISOString().slice(0,10)||o.dob<'1940-01-01')){toast3('Please check your date of birth');return}
   try{pfSave(o);if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');return}
   closeLayer();toast3('Profile saved');if(top()&&top().key==='prof'){PFM.on=false;redraw()}setTimeout(()=>softRender(),350)};
 A.pfRm=()=>{const o=Object.assign({},stuProf());delete o.photo;try{pfSave(o);if(typeof pfHdr==='function')pfHdr()}catch(e){}closeLayer();if(top()&&top().key==='prof'){PFM.on=false;redraw()}toast3('Photo removed')};
