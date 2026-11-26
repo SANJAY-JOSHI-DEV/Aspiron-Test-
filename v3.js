@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=127;
+const V3VER=129;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -107,6 +107,7 @@ const P={zup:'<path d="m7 12 5-5 5 5"/><path d="m7 18 5-5 5 5"/>',zdn:'<path d="
  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/>'
 };
 
+P.sdown='<path d="m6 9 6 6 6-6"/>';
 P.dots='<circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>';
 P.receipt='<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>';
 P.warn='<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>';
@@ -1792,35 +1793,95 @@ function purView(){return {t:'My purchases',s:'Your orders and receipts',key:'pu
   after:()=>purLoad()}}
 A.purchases=()=>{closeLayer();push(purView())};
 A.purRetry=()=>{PUR.err='';PUR.d=null;redraw();purLoad(true)};
-A.purOpen=el=>{PUR.sel=+el.dataset.i;push(rcpView())};
+A.purOpen=el=>{PUR.sel=+el.dataset.i;RCP.st='print';RCP.busy=0;RCP.cur=0;push(rcpView())};
 const curO=()=>PUR.d&&PUR.d.orders[PUR.sel];
+/* the receipt: a small machine prints the paper out in one smooth go (the writing is on the paper), a finger shows
+   "swipe down", and the paper tears away into the Download button. State: RCP.st 'print' -> 'gone' (View again prints it again). */
+const RCP={st:'print',busy:0,t:[],cur:0};
+const rcClr=()=>{RCP.t.forEach(clearTimeout);RCP.t=[]};const rcT=(f,ms)=>RCP.t.push(setTimeout(f,ms));
+const P_HAND='<path d="M18 11V6a2 2 0 0 0-4 0v1"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>';
+const rcMach=()=>`<div class="rcp-m" aria-hidden="true"><i class="rcp-led"></i><span class="rcp-sl"></span><i class="rcp-led r"></i></div>`;
 function rcpView(){return {t:'Order details',s:'',key:'rcp',html:()=>{const o=curO();if(!o)return '<div class="card empty"><b>Order not found</b></div>';
-  const rows=[['Order ID',esc3(o.code)],['Date',purD(o.at)],['Item',esc3(o.title||'Test series')],['Price',o.list>0?rupee(o.list):'Free']];
+  const nm=(PUR.d&&PUR.d.name)||(AUTH&&AUTH.name)||'';
+  const rows=[['Receipt no.',esc3(o.code)],['Date',purD(o.at)],['Billed to',esc3(nm)],['Mobile',esc3(AUTH?maskMob(AUTH.mobile):'')],['Item',esc3(o.title||'Test series')],['Price',o.list>0?rupee(o.list):'Free']];
   if(o.off>0)rows.push(['Coupon'+(o.coupon?' '+esc3(o.coupon):''),'− '+rupee(o.off)]);if(o.wallet>0)rows.push(['Wallet used','− '+rupee(o.wallet)]);
-  return `<section class="rcp"><div class="rcp-m" aria-hidden="true"><i class="rcp-led"></i><span class="rcp-sl"></span></div>
-   <div class="rcp-win"><div class="rcp-paper"><span class="rcp-ck">${ic('check',26)}</span><b class="rcp-h">Payment successful</b><em class="rcp-amt">${purP(o)}</em>
-    <div class="rcp-rows">${rows.map((r,i)=>`<div style="--i:${i}"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}<div class="tot" style="--i:${rows.length}"><span>Total paid</span><b>${purP(o)}</b></div></div>
-    <p class="rcp-f">Thank you for learning with ${esc3(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education')}</p><i class="rcp-tear"></i></div></div></section>
-   <div class="rcp-b"><button class="btn lg" data-a="rcDl">${ic('dl',17)}Download receipt</button><button class="btn lg ghost" data-a="rcSh">${ic('share',17)}Share receipt</button></div>
+  const site=esc3(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education'),web=esc3(String(((window.CBT_CONFIG||{}).SHORT_URL)||'').replace(/^https?:\/\//,'').replace(/\/$/,''));
+  const gone=RCP.st==='gone';
+  return `<section class="rcp${gone?' gone rdy':''}">${rcMach()}
+   ${gone?`<div class="rcp-note"><span class="rcp-nk">${ic('check',22)}</span><b>Your receipt is in Download</b><small>Tap “Download receipt” to keep it on your phone.</small><button class="lnk" data-a="rcAgain">View receipt again</button></div>`
+   :`<div class="rcp-win"><div class="rcp-paper"><div class="rcp-br"><img src="icon-192.png" alt=""><span><b>${site}</b><small>Payment receipt</small></span></div><span class="rcp-ck">${ic('check',22)}</span><b class="rcp-h">Payment successful</b><em class="rcp-amt">${purP(o)}</em>
+    <div class="rcp-rows">${rows.map(r=>`<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}<div class="tot"><span>Total paid</span><b>${purP(o)}</b></div></div>
+    <p class="rcp-f">Thank you for learning with ${site}.<br>${web?web+' · ':''}Computer generated receipt, no signature needed.</p><i class="rcp-tear"></i>
+    <span class="rcp-fg" aria-hidden="true"><svg viewBox="0 0 24 24">${P_HAND}</svg></span></div></div>
+    <button class="rcp-tip" data-a="rcFly">${ic('sdown',15)}<span>Swipe down to save</span></button>`}</section>
+   <div class="rcp-b"><button class="btn lg${gone?' got':''}" data-a="rcDl">${ic('dl',17)}Download receipt</button><button class="btn lg ghost" data-a="rcSh">${ic('share',17)}Share receipt</button></div>
    <div class="card p rcp-help"><div><b>Need help?</b><small>Get in touch with us for support.</small></div><button class="btn sm" data-a="setHelp">Chat with us</button></div>`},
-  after:()=>{if(!RM)setTimeout(()=>{try{if(top()&&top().key==='rcp'&&navigator.vibrate)navigator.vibrate(14)}catch(e){}},1500)}}}
-/* the receipt as a picture, drawn on the phone */
-function rcDraw(o){return new Promise(res=>{const W=720,rows=[['Receipt no.',o.code],['Date',purD(o.at)],['Name',(PUR.d&&PUR.d.name)||(AUTH&&AUTH.name)||''],['Mobile',AUTH?maskMob(AUTH.mobile):''],['Item',o.title||'Test series'],['Price',o.list>0?rupee(o.list):'Free']];
-  if(o.off>0)rows.push(['Coupon'+(o.coupon?' '+o.coupon:''),'- '+rupee(o.off)]);if(o.wallet>0)rows.push(['Wallet used','- '+rupee(o.wallet)]);
-  const H=330+rows.length*62+170,K=2,c=document.createElement('canvas');c.width=W*K;c.height=H*K;const g=c.getContext('2d');g.scale(K,K);
-  const F='-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif';g.fillStyle='#fff';g.fillRect(0,0,W,H);g.fillStyle='#1d1e22';g.fillRect(0,0,W,12);
-  g.textAlign='center';g.fillStyle='#17181b';g.font='700 38px '+F;g.fillText(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education',W/2,92);
-  g.fillStyle='#6b6d73';g.font='500 24px '+F;g.fillText('Payment receipt',W/2,132);
-  g.fillStyle='#e7f6ee';g.beginPath();g.arc(W/2,205,38,0,7);g.fill();g.strokeStyle='#1f9d55';g.lineWidth=7;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(W/2-15,206);g.lineTo(W/2-3,218);g.lineTo(W/2+17,191);g.stroke();
-  g.fillStyle='#17181b';g.font='700 28px '+F;g.fillText('Payment successful',W/2,288);
-  let y=330;g.textAlign='left';rows.forEach(r=>{g.fillStyle='#8a8c92';g.font='500 24px '+F;g.fillText(r[0],48,y+34);g.fillStyle='#17181b';g.font='600 26px '+F;g.textAlign='right';
-    let t=String(r[1]);while(g.measureText(t).width>W-96-200&&t.length>4)t=t.slice(0,-2);if(t!==String(r[1]))t+='…';g.fillText(t,W-48,y+34);g.textAlign='left';
-    g.strokeStyle='#ececea';g.lineWidth=1.5;g.beginPath();g.moveTo(48,y+54);g.lineTo(W-48,y+54);g.stroke();y+=62});
-  y+=18;g.fillStyle='#17181b';g.font='700 30px '+F;g.fillText('Total paid',48,y+30);g.textAlign='right';g.fillText(purP(o),W-48,y+30);g.textAlign='center';
-  g.fillStyle='#8a8c92';g.font='500 22px '+F;g.fillText('Thank you for learning with us.',W/2,y+96);g.fillText('This is a computer generated receipt.',W/2,y+130);
-  c.toBlob(b=>res(b),'image/png')})}
+  after:()=>rcpInit(),leave:()=>{rcClr();RCP.busy=0}}}
+function rcpInit(){rcClr();const R=$('.rcp'),P=R&&R.querySelector('.rcp-paper');if(!P||RCP.st==='gone')return;
+  if(RM){R.classList.add('rdy')}else{try{navigator.vibrate&&navigator.vibrate([10,40,10,40,10,40,10,40,10,40,10,40,10,40,16])}catch(e){}rcT(()=>{R.classList.add('rdy')},2900)}
+  let y0=null,dy=0;
+  P.addEventListener('pointerdown',e=>{if(!R.classList.contains('rdy')||RCP.busy)return;y0=e.clientY;dy=0;R.classList.add('drag','used');try{P.setPointerCapture(e.pointerId)}catch(x){}});
+  P.addEventListener('pointermove',e=>{if(y0===null)return;dy=Math.max(0,e.clientY-y0);RCP.cur=dy*.9;P.style.transform=`translateY(${RCP.cur}px) rotate(${Math.min(dy,160)*.02}deg)`});
+  const end=()=>{if(y0===null)return;y0=null;R.classList.remove('drag');if(dy>60)rcFly();else{P.style.transition='transform .45s cubic-bezier(.2,1.3,.4,1)';P.style.transform='';RCP.cur=0;rcT(()=>{P.style.transition=''},470)}};
+  P.addEventListener('pointerup',end);P.addEventListener('pointercancel',end)}
+function rcFly(){const R=$('.rcp'),P=R&&R.querySelector('.rcp-paper'),B=$('[data-a=rcDl]');if(!P||!B||RCP.busy||RCP.st==='gone')return;RCP.busy=1;rcClr();
+  R.classList.add('fly','used','rdy');R.classList.remove('drag');
+  const a=P.getBoundingClientRect(),b=B.getBoundingClientRect(),cur=RCP.cur||0,dx=(b.left+b.width/2)-(a.left+a.width/2),dy=(b.top+b.height/2)-(a.top+a.height/2);
+  try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
+  if(RM){RCP.st='gone';RCP.busy=0;RCP.cur=0;redraw();return}
+  /* a little tug first (the paper tears off the machine), then it flies into the button and shrinks away */
+  P.style.transition='transform .16s ease-out';P.style.transform=`translateY(${cur+10}px) rotate(-3deg)`;
+  rcT(()=>{P.style.transition='transform .8s cubic-bezier(.6,0,.25,1),opacity .8s cubic-bezier(.6,0,1,1)';P.style.transform=`translate(${dx}px,${cur+dy}px) scale(.08) rotate(-12deg)`;P.style.opacity='0'},170);
+  rcT(()=>{RCP.st='gone';RCP.busy=0;RCP.cur=0;redraw();try{navigator.vibrate&&navigator.vibrate([14,30,14])}catch(e){}},1020)}
+A.rcFly=()=>{const R=$('.rcp');if(R&&!R.classList.contains('rdy'))return;rcFly()};
+A.rcAgain=()=>{RCP.st='print';RCP.busy=0;RCP.cur=0;redraw()};
+/* the receipt as a picture, drawn on the phone: a proper invoice with the brand logo (config.js → INVOICE can add an address, GSTIN and email) */
+const rcWords=n=>{n=Math.floor(+n||0);if(!n)return 'Zero';const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'],b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const t=x=>x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:''),h=x=>x>99?a[Math.floor(x/100)]+' Hundred'+(x%100?' '+t(x%100):''):t(x);let r='';
+  const cr=Math.floor(n/1e7),lk=Math.floor(n%1e7/1e5),th=Math.floor(n%1e5/1e3),re=n%1e3;if(cr)r+=h(cr)+' Crore ';if(lk)r+=t(lk)+' Lakh ';if(th)r+=t(th)+' Thousand ';if(re)r+=h(re);return r.trim()};
+const rcLogo=()=>new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src='icon-192.png'});
+async function rcDraw(o){const CF=window.CBT_CONFIG||{},IV=CF.INVOICE||{},site=CF.SITE_NAME||'Aspiron Education',web=String(CF.SHORT_URL||'').replace(/^https?:\/\//,'').replace(/\/$/,''),sup=String(CF.SUPPORT_URL||'').replace(/^https?:\/\//,'');
+  const logo=await rcLogo(),pf=stuProf(),nm=(PUR.d&&PUR.d.name)||(AUTH&&AUTH.name)||'',mob=AUTH?'+91 '+AUTH.mobile:'',em=pf.email||'';
+  const W=800,M=44,F='-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',INK='#17181b',MUT='#6b6d73',LN='#d9d9d6',GOLD='#b08945';
+  const tots=[['Subtotal',o.list>0?rupee(o.list):'Free']];if(o.off>0)tots.push(['Coupon'+(o.coupon?' ('+o.coupon+')':''),'- '+rupee(o.off)]);if(o.wallet>0)tots.push(['Wallet used','- '+rupee(o.wallet)]);
+  const fl=[];if(IV.address)fl.push(String(IV.address));const gm=[];if(IV.gstin)gm.push('GSTIN: '+IV.gstin);if(IV.email)gm.push(IV.email);if(gm.length)fl.push(gm.join('   |   '));
+  const H=150+30+170+40+150+tots.length*44+130+240+fl.length*30+60,K=2,c=document.createElement('canvas');c.width=W*K;c.height=H*K;const g=c.getContext('2d');g.scale(K,K);
+  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+  const T=(t,x,y,font,col,al)=>{g.font=font;g.fillStyle=col;g.textAlign=al||'left';g.fillText(t,x,y)};
+  const fit=(t,max,font)=>{g.font=font;t=String(t);while(g.measureText(t).width>max&&t.length>3)t=t.slice(0,-2);return t};
+  g.fillStyle='#fff';g.fillRect(0,0,W,H);
+  /* header band with the logo */
+  g.fillStyle='#1d1e22';g.fillRect(0,0,W,138);g.fillStyle=GOLD;g.fillRect(0,138,W,5);
+  if(logo){g.save();rr(M,30,78,78,18);g.clip();g.drawImage(logo,M,30,78,78);g.restore()}
+  const tx=logo?M+98:M;T(site,tx,70,'700 32px '+F,'#fff');T(web||'',tx,102,'500 20px '+F,'rgba(255,255,255,.65)');
+  T('PAYMENT RECEIPT',W-M,66,'700 22px '+F,'#e6cf9a','right');T('No. '+o.code,W-M,100,'500 20px '+F,'rgba(255,255,255,.8)','right');
+  /* billed to / receipt details */
+  let y=178;const bw=(W-2*M-20)/2,bh=150;
+  [[M,'BILLED TO',[[nm,'700 26px '+F,INK],[mob,'500 22px '+F,MUT],[em,'500 22px '+F,MUT]]],[M+bw+20,'RECEIPT DETAILS',[['Receipt no.   '+o.code,'600 22px '+F,INK],['Date   '+purD(o.at),'500 22px '+F,MUT],['Status   Paid','700 22px '+F,'#1f9d55']]]].forEach(bx=>{
+    g.strokeStyle=LN;g.lineWidth=1.5;rr(bx[0],y,bw,bh,12);g.stroke();T(bx[1],bx[0]+20,y+32,'700 16px '+F,GOLD);let yy=y+68;bx[2].forEach(l=>{if(l[0]){T(fit(l[0],bw-40,l[1]),bx[0]+20,yy,l[1],l[2]);yy+=34}})});
+  y+=bh+36;
+  /* the table */
+  const cx=[M,M+64,W-M-290,W-M-230,W-M-120,W-M],tw=W-2*M;g.fillStyle='#1d1e22';rr(M,y,tw,48,8);g.fill();
+  [['Sr.',cx[0]+32,'center'],['Description',cx[1]+14,'left'],['Qty',(cx[2]+cx[3])/2,'center'],['Rate',cx[4]-14,'right'],['Amount',cx[5]-16,'right']].forEach(h=>T(h[0],h[1],y+31,'600 19px '+F,'#fff',h[2]));
+  y+=48;g.strokeStyle=LN;g.lineWidth=1.5;g.strokeRect(M,y,tw,92);[cx[1],cx[2],cx[3],cx[4]].forEach(x=>{g.beginPath();g.moveTo(x,y);g.lineTo(x,y+92);g.stroke()});
+  const pr=o.list>0?rupee(o.list):'0';
+  T('1',cx[0]+32,y+54,'500 21px '+F,INK,'center');T(fit(o.title||'Test series',cx[2]-cx[1]-28,'600 21px '+F),cx[1]+14,y+40,'600 21px '+F,INK);T('Digital test series access',cx[1]+14,y+68,'500 16px '+F,MUT);
+  T('1',(cx[2]+cx[3])/2,y+54,'500 21px '+F,INK,'center');T(pr,cx[4]-14,y+54,'500 20px '+F,INK,'right');T(pr,cx[5]-16,y+54,'600 21px '+F,INK,'right');
+  y+=92+34;
+  /* totals */
+  const tx0=W-M-330;tots.forEach(r=>{T(r[0],tx0,y+26,'500 21px '+F,MUT);T(r[1],W-M,y+26,'600 21px '+F,INK,'right');g.strokeStyle=LN;g.beginPath();g.moveTo(tx0,y+42);g.lineTo(W-M,y+42);g.stroke();y+=44});
+  g.fillStyle='#f4ecdc';rr(tx0-14,y+6,344,58,10);g.fill();T('Total paid',tx0,y+44,'700 24px '+F,INK);T(purP(o),W-M-14,y+44,'700 28px '+F,INK,'right');
+  /* PAID stamp and the amount in words */
+  g.save();g.translate(M+110,y+34);g.rotate(-.2);g.strokeStyle='rgba(31,157,85,.85)';g.fillStyle='rgba(31,157,85,.9)';g.lineWidth=5;rr(-78,-34,156,68,12);g.stroke();g.lineWidth=2;rr(-70,-27,140,54,8);g.stroke();T('PAID',0,13,'800 38px '+F,'rgba(31,157,85,.9)','center');g.restore();
+  y+=64+78;T('Amount in words',M,y,'700 16px '+F,GOLD);T('Rupees '+rcWords(o.amount)+' Only',M,y+30,'600 21px '+F,INK);
+  y+=90;g.strokeStyle=GOLD;g.lineWidth=2;g.beginPath();g.moveTo(M,y);g.lineTo(W-M,y);g.stroke();
+  T('Thank you for learning with '+site+'.',W/2,y+42,'600 21px '+F,INK,'center');
+  let fy=y+78;fl.forEach(l=>{T(fit(l,W-2*M,'500 18px '+F),W/2,fy,'500 18px '+F,MUT,'center');fy+=30});
+  T('This is a computer generated receipt and does not need a signature.',W/2,fy+4,'500 17px '+F,MUT,'center');
+  T([web,sup].filter(Boolean).join('   |   '),W/2,fy+32,'500 17px '+F,MUT,'center');
+  return new Promise(res=>c.toBlob(b=>res(b),'image/png'))}
 const rcName=o=>'receipt-'+String(o.code||'order').replace(/[^\w-]/g,'')+'.png';
-A.rcDl=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;try{const b=await rcDraw(o);if(!b)throw 0;const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=rcName(o);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast3('Receipt downloaded')}catch(e){toast3('Could not make the receipt. Please try again.')}el.disabled=false};
+A.rcDl=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;if(RCP.st!=='gone'&&$('.rcp.rdy'))rcFly();try{const b=await rcDraw(o);if(!b)throw 0;const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=rcName(o);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast3('Receipt downloaded')}catch(e){toast3('Could not make the receipt. Please try again.')}el.disabled=false};
 A.rcSh=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;try{const b=await rcDraw(o);if(!b)throw 0;const f=new File([b],rcName(o),{type:'image/png'});
   if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Payment receipt'})}else A.rcDl({disabled:false})}catch(e){if(!e||e.name!=='AbortError')toast3('Could not share the receipt')}el.disabled=false};
 
