@@ -68,6 +68,9 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   download manager. Syllabus progress needs new data and is not shown (XP, streak and the overall leaderboard: see Level Up below).
 - **To remove it:** delete `v3.js`, `v3.css` and the `<script src="v3.js?v=…">` line in `index.html`.
 
+> **Every time `v3.css` or `v3.js` changes, raise BOTH numbers together:** `const V3VER=…` at the top of `v3.js` (this is the `?v=` of `v3.css`) and `v3.js?v=…` in `index.html`.
+> If `V3VER` is left alone, phones keep the old stylesheet and new screens look unstyled. `tests/e2e/purchases.js` checks that the two match.
+
 ## My purchases, receipts and account deletion (`v3.js`, `supabase_v101_orders_delete.sql`)
 - **Profile** opens full screen (the dark hero reaches the top, like Level Up) with a ⋮ menu: My purchases, Exam countdown, Settings, Chat with support, Account deletion, Log out.
 - **My purchases** (Profile ⋮, Settings, menu): the student's own PAID store orders, free ones too (`cbt_my_orders`). An order opens as a receipt that prints out of a small machine

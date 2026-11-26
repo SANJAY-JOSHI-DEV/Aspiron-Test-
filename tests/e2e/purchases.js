@@ -71,6 +71,9 @@ const MOB = '9000000001', CODE = 'AAAA1111';
     await p.evaluate(() => { lpLogin(); login('code'); }); await p.waitForSelector('#ph');
     await p.fill('#ph', MOB); await p.fill('#cd', CODE); await p.click('#lbtn'); await wait(5000);
     const scr = () => S(p, 'const b=root.querySelector("#scrB");return b?b.innerText:""');
+    // the stylesheet number inside v3.js must move with the script number in index.html, or phones keep the OLD v3.css
+    const vj = /const V3VER=(\d+)/.exec(fs.readFileSync(path.join(ROOT, 'v3.js'), 'utf8'))[1], vi = /v3\.js\?v=(\d+)/.exec(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'))[1];
+    ok(vj === vi, 'cache 1 V3VER in v3.js (' + vj + ') matches v3.js?v= in index.html (' + vi + ')');
     // profile: opened from the picture menu, full screen with a three-dot button
     await click(p, '#dav'); await wait(400); await click(p, '#dmenu [data-k=profile]'); await wait(1200);
     ok(await S(p, 'return root.querySelector(".scr.bleed .pfh2")!==null'), 'profile 1 the profile opens full screen (hero to the top)');
