@@ -3035,7 +3035,7 @@ function lvRoad(m){const cur=myLv().i;
    ${carH('lvCar',LVL3.map((L,i)=>{const st=i<cur?'done':i===cur?'cur':'lock';
      return `<div class="lrc ${st}${i===DR3?' dr':''}" style="--c1:${L[3]};--c2:${L[4]}">${st==='cur'?'<i class="lrc-beam"></i>':''}<span class="lrc-c">${crest(i,i===DR3?86:74)}</span>
        <small>LEVEL ${i+1}</small><b>${i===DR3?'<span class="drp">Dr.</span> ':''}${esc3(L[1])}</b><p>${esc3(L[2])}</p>
-       <span class="lrc-m${(m.xp||0)>=L[0]?' ok':''}">${ic((m.xp||0)>=L[0]?'check':'spark',12)}${i?fmtN(L[0])+' XP':'Start'}</span>
+       <span class="lrc-m${(m.xp||0)>=L[0]?' ok':''}">${ic((m.xp||0)>=L[0]?'check':'xp',12)}${i?fmtN(L[0])+' XP':'Start'}</span>
        <em>${st==='cur'?'You are here':st==='done'?`${ic('check',13)}Passed`:i===cur+1?((m.xp||0)>=L[0]?'Climb this week':`${fmtN(L[0]-(m.xp||0))} XP to the mark`):`${i-cur} climbs away`}</em><span class="lrc-pd"></span></div>`}).join(''))}
    <p class="hint">Each level needs two keys: its XP Mark (total XP) and a Climb-zone finish in your weekly league. One level per week at most, so Dr. needs 20,000 XP and at least 9 good weeks.</p></section>`}
 function lvZones(){const L=myLv();return `<section class="sec"><div class="sh"><h2>How you climb</h2></div><div class="card lgw">
