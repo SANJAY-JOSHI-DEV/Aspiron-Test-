@@ -388,6 +388,7 @@ create or replace function cbt_private.admin_need(p_fn text, p_act text) returns
     when 'cbt_admin_test_reviews'   then case when p_act = 'get' then 'reviews:view' else 'reviews:manage' end   -- v67
     when 'cbt_admin_series_posts'   then case when p_act = 'get' then 'content:view' else 'content:manage' end   -- v77
     when 'cbt_admin_doubts'         then case when p_act = 'get' then 'messaging:view' else 'messaging:manage' end   -- v87
+    when 'cbt_admin_delreq'         then case when p_act = 'get' then 'students:view' else 'students:manage' end   -- v102
     when 'cbt_admin_plans'          then case when p_act = 'get' then 'store:view' else 'store:manage' end   -- v90
     when 'cbt_admin_plan_access'    then case when p_act = 'get' then 'store:view' else 'store:manage' end   -- v91
     when 'cbt_admin_suspects'       then case when p_act = 'ok' then 'integrity:manage' else 'integrity:view' end   -- v68

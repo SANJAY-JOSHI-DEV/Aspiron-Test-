@@ -142,5 +142,11 @@ select 41, 'supabase_v101_orders_delete.sql', case when to_regprocedure('public.
   and to_regprocedure('public.cbt_delete_request(text,text,text,text)') is not null
   and to_regclass('cbt_private.delete_requests') is not null then 'ok'
   else 'MISSING — run this file (after v100)' end
+union all
+-- v102: 'ok' when the owner can see and handle account deletion requests (run v35 again after it)
+select 42, 'supabase_v102_delete_requests.sql', case when to_regprocedure('public.cbt_admin_delreq(text,text,jsonb)') is not null
+  and to_regprocedure('cbt_private.cbt_admin_delreq__core(text,text,jsonb)') is not null then 'ok'
+  when to_regprocedure('public.cbt_admin_delreq(text,text,jsonb)') is not null then 'run supabase_v35_admin_team.sql again'
+  else 'MISSING — run this file (after v101), then v35 again' end
 ) x
 order by n;

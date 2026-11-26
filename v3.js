@@ -1828,14 +1828,21 @@ A.rcSh=async el=>{const o=curO();if(!o||el.disabled)return;el.disabled=true;try{
 A.pfMore=()=>openSheet(`<h2 id="sheetT">More</h2><div class="card rows" style="margin-top:8px">${setRow('receipt','My purchases','Orders and receipts','purchases')}${setRow('target','Exam countdown','','cdEdit')}${setRow('gear','Settings','','settings')}${setRow('mail','Chat with support','','setHelp')}${setRow('trash','Account deletion','','delAcc')}</div><button class="btn lg ghost danger3" data-a="setOut" style="margin-top:12px">${ic('out',17)}Log out</button>`);
 
 /* ---------- account deletion: read the warning, confirm, send the request ---------- */
+const DAY3=864e5,DELT={t:0};
+const delHms=ms=>{const t=Math.floor(Math.max(0,ms)/1000);return [Math.floor(t/3600),Math.floor(t%3600/60),t%60].map(n=>String(n).padStart(2,'0')).join(':')};
+const delPc=at=>Math.max(0,Math.min(100,Math.round((at+DAY3-Date.now())*100/DAY3)));
+function delTick(){const at=PUR.d&&PUR.d.delete_at,t=$('#delClkT');if(!at||!t||!top()||top().key!=='del'){clearInterval(DELT.t);DELT.t=0;return}
+  const m=at+DAY3-Date.now();t.textContent=delHms(m);const b=$('#delClkB');if(b)b.style.width=delPc(at)+'%';const l=$('#delClkS');if(l)l.textContent=m>0?'Time left':'Our team is processing your request'}
 const DELW=['I have another account','I no longer need it','Too many notifications','Privacy concerns','Something else'];const DEL={why:'',busy:0};
 function delView(){return {t:'Account deletion',s:'',key:'del',html:()=>{const at=PUR.d&&PUR.d.delete_at;
-  if(at)return `<div class="sp-pane stack"><div class="card p del-c ok"><span class="del-i ok">${ic('check',30)}</span><h2>Request submitted</h2><p>We received your request on ${purD(at)}. Our team will review it and permanently delete your account and data.</p><p class="mut">Changed your mind? You can withdraw it any time before it is done.</p></div>
+  if(at)return `<div class="sp-pane stack"><div class="card p del-c ok"><span class="del-i ok">${ic('check',30)}</span><h2>Request submitted</h2><p>We received your request on ${purD(at)}. Our team will review it and delete your account and data within 24 hours.</p>
+    <div class="del-clock" id="delClk"><small id="delClkS">Time left</small><b id="delClkT">${delHms(at+DAY3-Date.now())}</b><span class="del-bar"><i id="delClkB" style="width:${delPc(at)}%"></i></span></div>
+    <p class="mut">Changed your mind? You can withdraw it any time before it is done.</p></div>
     <div class="buybar"><span class="mut" style="font-size:13px">You are still signed in</span><button class="btn ghost" data-a="delCancel">Withdraw request</button></div></div>`;
   return `<div class="sp-pane stack"><div class="card p del-c"><span class="del-i">${ic('warn',30)}</span><h2>Please read this carefully!</h2><p>You are about to submit a request for us to permanently close your ${esc3(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education')} account and delete your data.</p></div>
     <div class="del-n">Note: Account closure is a permanent action.</div>
     <ul class="del-l"><li>Your profile, results, XP, streak and notes will be removed.</li><li>Test series you bought will no longer be available.</li><li>Purchases are not refunded.</li></ul>
-    <div class="buybar del-b"><button class="btn ghost" data-a="delGo">Okay, continue</button><button class="btn" data-a="back">No, cancel</button></div></div>`},after:()=>purLoad()}}
+    <div class="buybar del-b"><button class="btn ghost" data-a="delGo">Okay, continue</button><button class="btn" data-a="back">No, cancel</button></div></div>`},after:()=>{purLoad();clearInterval(DELT.t);DELT.t=0;if(PUR.d&&PUR.d.delete_at)DELT.t=setInterval(delTick,1000)},leave:()=>{clearInterval(DELT.t);DELT.t=0}}}
 A.delAcc=()=>{closeLayer();push(delView())};
 A.delGo=()=>{DEL.why='';openSheet(`<span class="ti" style="margin-bottom:12px;color:var(--err)">${ic('warn',22)}</span><h2 id="sheetT">Delete your account?</h2><p class="sub">This cannot be undone once our team completes it. Tell us why you are leaving (optional).</p>
   <div class="chips wrap">${DELW.map(w=>`<button data-dw="${esc3(w)}">${w}</button>`).join('')}</div>
