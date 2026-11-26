@@ -1830,7 +1830,8 @@ A.pfMore=()=>openSheet(`<h2 id="sheetT">More</h2><div class="card rows" style="m
 /* ---------- account deletion: read the warning, confirm, send the request ---------- */
 const DELW=['I have another account','I no longer need it','Too many notifications','Privacy concerns','Something else'];const DEL={why:'',busy:0};
 function delView(){return {t:'Account deletion',s:'',key:'del',html:()=>{const at=PUR.d&&PUR.d.delete_at;
-  if(at)return `<div class="sp-pane stack"><div class="card p del-c ok"><span class="del-i ok">${ic('check',30)}</span><h2>Request submitted</h2><p>We received your request on ${purD(at)}. Our team will review it and permanently delete your account and data.</p><p class="mut">Changed your mind? You can withdraw it any time before it is done.</p></div>
+  if(at)return `<div class="sp-pane stack"><div class="card p del-c ok"><span class="del-i ok">${ic('check',30)}</span><h2>Request submitted</h2><p>We received your request on ${purD(at)}. Your account and data will be deleted within 24 hours.</p>
+    <p class="mut">Changed your mind? You can withdraw it any time before it is done.</p></div>
     <div class="buybar"><span class="mut" style="font-size:13px">You are still signed in</span><button class="btn ghost" data-a="delCancel">Withdraw request</button></div></div>`;
   return `<div class="sp-pane stack"><div class="card p del-c"><span class="del-i">${ic('warn',30)}</span><h2>Please read this carefully!</h2><p>You are about to submit a request for us to permanently close your ${esc3(((window.CBT_CONFIG||{}).SITE_NAME)||'Aspiron Education')} account and delete your data.</p></div>
     <div class="del-n">Note: Account closure is a permanent action.</div>

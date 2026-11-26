@@ -2528,6 +2528,39 @@ do $$ begin
 end $$;
 reset role;
 
+-- ===== v102: the owner handles deletion requests =====
+insert into cbt_private.students (id, name, mobile, status, salt, code_hash) values
+  ('bbbbbbbb-0000-0000-0102-000000000001', 'Leaver One', '9830000001', 'approved', 's201', cbt_private.hash_code('s201', 'LEAV1010')),
+  ('bbbbbbbb-0000-0000-0102-000000000002', 'Stayer Two', '9830000002', 'approved', 's202', cbt_private.hash_code('s202', 'LEAV2020'));
+select public.cbt_delete_request('9830000001', 'LEAV1010', 'dev-lv102001', 'privacy') ->> 'ok' as d1 \gset
+select public.cbt_delete_request('9830000002', 'LEAV2020', 'dev-lv102002', '') ->> 'ok' as d2 \gset
+select (x->>'id') as rq1 from jsonb_array_elements(public.cbt_admin_delreq(:'ow87', 'get', '{}')->'items') x where x->>'mobile' = '9830000001' \gset
+select (x->>'id') as rq2 from jsonb_array_elements(public.cbt_admin_delreq(:'ow87', 'get', '{}')->'items') x where x->>'mobile' = '9830000002' \gset
+select pg_temp.chk('59a owner sees the requests (with the reason); a wrong key sees nothing',
+  public.cbt_admin_delreq(:'ow87', 'get', '{}')->>'ok' = 'true' and (public.cbt_admin_delreq(:'ow87', 'get', '{}')->>'pending')::int >= 2
+  and public.cbt_admin_delreq('wrong-key', 'get', '{}')->>'ok' = 'false' and public.cbt_admin_delreq('wrong-key', 'get', '{}') ? 'items' = false);
+select pg_temp.chk('59b a viewer cannot delete or reject (needs Full access to Students)',
+  public.cbt_admin_delreq(:'vt87', 'delete', jsonb_build_object('id', :'rq1'))->>'error' = 'forbidden'
+  and exists (select 1 from cbt_private.students where mobile = '9830000001'));
+select public.cbt_admin_delreq(:'ow87', 'delete', jsonb_build_object('id', :'rq1'))->>'ok' as x59c \gset
+select pg_temp.chk('59c Delete now removes the student and clears the request (only the last 4 digits stay)',
+  :'x59c' = 'true'
+  and not exists (select 1 from cbt_private.students where mobile = '9830000001')
+  and (select status || '|' || name || '|' || reason || '|' || mobile from cbt_private.delete_requests where id = :'rq1'::uuid) = 'done|||******0001');
+select public.cbt_admin_delreq(:'ow87', 'reject', jsonb_build_object('id', :'rq2'))->>'ok' as x59d \gset
+select pg_temp.chk('59d Reject keeps the student and closes the request; it cannot be handled twice',
+  :'x59d' = 'true'
+  and exists (select 1 from cbt_private.students where mobile = '9830000002')
+  and (select status from cbt_private.delete_requests where id = :'rq2'::uuid) = 'rejected'
+  and public.cbt_admin_delreq(:'ow87', 'delete', jsonb_build_object('id', :'rq2'))->>'error' = 'not_found'
+  and (public.cbt_my_orders('9830000002', 'LEAV2020', 'dev-lv102002')->>'delete_at') is null);
+set role anon;
+do $$ begin
+  begin perform pg_temp.chk('59e anon cannot run the admin function without the wrapper checks', public.cbt_admin_delreq('x', 'get', '{}')->>'ok' = 'false');
+  exception when others then perform pg_temp.chk('59e anon cannot run the admin function without the wrapper checks', true); end;
+end $$;
+reset role;
+
 -- ===== report =====
 \t off
 \a
