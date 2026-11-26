@@ -3403,3 +3403,11 @@ sup,sub{font-size:.72em;line-height:0}
 .gl-row.pick,.gl-t2.on{animation:obpop .32s var(--out)}
 .gl-row.on{box-shadow:0 8px 20px -14px var(--acc)}
 @media (prefers-reduced-motion:reduce){.gl-body,.gl-body .gl-cur,.gl-body .gl-row,.gl-body .gl-t2,.gl-row.pick{animation:none}}
+
+/* v123: a still, steady backdrop. The blur has its own layer, the scrim and the page behind take no touches, and the sheet
+   never passes a scroll on to the page (no flicker when the front is touched or scrolled). */
+.scrim{touch-action:none;overscroll-behavior:contain}
+.scrim::after,.scrim::before{will-change:opacity;transform:translateZ(0);backface-visibility:hidden}
+.sheet,.drawer{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.app.lay .main,.app.lay .hdr,.app.lay .dock{pointer-events:none;-webkit-user-select:none;user-select:none}
+.sheet button,.sheet [data-a]{-webkit-tap-highlight-color:transparent}
