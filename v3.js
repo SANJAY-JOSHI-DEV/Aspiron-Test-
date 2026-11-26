@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=119;
+const V3VER=120;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -909,8 +909,8 @@ function storeView(){
    trendRail()+(soon.length?`<section class="sec"><div class="sh"><h2>Coming soon</h2><span class="aside">${soon.length}</span></div><div class="list">${soon.map(iCard).join('')}</div></section>`:'')+
    `<a class="btn lg ghost" href="store.html">${ic('right',16)}Open the full store</a>`}
 
-VIEW.test=()=>poster()+`<div id="tBody" class="stack" style="gap:var(--gap)">${catBar()}${storeView()}</div>`;
-function drawT(){const b=$('#tBody');if(!b)return;b.innerHTML=catBar()+storeView();entr(b);const n=tfCount(),fb=$('[data-a="tFilter"]');if(fb){fb.className='fb'+(n?' on':'');fb.innerHTML=ic('filter',20)+(n?`<b>${n}</b>`:'')}const x=$('[data-a="tqClear"]');x&&(x.hidden=!TQ.q);const t=$('.tt2');t&&(t.outerHTML=tabs2());autoRail('#tbRail','#tbRailD');reveal(b);lastQ=-1;pstSync()}
+VIEW.test=()=>poster()+`<div id="tBody" class="stack" style="gap:var(--gap)">${storeView()}</div>`;
+function drawT(){const b=$('#tBody');if(!b)return;b.innerHTML=storeView();entr(b);const n=tfCount(),fb=$('[data-a="tFilter"]');if(fb){fb.className='fb'+(n?' on':'');fb.innerHTML=ic('filter',20)+(n?`<b>${n}</b>`:'')}const x=$('[data-a="tqClear"]');x&&(x.hidden=!TQ.q);const t=$('.tt2');t&&(t.outerHTML=tabs2());autoRail('#tbRail','#tbRailD');reveal(b);lastQ=-1;pstSync()}
 AFTER.test=()=>{loadMeta();const q=$('#tq');q.addEventListener('input',()=>{TQ.q=q.value;drawT()});autoRail('#tbRail','#tbRailD');loadExtras();loadLook();loadPC();pstSync(true);const pi=$('#pst img');pi&&!pi.complete&&pi.addEventListener('load',()=>pstSync(true),{once:true});
   /* at most one try a minute: with no banners (or no network) the redraw below used to start the next load at once,
      an endless loop of requests and redraws that made the Tests page stutter */
@@ -922,10 +922,14 @@ A.tClear=()=>{TQ.q='';TQ.f={e:[],c:[],s:[]};const q=$('#tq');if(q)q.value='';dra
 A.cat=el=>{TQ.cat=el.dataset.v;drawT()};
 A.mf=el=>{TQ.mf=el.dataset.v;redraw()};
 A.tFilter=()=>{loadLook();const G=[['e','Exam',LK().exams],['c','Class',LK().classes],['s','Subject',LK().subjects]].filter(g=>g[2].length);
-  const draw=()=>{sheet.innerHTML=`<div class="grab"></div><h2 id="sheetT">Filter</h2><p class="sub">Pick your exam, class and subject.</p>
+  /* v120: your class and exam (Change) and "show every series" live here, not on the page */
+  const mine=()=>catOk()&&STORE!==null?`<div class="catbar in"><span class="ti g">${ic('target',18)}</span><span class="catbar-t"><small>${TQ.all?'Showing every test series':'Test series for you'}</small><b>${esc3(catTxt())}</b></span><button class="btn sm" data-a="catEdit">${ic('pen',14)}Change</button></div>
+   <button class="lnk cat-all" data-ca>${TQ.all?'Show only my class and exam':'Show every test series'}</button>`:'';
+  const draw=()=>{sheet.innerHTML=`<div class="grab"></div><h2 id="sheetT">Filter</h2><p class="sub">Pick your exam, class and subject.</p>${mine()}
    ${G.map(([k,l,o])=>`<div class="fg"><h3>${l}</h3><div class="chips wrap">${o.map(v=>`<button class="${TQ.f[k].includes(v)?'on':''}" aria-pressed="${TQ.f[k].includes(v)}" data-fk="${k}" data-fv="${esc3(v)}">${esc3(v)}</button>`).join('')}</div></div>`).join('')}
    <div class="sheet-ft"><button class="btn ghost" data-fc>Clear</button><button class="btn" data-fa>Show ${(STORE||[]).filter(spass).length} test series</button></div>`};
   openSheet('');draw();sheet.onclick=e=>{const c=e.target.closest('[data-fk]');if(c){const a=TQ.f[c.dataset.fk],v=c.dataset.fv,i=a.indexOf(v);i>-1?a.splice(i,1):a.push(v);const y=sheet.scrollTop;draw();sheet.scrollTop=y;drawT();return}
+   if(e.target.closest('[data-ca]')){TQ.all=!TQ.all;draw();drawT();return}
    if(e.target.closest('[data-fc]')){TQ.f={e:[],c:[],s:[]};draw();drawT();return}if(e.target.closest('[data-fa]')){closeLayer();A.toList()}}};
 
 /* ---------- one test series page: photo, Description | Resources | Reviews, buy bar ---------- */
