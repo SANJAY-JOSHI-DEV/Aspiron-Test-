@@ -409,7 +409,7 @@ function sheet(h,id){
   const again=document.getElementById('layer').querySelector('.bsheet[data-id="'+id+'"]');
   $('#layer').innerHTML=`<div class="modal bsheet${again?' again':''}" data-id="${id||''}" onclick="if(event.target===this)closeModal()"><div class="box"><div class="shnd"></div><button class="shclose" onclick="closeModal()" aria-label="Close">${ic('x',18)}</button>${h}</div></div>`;
 }
-IC.edit='<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>';
+IC.edit='<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>';
 const ACC={cyber:['Cyber Blue','linear-gradient(135deg,#22d3ee,#6366f1)'],green:['Emerald','linear-gradient(135deg,#059669,#34d399)'],royal:['Royal Purple','linear-gradient(135deg,#7c3aed,#c084fc)'],blue:['Classic Blue','linear-gradient(135deg,#1c5fe0,#3b9bff)'],rose:['Rose','linear-gradient(135deg,#e11d48,#fb7185)'],gray:['Slate','linear-gradient(135deg,#334155,#94a3b8)']};
 /* palette for design v2 (Aspiron Lux): Black → Gold, Yellow, Emerald; Light → Graphite, Gold, Blue Ice */
 const ACC2={gold:['Champagne gold','#c9a96e'],yellow:['Yellow','#e3c34d'],green:['Emerald','#5fb38a'],ice:['Blue ice','#9cc7e0'],grey:['Graphite','#8e8e93'],rose:['Rose','#d98b95']};
