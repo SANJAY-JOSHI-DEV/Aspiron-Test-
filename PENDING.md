@@ -61,6 +61,11 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   Then Admin → Students & accounts → **Deletion requests**: each request shows with Reject / Delete now. The student sees the 24-hour promise; nothing is deleted by itself, an old request turns red (Overdue) and shows in the dashboard's attention list.
   Accept and delete removes the student and their data (like Students → Delete). Store orders / payment records stay; the student's Supabase login (email / Google) stays until you remove it in Supabase → Authentication → Users.
   *Check:* `supabase_check_installed.sql` row 42 says ok.
+- [ ] **1.21 Free access in My purchases (with a receipt):** Supabase → SQL Editor: `supabase_v103_free_access.sql` (after v101, nothing after it).
+  A test series you give a student in Students → access now also shows in their My purchases as "Free access", with a receipt (number `FREE-XXXXXX`).
+  A series they already bought in the store is shown only as the order. Series that are free for everybody (the Free tag) are not listed.
+  The date is remembered for new grants from now on; older grants show "Earlier".
+  *Check:* `supabase_check_installed.sql` row 43 says ok.
 - [ ] **1.9** Backup password aur 2FA recovery codes kagaz par likh kar offline rakho.
 
 ## Phase 2: Brand aur email (pehchaan)

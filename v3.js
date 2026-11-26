@@ -1824,18 +1824,22 @@ const PUR={d:null,at:0,busy:0,err:'',sel:-1};
 function purLoad(force){if(PUR.busy||(PUR.d&&!force&&Date.now()-PUR.at<60000))return;PUR.busy=1;
   rpc('cbt_my_orders',{}).then(r=>{if(r&&r.ok&&r.v101){PUR.d=r;PUR.at=Date.now();PUR.err=''}else PUR.err=r&&r.status===404?'soon':'fail'}).catch(()=>{PUR.err='fail'})
    .then(()=>{PUR.busy=0;const k=top()&&top().key;if(k==='pur'||k==='del')redraw()})}
-const purD=t=>{try{return new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}};
+const purD=t=>{if(!t)return 'Earlier';try{return new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}};
 const purP=o=>o.amount>0?rupee(o.amount):'Free';
+const isFr=o=>!(o.amount>0);
+/* paid and free orders, and series the team gave (v103), newest first; a grant from before v103 has no date */
+const purAll=()=>{const d=PUR.d;if(!d)return [];const f=(d.free||[]).map(x=>({code:x.code,title:x.title,amount:0,list:0,coupon:'',off:0,wallet:0,at:x.at||0,given:1}));
+  return (d.orders||[]).concat(f).sort((a,b)=>(b.at||0)-(a.at||0))};
 function purView(){return {t:'My purchases',s:'Your orders and receipts',key:'pur',html:()=>{const d=PUR.d;
   if(!d)return PUR.err?`<div class="card empty"><span class="ti g">${ic('receipt',22)}</span><b>${PUR.err==='soon'?'Receipts are coming soon':'Could not load your purchases'}</b><p class="mut">${PUR.err==='soon'?'This part is being set up. Please check again later.':'Check your internet and try again.'}</p><button class="btn" data-a="purRetry">Try again</button></div>`
     :`<div class="stack">${'<div class="card sk" style="height:86px"></div>'.repeat(4)}</div>`;
-  if(!d.orders.length)return `<div class="card empty"><span class="ti g">${ic('receipt',22)}</span><b>No purchases yet</b><p class="mut">Test series you buy or get free from the store show up here, with a receipt for each.</p><a class="btn" href="store">Open the store</a></div>`;
-  return `<div class="stack pur">${d.orders.map((o,i)=>`<button class="card pur-c" data-a="purOpen" data-i="${i}"><span class="pur-i">${ic('receipt',20)}</span><span class="pur-t"><em class="pur-ok">${ic('check',11)}Success</em><b>${esc3(o.title||'Test series')}</b><small>${purD(o.at)} · <span class="${o.amount>0?'':'pur-fr'}">${purP(o)}</span></small></span>${ic('right',18)}</button>`).join('')}</div>`},
+  if(!purAll().length)return `<div class="card empty"><span class="ti g">${ic('receipt',22)}</span><b>No purchases yet</b><p class="mut">Test series you buy or get free from the store show up here, with a receipt for each.</p><a class="btn" href="store">Open the store</a></div>`;
+  return `<div class="stack pur">${purAll().map((o,i)=>`<button class="card pur-c" data-a="purOpen" data-i="${i}"><span class="pur-i">${ic('receipt',20)}</span><span class="pur-t"><em class="pur-ok${isFr(o)?' fr':''}">${ic('check',11)}${isFr(o)?'Free access':'Success'}</em><b>${esc3(o.title||'Test series')}</b><small>${purD(o.at)} · <span class="${o.amount>0?'':'pur-fr'}">${purP(o)}</span></small></span>${ic('right',18)}</button>`).join('')}</div>`},
   after:()=>purLoad()}}
 A.purchases=()=>{closeLayer();push(purView())};
 A.purRetry=()=>{PUR.err='';PUR.d=null;redraw();purLoad(true)};
 A.purOpen=el=>{PUR.sel=+el.dataset.i;RCP.st='print';RCP.busy=0;RCP.cur=0;push(rcpView())};
-const curO=()=>PUR.d&&PUR.d.orders[PUR.sel];
+const curO=()=>purAll()[PUR.sel];
 /* the receipt: a small machine prints the paper out in one smooth go (the writing is on the paper), a finger shows
    "swipe down", and the paper tears away into the Download button. State: RCP.st 'print' -> 'gone' (View again prints it again). */
 const RCP={st:'print',busy:0,t:[],cur:0};
@@ -1850,8 +1854,8 @@ function rcpView(){return {t:'Order details',s:'',key:'rcp',html:()=>{const o=cu
   const gone=RCP.st==='gone';
   return `<section class="rcp${gone?' gone rdy':''}">${rcMach()}
    ${gone?`<div class="rcp-note"><span class="rcp-nk">${ic('check',22)}</span><b>Your receipt is in Download</b><small>Tap “Download receipt” to keep it on your phone.</small><button class="lnk" data-a="rcAgain">View receipt again</button></div>`
-   :`<div class="rcp-win"><div class="rcp-paper"><div class="rcp-br"><img src="icon-192.png" alt=""><span><b>${site}</b><small>Payment receipt</small></span></div><span class="rcp-ck">${ic('check',22)}</span><b class="rcp-h">Payment successful</b><em class="rcp-amt">${purP(o)}</em>
-    <div class="rcp-rows">${rows.map(r=>`<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}<div class="tot"><span>Total paid</span><b>${purP(o)}</b></div></div>
+   :`<div class="rcp-win"><div class="rcp-paper"><div class="rcp-br"><img src="icon-192.png" alt=""><span><b>${site}</b><small>${isFr(o)?'Access receipt':'Payment receipt'}</small></span></div><span class="rcp-ck">${ic('check',22)}</span><b class="rcp-h">${isFr(o)?'Free access added':'Payment successful'}</b><em class="rcp-amt">${purP(o)}</em>
+    <div class="rcp-rows">${rows.map(r=>`<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}<div class="tot"><span>${isFr(o)?'Total':'Total paid'}</span><b>${purP(o)}</b></div></div>
     <p class="rcp-f">Thank you for learning with ${site}.<br>${web?web+' · ':''}Computer generated receipt, no signature needed.</p><i class="rcp-tear"></i>
     <span class="rcp-fg" aria-hidden="true"><svg viewBox="0 0 24 24">${P_HAND}</svg></span></div></div>
     <button class="rcp-tip" data-a="rcFly">${ic('sdown',15)}<span>Swipe down to save</span></button>`}</section>
@@ -1895,26 +1899,26 @@ async function rcDraw(o){const CF=window.CBT_CONFIG||{},IV=CF.INVOICE||{},site=C
   g.fillStyle='#1d1e22';g.fillRect(0,0,W,138);g.fillStyle=GOLD;g.fillRect(0,138,W,5);
   if(logo){g.save();rr(M,30,78,78,18);g.clip();g.drawImage(logo,M,30,78,78);g.restore()}
   const tx=logo?M+98:M;T(site,tx,70,'700 32px '+F,'#fff');T(web||'',tx,102,'500 20px '+F,'rgba(255,255,255,.65)');
-  T('PAYMENT RECEIPT',W-M,66,'700 22px '+F,'#e6cf9a','right');T('No. '+o.code,W-M,100,'500 20px '+F,'rgba(255,255,255,.8)','right');
+  T(isFr(o)?'ACCESS RECEIPT':'PAYMENT RECEIPT',W-M,66,'700 22px '+F,'#e6cf9a','right');T('No. '+o.code,W-M,100,'500 20px '+F,'rgba(255,255,255,.8)','right');
   /* billed to / receipt details */
   let y=178;const bw=(W-2*M-20)/2,bh=150;
-  [[M,'BILLED TO',[[nm,'700 26px '+F,INK],[mob,'500 22px '+F,MUT],[em,'500 22px '+F,MUT]]],[M+bw+20,'RECEIPT DETAILS',[['Receipt no.   '+o.code,'600 22px '+F,INK],['Date   '+purD(o.at),'500 22px '+F,MUT],['Status   Paid','700 22px '+F,'#1f9d55']]]].forEach(bx=>{
+  [[M,'BILLED TO',[[nm,'700 26px '+F,INK],[mob,'500 22px '+F,MUT],[em,'500 22px '+F,MUT]]],[M+bw+20,'RECEIPT DETAILS',[['Receipt no.   '+o.code,'600 22px '+F,INK],['Date   '+purD(o.at),'500 22px '+F,MUT],[isFr(o)?'Status   Free access':(isFr(o)?'Status   Free access':'Status   Paid'),'700 22px '+F,'#1f9d55']]]].forEach(bx=>{
     g.strokeStyle=LN;g.lineWidth=1.5;rr(bx[0],y,bw,bh,12);g.stroke();T(bx[1],bx[0]+20,y+32,'700 16px '+F,GOLD);let yy=y+68;bx[2].forEach(l=>{if(l[0]){T(fit(l[0],bw-40,l[1]),bx[0]+20,yy,l[1],l[2]);yy+=34}})});
   y+=bh+36;
   /* the table */
   const cx=[M,M+64,W-M-290,W-M-230,W-M-120,W-M],tw=W-2*M;g.fillStyle='#1d1e22';rr(M,y,tw,48,8);g.fill();
   [['Sr.',cx[0]+32,'center'],['Description',cx[1]+14,'left'],['Qty',(cx[2]+cx[3])/2,'center'],['Rate',cx[4]-14,'right'],['Amount',cx[5]-16,'right']].forEach(h=>T(h[0],h[1],y+31,'600 19px '+F,'#fff',h[2]));
   y+=48;g.strokeStyle=LN;g.lineWidth=1.5;g.strokeRect(M,y,tw,92);[cx[1],cx[2],cx[3],cx[4]].forEach(x=>{g.beginPath();g.moveTo(x,y);g.lineTo(x,y+92);g.stroke()});
-  const pr=o.list>0?rupee(o.list):'0';
+  const pr=o.list>0?rupee(o.list):'Free';
   T('1',cx[0]+32,y+54,'500 21px '+F,INK,'center');T(fit(o.title||'Test series',cx[2]-cx[1]-28,'600 21px '+F),cx[1]+14,y+40,'600 21px '+F,INK);T('Digital test series access',cx[1]+14,y+68,'500 16px '+F,MUT);
   T('1',(cx[2]+cx[3])/2,y+54,'500 21px '+F,INK,'center');T(pr,cx[4]-14,y+54,'500 20px '+F,INK,'right');T(pr,cx[5]-16,y+54,'600 21px '+F,INK,'right');
   y+=92+34;
   /* totals */
   const tx0=W-M-330;tots.forEach(r=>{T(r[0],tx0,y+26,'500 21px '+F,MUT);T(r[1],W-M,y+26,'600 21px '+F,INK,'right');g.strokeStyle=LN;g.beginPath();g.moveTo(tx0,y+42);g.lineTo(W-M,y+42);g.stroke();y+=44});
-  g.fillStyle='#f4ecdc';rr(tx0-14,y+6,344,58,10);g.fill();T('Total paid',tx0,y+44,'700 24px '+F,INK);T(purP(o),W-M-14,y+44,'700 28px '+F,INK,'right');
+  g.fillStyle='#f4ecdc';rr(tx0-14,y+6,344,58,10);g.fill();T(isFr(o)?'Total':'Total paid',tx0,y+44,'700 24px '+F,INK);T(purP(o),W-M-14,y+44,'700 28px '+F,INK,'right');
   /* PAID stamp and the amount in words */
-  g.save();g.translate(M+110,y+34);g.rotate(-.2);g.strokeStyle='rgba(31,157,85,.85)';g.fillStyle='rgba(31,157,85,.9)';g.lineWidth=5;rr(-78,-34,156,68,12);g.stroke();g.lineWidth=2;rr(-70,-27,140,54,8);g.stroke();T('PAID',0,13,'800 38px '+F,'rgba(31,157,85,.9)','center');g.restore();
-  y+=64+78;T('Amount in words',M,y,'700 16px '+F,GOLD);T('Rupees '+rcWords(o.amount)+' Only',M,y+30,'600 21px '+F,INK);
+  g.save();g.translate(M+110,y+34);g.rotate(-.2);g.strokeStyle='rgba(31,157,85,.85)';g.fillStyle='rgba(31,157,85,.9)';g.lineWidth=5;rr(-78,-34,156,68,12);g.stroke();g.lineWidth=2;rr(-70,-27,140,54,8);g.stroke();T(isFr(o)?'FREE':'PAID',0,13,'800 38px '+F,'rgba(31,157,85,.9)','center');g.restore();
+  y+=64+78;T(isFr(o)?'Note':'Amount in words',M,y,'700 16px '+F,GOLD);T(isFr(o)?'This test series was given free of charge.':'Rupees '+rcWords(o.amount)+' Only',M,y+30,'600 21px '+F,INK);
   y+=90;g.strokeStyle=GOLD;g.lineWidth=2;g.beginPath();g.moveTo(M,y);g.lineTo(W-M,y);g.stroke();
   T('Thank you for learning with '+site+'.',W/2,y+42,'600 21px '+F,INK,'center');
   let fy=y+78;fl.forEach(l=>{T(fit(l,W-2*M,'500 18px '+F),W/2,fy,'500 18px '+F,MUT,'center');fy+=30});

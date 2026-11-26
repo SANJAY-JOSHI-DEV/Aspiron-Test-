@@ -3581,3 +3581,5 @@ sup,sub{font-size:.72em;line-height:0}
 .card.empty .ti{animation:emFloat 4.2s ease-in-out infinite}
 @keyframes emFloat{50%{transform:translateY(-5px)}}
 @media (prefers-reduced-motion:reduce){.card.empty .ti{animation:none}}
+
+.pur-ok.fr{color:var(--acc);background:color-mix(in srgb,var(--acc1) 30%,transparent)}

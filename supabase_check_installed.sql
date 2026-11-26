@@ -150,5 +150,10 @@ select 42, 'supabase_v102_delete_requests.sql', case when to_regprocedure('publi
   and to_regprocedure('cbt_private.cbt_admin_delreq__core(text,text,jsonb)') is not null then 'ok'
   when to_regprocedure('public.cbt_admin_delreq(text,text,jsonb)') is not null then 'run supabase_v35_admin_team.sql again'
   else 'MISSING — run this file (after v101), then v35 again' end
+union all
+-- v103: 'ok' when free access (given in Students → access) shows in My purchases with a receipt
+select 43, 'supabase_v103_free_access.sql', case when to_regclass('cbt_private.access_dates') is not null
+  and pg_get_functiondef(to_regprocedure('public.cbt_my_orders(text,text,text)')) like '%''free''%' then 'ok'
+  else 'MISSING — run this file (after v101)' end
 ) x
 order by n;
