@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=131;
+const V3VER=132;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -117,14 +117,14 @@ const ic=(n,w)=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true"${w?` styl
 /* ---------- theme engine: tokens live on the host element only, so the classic screens keep their own theme ---------- */
 const TK={bg:'--bg',bg2:'--bg2',s:'--surface',s2:'--surface2',ln:'--line',tx:'--tx',mt:'--mut',ft:'--faint',ink:'--ink',on:'--onInk',acc:'--acc',a1:'--acc1',a2:'--acc2',onA:'--onAcc',as:'--accSoft',h1:'--hero1',h2:'--hero2',glow:'--glow',ok:'--ok',warn:'--warn',err:'--err',nav:'--nav',hdr:'--hdr',pill:'--pill',scrim:'--scrim',logo:'--logo',logoE:'--logoE',sh:'--sh'};
 const TBASE={
- light:{bg:'#f5f5f3',bg2:'#ebebe8',s:'#ffffff',s2:'#f0f0ee',ln:'#e4e4e0',tx:'#17181b',mt:'#5e6066',ft:'#96989d',ink:'#1d1e22',on:'#ffffff',acc:'#85672c',a1:'#e6cf9a',a2:'#b08945',onA:'#1d1608',as:'#f4ecdc',h1:'#2b2d32',h2:'#111215',glow:'rgba(222,186,112,.32)',ok:'#2d7a58',warn:'#93661f',err:'#b3433d',nav:'rgba(255,255,255,.86)',hdr:'rgba(245,245,243,.84)',pill:'rgba(29,30,34,.07)',scrim:'rgba(12,12,14,.4)',logo:'#1d1e22',logoE:'#6b6d73',sh:'0 1px 2px rgba(20,20,24,.04),0 10px 30px -14px rgba(20,20,24,.14)'},
+ light:{bg:'#f5f5f3',bg2:'#ebebe8',s:'#ffffff',s2:'#f0f0ee',ln:'#e4e4e0',tx:'#17181b',mt:'#5e6066',ft:'#72757c',ink:'#1d1e22',on:'#ffffff',acc:'#85672c',a1:'#e6cf9a',a2:'#b08945',onA:'#1d1608',as:'#f4ecdc',h1:'#2b2d32',h2:'#111215',glow:'rgba(222,186,112,.32)',ok:'#2d7a58',warn:'#93661f',err:'#b3433d',nav:'rgba(255,255,255,.86)',hdr:'rgba(245,245,243,.84)',pill:'rgba(29,30,34,.07)',scrim:'rgba(12,12,14,.4)',logo:'#1d1e22',logoE:'#6b6d73',sh:'0 1px 2px rgba(20,20,24,.04),0 10px 30px -14px rgba(20,20,24,.14)'},
  dark:{bg:'#161719',bg2:'#0f1011',s:'#1e1f22',s2:'#27282c',ln:'#303135',tx:'#ededee',mt:'#a3a5aa',ft:'#8b8d92',ink:'#ededee',on:'#161719',acc:'#d6b878',a1:'#ecd6a4',a2:'#b8924c',onA:'#1a1408',as:'#2c271d',h1:'#2c2d32',h2:'#18191c',glow:'rgba(214,180,110,.22)',ok:'#6cc39b',warn:'#d9a55a',err:'#e07a74',nav:'rgba(30,31,34,.86)',hdr:'rgba(22,23,25,.82)',pill:'rgba(237,237,238,.09)',scrim:'rgba(0,0,0,.6)',logo:'#f2f2f3',logoE:'#a3a5aa',sh:'none'},
  black:{bg:'#000000',bg2:'#000000',s:'#0c0c0d',s2:'#161617',ln:'#222224',tx:'#ffffff',mt:'#a0a0a5',ft:'#8a8a8f',ink:'#ffffff',on:'#000000',acc:'#d6d6da',a1:'#f2f2f4',a2:'#a8a8ad',onA:'#000000',as:'#161618',h1:'#18181a',h2:'#050505',glow:'rgba(255,255,255,.08)',ok:'#5fbf93',warn:'#d6a352',err:'#e0716a',nav:'rgba(14,14,15,.9)',hdr:'rgba(0,0,0,.84)',pill:'rgba(255,255,255,.1)',scrim:'rgba(0,0,0,.72)',logo:'#ffffff',logoE:'#a0a0a5',sh:'none'}
 };
 const THEMES={
  light:{name:'Light',pals:{
   A:['Premium Gray',{},'Warm grays with champagne gold'],
-  B:['Pure Black & White',{bg:'#ffffff',bg2:'#f4f4f4',s2:'#f2f2f2',ln:'#e6e6e6',tx:'#000000',mt:'#4f4f4f',ft:'#8c8c8c',ink:'#000000',acc:'#000000',a1:'#3a3a3a',a2:'#000000',onA:'#ffffff',as:'#f0f0f0',h1:'#1c1c1c',h2:'#000000',glow:'rgba(255,255,255,.12)',logo:'#000000',logoE:'#4f4f4f',pill:'rgba(0,0,0,.07)'},'Only black and white, no colour'],
+  B:['Pure Black & White',{bg:'#ffffff',bg2:'#f4f4f4',s2:'#f2f2f2',ln:'#e6e6e6',tx:'#000000',mt:'#4f4f4f',ft:'#767676',ink:'#000000',acc:'#000000',a1:'#3a3a3a',a2:'#000000',onA:'#ffffff',as:'#f0f0f0',h1:'#1c1c1c',h2:'#000000',glow:'rgba(255,255,255,.12)',logo:'#000000',logoE:'#4f4f4f',pill:'rgba(0,0,0,.07)'},'Only black and white, no colour'],
   C:['Silver Mist',{bg:'#f3f4f6',bg2:'#e7e9ed',s:'#fcfcfd',s2:'#eceef1',ln:'#dfe2e6',tx:'#1f2228',mt:'#5d636d',ink:'#343941',acc:'#4f5866',a1:'#dde1e7',a2:'#97a0ad',onA:'#1f2228',as:'#e9ecf0',h1:'#3b4048',h2:'#1d2025',glow:'rgba(200,210,225,.35)',logo:'#343941',pill:'rgba(52,57,65,.08)'},'Cool silver, very calm'],
   D:['Blue Gray',{bg:'#f2f4f7',bg2:'#e6eaf0',s2:'#ebeff4',ln:'#dce2ea',tx:'#1a2230',mt:'#556072',ink:'#24324a',acc:'#3b5779',a1:'#bccde3',a2:'#6d8bb2',onA:'#121b29',as:'#e5ecf5',h1:'#2a3a55',h2:'#131b29',glow:'rgba(140,175,220,.35)',logo:'#24324a',pill:'rgba(36,50,74,.08)'},'Gray with a quiet slate blue'],
   E:['Soft Sage Gray',{bg:'#f3f5f2',bg2:'#e7ebe5',s2:'#ecf0ea',ln:'#dde3da',tx:'#1c231d',mt:'#59645b',ink:'#283429',acc:'#4a6650',a1:'#c6d8c5',a2:'#7f9a80',onA:'#152016',as:'#e5ede5',h1:'#2c3a2f',h2:'#141b15',glow:'rgba(170,205,165,.3)',logo:'#283429',pill:'rgba(40,52,41,.08)'},'Gray with soft green, easy on the eyes'],
@@ -335,7 +335,7 @@ function drawScr(dir){const v=top();if(!v)return;scr.classList.toggle('bleed',!!
 let ENT=0,ENTD='';
 const arm=d=>{if(RM)return;ENT=Date.now();ENTD=d||''};
 const ENTS='.sp-pane>.tbar,.sp-pane>.promo,.sp-pane .stack>.tc3,.sp-pane .rs3,.rs3r,.sp-pane>.card,.sp-pane>.stack>.card,.sp-pane .ann3,.list>.card,.list>article,.tt2,.sec>.card,.scr-in>.card,.scr-in>.stack>.card';
-function entr(root){if(!ENT||!root)return;if(Date.now()-ENT>2000){ENT=0;return}if(root.querySelector('.sk'))return;ENT=0;
+function entr(root){if(!ENT||!root)return;if(Date.now()-ENT>2000){ENT=0;return}if(root.querySelector('.sk'))return;ENT=0;try{countUp(root)}catch(e){}
   const pane=root.querySelector('.sp-pane');if(pane&&ENTD){pane.style.setProperty('--tx',ENTD==='l'?'-16px':'16px');pane.classList.add('tabin')}ENTD='';
   const H=window.innerHeight;let i=0;root.querySelectorAll(ENTS).forEach(el=>{if(i>=8||el.classList.contains('rv')||(el.parentElement&&el.parentElement.closest('.ent')))return;
     if(el.getBoundingClientRect().top>H)return;el.style.setProperty('--e',i++);el.classList.add('ent')})}
@@ -505,9 +505,10 @@ function hbRefLoad(){if(HBRL)return;HBRL=true;try{rfLoad(false).then(r=>{if(r&&r
 /* v106: XP and the streak come from Level Up (cbt_xp_me, or worked out on the phone until supabase_v97 is run) */
 function hbStats(){let R=[];try{R=allRes()}catch(e){}const st=stats(R);hbRefLoad();xpLoad();
   const m=xpMe(),xp=m.xp||0,sk=m.streak||0,k=n=>n>=10000?(Math.round(n/100)/10)+'k':fmtN(n);
-  const L=[['xp','xp',k(xp),'XP','XP points: '+fmtN(xp)+', level '+myLv().n+', '+myLv().name],['streak','flame',sk,'day'+(sk===1?'':'s'),sk+' day streak'],['prac','practice',k(st.tot||0),'Qs',fmtN(st.tot||0)+' questions practised']];
+  const cn=n=>n>=10000?esc3(k(n)):N(n);
+  const L=[['xp','xp',cn(xp),'XP','XP points: '+fmtN(xp)+', level '+myLv().n+', '+myLv().name],['streak','flame',cn(sk),'day'+(sk===1?'':'s'),sk+' day streak'],['prac','practice',cn(st.tot||0),'Qs',fmtN(st.tot||0)+' questions practised']];
   if(HBRF&&HBRF.ok)L.push(['ref','wallet',rfInr(HBRF.balance||0),'','Refer wallet: '+rfInr(HBRF.balance||0)]);
-  return `<span class="hb-st" role="list">${L.map((x,i)=>`<button class="hb-sc" role="listitem" data-a="hbGo" data-k="${x[0]}" style="--i:${i}" aria-label="${esc3(x[4])}">${ic(x[1],14)}<b>${esc3(String(x[2]))}</b>${x[3]?`<small>${x[3]}</small>`:''}</button>`).join('')}</span>`}
+  return `<span class="hb-st" role="list">${L.map((x,i)=>`<button class="hb-sc" role="listitem" data-a="hbGo" data-k="${x[0]}" style="--i:${i}" aria-label="${esc3(x[4])}">${ic(x[1],14)}<b>${x[0]==='ref'?esc3(String(x[2])):x[2]}</b>${x[3]?`<small>${x[3]}</small>`:''}</button>`).join('')}</span>`}
 A.hbGo=el=>{const k=el.dataset.k;if(k==='ref')openRefer();else if(k==='prac')A.hist();else if(k==='streak')skSheet();else openLevel()};
 function hbQd(){qdLoad();const G=QD.ok?qdGroups():[];if(!G.length)return `<div class="hb-q" id="hbTop"><div class="hb-h nq"><span class="hb-hl">${hbStats()}</span></div></div>`;const all=QD.items.length,dn=QD.items.filter(x=>x.done).length;
   return `<div class="hb-q still${QD.fresh?' pop':''}${HBO?' open':''}" id="qdBox"><div class="hb-h" data-a="qdTg"><span class="hb-hl"><small class="hb-k">QUESTIONS OF THE DAY</small>${hbStats()}</span>
@@ -2931,7 +2932,7 @@ function rhLb(){const b=RK3.ov;
 function rhAna(){const R=allRes();
   if(!R.length)return `<div class="rh-e"><span class="ti">${ic('chart',22)}</span><b>Nothing to analyse yet</b><p>Attempt a test to see your scores and trend.</p></div>`;
   const P=R.map(rawPct),avg=Math.round(P.reduce((a,b)=>a+b,0)/P.length*10)/10,L=P.slice(-8),mx=Math.max(20,...L.map(Math.abs));
-  return `<div class="rh-st"><div><b>${R.length}</b><small>Attempts</small></div><div><b>${Math.max(0,avg)}%</b><small>Average</small></div><div><b>${Math.max(0,Math.max(...P))}%</b><small>Best</small></div></div>
+  return `<div class="rh-st"><div><b>${N(R.length)}</b><small>Attempts</small></div><div><b>${N(Math.max(0,avg),Number.isInteger(avg)?0:1)}%</b><small>Average</small></div><div><b>${N(Math.max(0,Math.max(...P)),Number.isInteger(Math.max(...P))?0:1)}%</b><small>Best</small></div></div>
    <div class="rh-ch" aria-label="Your last ${L.length} scores">${L.map((p,i)=>`<span style="--h:${Math.max(4,Math.abs(p)/mx*100).toFixed(0)}%"${i===L.length-1?' class="on"':''}><i>${Math.max(0,Math.round(p))}</i></span>`).join('')}</div>
    <button class="btn ghost blk" data-a="tab" data-tab="stats">${ic('chart',16)}Open Analytics</button>`}
 function rhMk(){return `<div class="rh-e"><span class="ti">${ic('mistake',22)}</span><b>Mistake notebook</b><p>Every wrong and skipped question from your tests, to revise before the exam.</p></div>
