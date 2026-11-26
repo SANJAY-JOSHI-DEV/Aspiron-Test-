@@ -3287,7 +3287,6 @@ sup,sub{font-size:.72em;line-height:0}
 .xpt em{font-style:normal;margin-left:3px;padding-left:5px;border-left:1px solid currentColor}
 .xpt.hot{color:#b3352d;background:color-mix(in srgb,#ef5a50 12%,var(--surface));border-color:color-mix(in srgb,#ef5a50 28%,transparent);animation:xpH 2.4s ease-in-out 3}
 @keyframes xpH{50%{box-shadow:0 0 0 4px color-mix(in srgb,#ef5a50 18%,transparent)}}
-.evD-top .xpt{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)}
 .sa-c.shield i .i{fill:rgba(255,255,255,.3)}
 
 /* submitted screen: the Done button is always fully visible */
@@ -3354,3 +3353,16 @@ sup,sub{font-size:.72em;line-height:0}
 .lvh2>.lvh2-gl{position:absolute;z-index:0}
 .lvp>.lvh2+*{margin-top:-18px}
 .lvh2{padding-bottom:78px}.lvh2::after{height:60px}
+
+/* v113: Upcoming / Live Today card in the same glass style as the live card; total XP chip; XP flies up to the XP number */
+.evD-l{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.evD-live.up{color:var(--acc);background:var(--accSoft);border-color:color-mix(in srgb,var(--acc) 30%,var(--line))}
+.evD-live.up i{background:var(--acc)}.evD-live.up i::after{display:none}
+.evU .evcd{margin:6px 0 2px;background:color-mix(in srgb,var(--acc2) 9%,var(--surface2))}
+.evU.st-today .evcd b{color:#d11226}
+.evU .evbell{border:1px solid var(--line)}
+.evD .xpt{height:28px;padding:0 10px 0 8px;font-size:12.5px}
+.xp-pill.fly{transform:none;animation:none;top:0;left:0;pointer-events:none;will-change:transform,opacity}
+.hb-sc.xp-hit{animation:xpHit .9s var(--spring)}
+@keyframes xpHit{0%{transform:scale(1)}30%{transform:scale(1.28);box-shadow:0 0 0 6px rgba(255,214,10,.28)}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,214,10,0)}}
+@media (prefers-reduced-motion:reduce){.hb-sc.xp-hit{animation:none}}
