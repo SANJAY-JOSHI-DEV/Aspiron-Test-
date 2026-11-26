@@ -2489,6 +2489,45 @@ do $$ begin
 end $$;
 reset role;
 
+-- ===== v101: My purchases (receipts) and the account deletion request =====
+insert into cbt_private.students (id, name, mobile, status, salt, code_hash) values
+  ('bbbbbbbb-0000-0000-0101-000000000001', 'Order One', '9820000001', 'approved', 's101', cbt_private.hash_code('s101', 'ORDE1010')),
+  ('bbbbbbbb-0000-0000-0101-000000000002', 'Order Two', '9820000002', 'approved', 's102', cbt_private.hash_code('s102', 'ORDE2020'));
+insert into public.cbt_store_orders (code, item_title, amount, name, mobile, status, list_price, coupon_code, coupon_off, paid_at) values
+  ('V101A', 'Paid series', 399, 'Order One', '9820000001', 'paid', 499, 'SAVE100', 100, now()),
+  ('V101B', 'Still pending', 100, 'Order One', '9820000001', 'pending', 100, null, 0, null),
+  ('V101C', 'Belongs to student two', 100, 'Order Two', '9820000002', 'paid', 100, null, 0, now());
+select public.cbt_my_orders('9820000001', 'ORDE1010', 'dev-or101001') as or101 \gset
+select pg_temp.chk('58a my orders: only my own PAID orders, with the price breakup',
+  (:'or101'::jsonb->>'ok')::boolean and jsonb_array_length(:'or101'::jsonb->'orders') = 1
+  and :'or101'::jsonb->'orders'->0->>'code' = 'V101A' and (:'or101'::jsonb->'orders'->0->>'off')::int = 100 and (:'or101'::jsonb->'orders'->0->>'list')::int = 499
+  and :'or101'::jsonb->>'delete_at' is null);
+select pg_temp.chk('58b my orders: a wrong access code gets nothing',
+  public.cbt_my_orders('9820000001', 'WRONG0000', 'dev-or101001')->>'ok' = 'false' and public.cbt_my_orders('9820000001', 'WRONG0000', 'dev-or101001') ? 'orders' = false);
+select public.cbt_delete_request('9820000001', 'ORDE1010', 'dev-or101001', 'x<b>"y') as dr1 \gset
+select public.cbt_delete_request('9820000001', 'ORDE1010', 'dev-or101001', 'again') as dr2 \gset
+select pg_temp.chk('58c deletion request: sent once (a second tap does not add another), the reason is cleaned, nothing is deleted',
+  (:'dr1'::jsonb->>'ok')::boolean and (:'dr2'::jsonb->>'ok')::boolean
+  and (select count(*) from cbt_private.delete_requests where mobile = '9820000001' and status = 'pending') = 1
+  and (select reason from cbt_private.delete_requests where mobile = '9820000001') = 'xby'
+  and exists (select 1 from cbt_private.students where mobile = '9820000001')
+  and (public.cbt_my_orders('9820000001', 'ORDE1010', 'dev-or101001')->>'delete_at') is not null);
+select pg_temp.chk('58d deletion request: another student cannot send or withdraw it for me, a wrong code is refused',
+  public.cbt_delete_request('9820000002', 'WRONG0000', 'dev-or101002', '')->>'ok' = 'false'
+  and (select count(*) from cbt_private.delete_requests where mobile = '9820000002') = 0);
+select public.cbt_delete_cancel('9820000001', 'ORDE1010', 'dev-or101001') as dr3 \gset
+select pg_temp.chk('58e deletion request: I can withdraw it',
+  (:'dr3'::jsonb->>'ok')::boolean and (select status from cbt_private.delete_requests where mobile = '9820000001') = 'cancelled'
+  and (public.cbt_my_orders('9820000001', 'ORDE1010', 'dev-or101001')->>'delete_at') is null);
+set role anon;
+do $$ begin
+  begin perform count(*) from cbt_private.delete_requests; perform pg_temp.chk('58f anon cannot read the deletion requests', false);
+  exception when insufficient_privilege then perform pg_temp.chk('58f anon cannot read the deletion requests', true); end;
+  begin perform count(*) from public.cbt_store_orders; perform pg_temp.chk('58g anon cannot read the store orders directly', false);
+  exception when insufficient_privilege then perform pg_temp.chk('58g anon cannot read the store orders directly', true); end;
+end $$;
+reset role;
+
 -- ===== report =====
 \t off
 \a

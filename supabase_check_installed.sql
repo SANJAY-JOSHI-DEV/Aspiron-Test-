@@ -136,5 +136,11 @@ union all
 -- v100: 'ok' when the store can set a series for CBSE / CUET
 select 40, 'supabase_v100_student_category.sql', case when pg_get_functiondef(to_regprocedure('public.cbt_admin_store_layout(text,text,jsonb)')) like '%cuet%' then 'ok'
   else 'MISSING — run this file' end
+union all
+-- v101: 'ok' when My purchases (receipts) and the account deletion request are in
+select 41, 'supabase_v101_orders_delete.sql', case when to_regprocedure('public.cbt_my_orders(text,text,text)') is not null
+  and to_regprocedure('public.cbt_delete_request(text,text,text,text)') is not null
+  and to_regclass('cbt_private.delete_requests') is not null then 'ok'
+  else 'MISSING — run this file (after v100)' end
 ) x
 order by n;

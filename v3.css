@@ -3411,3 +3411,62 @@ sup,sub{font-size:.72em;line-height:0}
 .sheet,.drawer{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 .app.lay .main,.app.lay .hdr,.app.lay .dock{pointer-events:none;-webkit-user-select:none;user-select:none}
 .sheet button,.sheet [data-a]{-webkit-tap-highlight-color:transparent}
+
+/* ================= PROFILE full screen, MY PURCHASES, RECEIPT machine, ACCOUNT DELETION (v124) ================= */
+.pfh.pfh2{position:relative;overflow:hidden;margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px))) 16px;padding:calc(70px + env(safe-area-inset-top,0px)) 18px 22px;border-radius:0 0 34px 34px;
+  background:radial-gradient(90% 60% at 85% 0%,color-mix(in srgb,var(--acc1) 26%,transparent),transparent 70%),linear-gradient(170deg,var(--hero1),var(--hero2))}
+.pfh2-gl{position:absolute;right:-90px;top:10px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--acc1) 18%,transparent),transparent 65%);pointer-events:none}
+.pfh2>*:not(.pfh2-gl){position:relative;z-index:1}
+.pfh2 .pfa{animation:pfPop .6s var(--spring) both}
+.pfh2 .pfn>*{animation:pop3 .5s var(--out) backwards}.pfh2 .pfn>*:nth-child(2){animation-delay:.06s}.pfh2 .pfn>*:nth-child(3){animation-delay:.12s}
+.pfh2 .pfs>div{animation:pop3 .5s var(--out) backwards}.pfh2 .pfs>div:nth-child(2){animation-delay:.07s}.pfh2 .pfs>div:nth-child(3){animation-delay:.14s}
+@keyframes pfPop{from{opacity:0;transform:scale(.7)}}
+
+.pur{gap:10px}
+.pur-c{display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:14px;width:100%;padding:14px 16px;text-align:left;color:var(--tx);transition:transform .25s var(--out),box-shadow .25s}
+.pur-c:active{transform:scale(.985)}
+.pur-i{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--surface2);color:var(--mut)}
+.pur-t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pur-t b{font-size:15.5px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pur-t small{font-size:13px;color:var(--mut)}
+.pur-ok{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:7px;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.pur-fr{color:var(--ok);font-weight:600}
+.pur-c>.i:last-child{color:var(--faint)}
+
+/* the receipt machine: a slot, and the paper prints out of it, line by line */
+.rcp{display:flex;flex-direction:column;align-items:stretch;padding:6px 6px 0}
+.rcp-m{position:relative;z-index:2;height:34px;border-radius:18px;background:linear-gradient(180deg,var(--hero1),var(--hero2));box-shadow:0 14px 26px -14px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center}
+.rcp-led{position:absolute;left:16px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent),0 0 12px var(--ok);animation:rcLed 2s steps(2,end) 0s 1,rcLedOn 0s 2s forwards}
+.rcp-sl{width:calc(100% - 64px);height:8px;border-radius:99px;background:#050506;box-shadow:inset 0 2px 4px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1)}
+.rcp-win{position:relative;z-index:1;margin:-12px 22px 0;padding:12px 0 22px;overflow:hidden}
+.rcp-paper{position:relative;background:var(--surface);padding:26px 20px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:0 18px 40px -26px rgba(0,0,0,.45);
+  border:1px solid var(--line);border-top:0;animation:rcOut 1.5s cubic-bezier(.45,.05,.3,1) .35s both}
+@keyframes rcOut{0%{transform:translateY(-102%)}18%{transform:translateY(-82%)}30%{transform:translateY(-82%)}52%{transform:translateY(-50%)}62%{transform:translateY(-50%)}100%{transform:translateY(0)}}
+@keyframes rcLed{50%{opacity:.25}}@keyframes rcLedOn{to{opacity:1}}
+.rcp-tear{position:absolute;left:-1px;right:-1px;bottom:-9px;height:10px;background:linear-gradient(135deg,var(--surface) 5px,transparent 0) 0 0/14px 10px repeat-x,linear-gradient(225deg,var(--surface) 5px,transparent 0) 0 0/14px 10px repeat-x;filter:drop-shadow(0 3px 2px rgba(0,0,0,.08))}
+.rcp-ck{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(160deg,#3ecf84,#1f9d55);box-shadow:0 0 0 8px color-mix(in srgb,var(--ok) 14%,transparent);animation:rcCk .6s var(--spring) 1.55s both}
+@keyframes rcCk{from{opacity:0;transform:scale(.3) rotate(-25deg)}}
+.rcp-ck .i{stroke-width:3.2;stroke-dasharray:30;animation:rcDraw .45s ease-out 1.85s both}
+@keyframes rcDraw{from{stroke-dashoffset:30}}
+.rcp-h{font-size:18px;font-weight:650;letter-spacing:-.01em;animation:rcRow .45s var(--out) 1.6s both}
+.rcp-amt{font-style:normal;font-size:34px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;animation:rcRow .45s var(--out) 1.68s both}
+.rcp-rows{width:100%;margin-top:8px;border-top:1.5px dashed var(--line);padding-top:6px}
+.rcp-rows>div{display:flex;justify-content:space-between;gap:16px;padding:9px 0;font-size:14px;text-align:left;border-bottom:1px dashed var(--line);animation:rcRow .45s var(--out) calc(1.75s + var(--i)*.08s) both}
+.rcp-rows span{color:var(--mut);flex:none}.rcp-rows b{font-weight:600;text-align:right;word-break:break-word}
+.rcp-rows .tot{border-bottom:0;font-size:16px}.rcp-rows .tot span,.rcp-rows .tot b{color:var(--tx);font-weight:700}
+.rcp-f{font-size:12.5px;color:var(--faint);margin:6px 0 4px;animation:rcRow .45s var(--out) 2.3s both}
+@keyframes rcRow{from{opacity:0;transform:translateY(8px)}}
+.rcp-b .btn{padding:0 8px;font-size:14.5px}.rcp-b .btn:not(.ghost){color:var(--onInk)}
+.rcp-b{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;animation:rcRow .5s var(--out) 2.1s both}
+.rcp-help{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;animation:rcRow .5s var(--out) 2.25s both}
+.rcp-help b{display:block;font-size:15.5px}.rcp-help small{font-size:13px;color:var(--mut)}
+@media (prefers-reduced-motion:reduce){.rcp-paper,.rcp-ck,.rcp-ck .i,.rcp-h,.rcp-amt,.rcp-rows>div,.rcp-f,.rcp-b,.rcp-help{animation:none!important}}
+:host-context(html[data-lite]) .rcp-paper{animation-duration:.8s}
+
+.del-c{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:26px 20px}
+.del-c h2{font-size:19px;font-weight:650}.del-c p{font-size:14.5px;line-height:1.55;color:var(--mut);margin:0}
+.del-i{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;color:var(--err);background:color-mix(in srgb,var(--err) 12%,transparent);animation:rcCk .6s var(--spring) both}
+.del-i.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.del-n{margin-top:12px;padding:14px;border:1.5px dashed color-mix(in srgb,var(--err) 55%,transparent);border-radius:14px;text-align:center;font-size:14.5px;font-weight:500;color:var(--err);background:color-mix(in srgb,var(--err) 6%,transparent)}
+.del-l{margin:14px 4px 0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--mut);line-height:1.5}
+.del-b{gap:10px}.del-b .btn{flex:1;padding:0 12px}

@@ -68,6 +68,15 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
   download manager. Syllabus progress needs new data and is not shown (XP, streak and the overall leaderboard: see Level Up below).
 - **To remove it:** delete `v3.js`, `v3.css` and the `<script src="v3.js?v=…">` line in `index.html`.
 
+## My purchases, receipts and account deletion (`v3.js`, `supabase_v101_orders_delete.sql`)
+- **Profile** opens full screen (the dark hero reaches the top, like Level Up) with a ⋮ menu: My purchases, Exam countdown, Settings, Chat with support, Account deletion, Log out.
+- **My purchases** (Profile ⋮, Settings, menu): the student's own PAID store orders, free ones too (`cbt_my_orders`). An order opens as a receipt that prints out of a small machine
+  (CSS only, off with reduced motion). **Download / Share receipt** draw a PNG on the phone (canvas); nothing is uploaded. The receipt shows only the site name, no address or GSTIN.
+- **Account deletion** (Settings → Additional settings, or Profile ⋮): warning, then a sheet that needs the word DELETE, then `cbt_delete_request`. It is only a request in
+  `cbt_private.delete_requests`; the owner deletes the student in Admin and sets the request to `done`. The student can withdraw it (`cbt_delete_cancel`).
+- Log out asks "Do you want to log out?" first (same sheet from the menu, Settings and Profile).
+- Test by hand: `PGDATABASE=e2e node tests/e2e/purchases.js` (SHOTS=dir for screenshots). `break_it.sql` section 58 covers the SQL.
+
 ## Class + exam: first-time setup and test series for each student (`v3.js`, `store.js`, `supabase_v100_student_category.sql`)
 - **Categories:** class Class 9 / Class 10 / Class 11 / Class 12 / Dropper; exam NEET / JEE / CBSE / CUET (`PF3` in `v3.js`,
   `CLS` and `CN` in `store.js`; the classic profile in `app6.js` uses the same lists).
