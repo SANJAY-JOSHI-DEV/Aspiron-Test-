@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=122;
+const V3VER=123;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -304,6 +304,16 @@ function closeLayer(fromBack){if(!layer)return;$('#app3').classList.remove('lay'
 function openSheet(h){sheet.onclick=null;sheet.innerHTML='<div class="grab"></div>'+h;sheet.scrollTop=0;openLayer(sheet)}
 /* keyboard: lift the sheet above the on-screen keyboard (visual viewport shrinks, fixed bottom does not).
    Only the sheet itself is scrolled (never the page), and only when the keyboard goes from closed to open. */
+/* v123: with a sheet or the menu open, the page behind stays still and never reacts to touches (no scroll through the sheet, no
+   flicker of the blur), and anything that starts typing behind it (the search box) closes the sheet at once. */
+try{const still=e=>{if(!layer)return;const el=e.target&&e.target.closest?e.target.closest('.sheet,.drawer'):null;
+   if(!el){e.cancelable&&e.preventDefault();return}
+   /* inside: only a part that can really scroll may scroll; otherwise the touch would pass to the page behind */
+   if(el.scrollHeight<=el.clientHeight+1&&!e.target.closest('input,textarea,select,[contenteditable],.chips'))e.cancelable&&e.preventDefault()};
+  root.addEventListener('touchmove',still,{passive:false});
+  root.addEventListener('wheel',e=>{if(!layer)return;if(!(e.target.closest&&e.target.closest('.sheet,.drawer')))e.preventDefault()},{passive:false});
+  root.addEventListener('focusin',e=>{if(!layer||layer!==sheet)return;const t=e.target;if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)&&!sheet.contains(t)&&!drawer.contains(t))closeLayer()});
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&layer)closeLayer()})}catch(e){}
 try{if(window.visualViewport){const vv=visualViewport;let kbUp=false,last=-1;
   const fit=()=>{try{if(!sheet.classList.contains('open'))return;const a=sheet.getRootNode().activeElement;if(!(a&&sheet.contains(a)&&/^(TEXTAREA|INPUT)$/.test(a.tagName)))return;
     sheet.scrollTop+=a.getBoundingClientRect().top-sheet.getBoundingClientRect().top-(sheet.clientHeight-a.offsetHeight)/2}catch(e){}};
