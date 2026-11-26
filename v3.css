@@ -3376,3 +3376,19 @@ sup,sub{font-size:.72em;line-height:0}
 .btn.held-done{color:#fff!important;font-weight:700;opacity:1!important;filter:none!important;background:linear-gradient(180deg,#4a4290,#2f2863)!important;border:1px solid rgba(255,255,255,.22);box-shadow:0 12px 26px -14px rgba(47,40,99,.9),inset 0 1px 0 rgba(255,255,255,.22)}
 
 .catbar.in{margin:10px 0 4px}.cat-all{display:block;margin:2px 0 14px;font-size:13.5px}
+
+/* v121: the one exam-goal picker (Select your goal → Select your class) and the goal card in Filter / Profile */
+.gl-h{margin:16px 0 8px;font-size:13px;font-weight:500;color:var(--mut)}
+.gl-top{display:flex;align-items:center;gap:8px;margin:2px 0 4px}.gl-top h2{margin:0}
+.gl-bk{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line)}
+.gl-pop{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gl-t2{display:flex;align-items:center;gap:10px;min-height:60px;padding:10px 12px;border-radius:16px;background:var(--surface);border:1.5px solid var(--line);text-align:left;font-size:15px}
+.gl-t2.on,.gl-row.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 9%,var(--surface))}
+.gl-list{display:flex;flex-direction:column;gap:10px}
+.gl-row{display:grid;grid-template-columns:38px 1fr 18px;gap:12px;align-items:center;min-height:62px;padding:10px 14px 10px 12px;border-radius:16px;background:var(--surface);border:1.5px solid var(--line);text-align:left;color:var(--ink)}
+.gl-row .ti,.gl-t2 .ti{width:38px;height:38px}
+.gl-t b{display:block;font-size:15px;font-weight:600}.gl-t small{display:block;font-size:12px;color:var(--mut);font-weight:400}
+.gl-row:active,.gl-t2:active{transform:scale(.98)}
+.gl-cur{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;border:1.5px solid var(--acc);background:color-mix(in srgb,var(--acc) 9%,var(--surface));font-size:15px}
+.gl-btn{display:grid;grid-template-columns:38px 1fr auto;width:100%;text-align:left;color:var(--ink);margin:12px 0 4px}
+.gl-btn .ti{width:38px;height:38px}.gl-ch{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:600;color:var(--acc)}

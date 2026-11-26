@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=120;
+const V3VER=121;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -757,7 +757,7 @@ const preview=x=>{const sid=seriesOfItem(x.id);return sid&&(C().series||[]).some
 const bought=x=>{const sid=seriesOfItem(x.id),s=sid&&(C().series||[]).find(v=>v.id===sid);return !!(s&&s.unlocked&&!s.is_free)};
 const myCat=()=>{const p=stuProf();return {e:PF3.exam.includes(p.exam)?p.exam:'',c:PF3.cls.includes(p.cls)?p.cls:''}};
 const catOk=()=>{const m=myCat();return !!(m.e&&m.c)};
-const catTxt=()=>{const m=myCat();return [m.e,m.c].filter(Boolean).join(' · ')};
+const catTxt=()=>{const m=myCat();return [m.e&&(typeof goalName==='function'?goalName(m.e):m.e),m.c].filter(Boolean).join(' · ')};
 /* a series is for this student when its exam / class tags (Admin → Tests page; none = everyone) include theirs */
 const forMe=x=>{if(TQ.all)return true;const m=myCat(),g=tagsOf(x),has=(L,v)=>!v||!L.length||L.some(t=>String(t).toLowerCase()===v.toLowerCase());return has(g.e,m.e)&&has(g.c,m.c)};
 const shop=()=>(STORE||[]).filter(x=>!bought(x)&&forMe(x));
@@ -801,17 +801,35 @@ function catBar(){if(!catOk()||STORE===null)return '';const hid=(STORE||[]).filt
   return `<div class="catbar${TQ.all?' all':''}"><span class="ti g">${ic('target',18)}</span><span class="catbar-t"><small>${TQ.all?'Showing every test series':'Test series for you'}${TQ.all?' · <button class="lnk" data-a="catMine">Only mine</button>':hid?` · <button class="lnk" data-a="catAll">See all</button>`:''}</small><b>${esc3(catTxt())}</b></span>
    <button class="btn sm" data-a="catEdit">${ic('pen',14)}Change</button></div>`}
 A.catAll=()=>{TQ.all=true;drawT()};A.catMine=()=>{TQ.all=false;drawT()};
-/* quick change of class and exam (a sheet): saved in the profile at once, the app redraws for the new category */
-let CATD=null;
-function catSheet(){const d=CATD,chip=(k,v)=>`<button type="button" class="${d[k]===v?'on':''}" aria-pressed="${d[k]===v}" data-a="catPick" data-k="${k}" data-v="${esc3(v)}">${esc3(v)}</button>`;
-  openSheet(`<h2 id="sheetT">Your class and exam</h2><p class="sub">The app shows the test series and tips for this. Change it any time.</p>
-   <div class="fl" style="margin-top:14px"><span>Your class</span><div class="chips wrap">${PF3.cls.map(v=>chip('cls',v)).join('')}</div></div>
-   <div class="fl" style="margin-top:14px"><span>Target exam</span><div class="chips wrap">${PF3.exam.map(v=>chip('exam',v)).join('')}</div></div>
-   <button class="btn blk" style="margin-top:18px" data-a="catSave"${d.cls&&d.exam?'':' disabled'}>${ic('check',16)}Save</button>`)}
-A.catEdit=()=>{const m=myCat();CATD={cls:m.c,exam:m.e};closeLayer();setTimeout(catSheet,RM?0:180)};
-A.catPick=el=>{CATD[el.dataset.k]=el.dataset.v;catSheet()};
-A.catSave=()=>{if(!CATD||!CATD.cls||!CATD.exam)return;try{pfSave(Object.assign({},stuProf(),{cls:CATD.cls,exam:CATD.exam}));if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');return}
-  TQ.all=false;closeLayer();toast3('Now showing '+catTxt());setTimeout(()=>{if(S.tab==='test')drawT();softRender()},300)};
+/* ONE place to choose the exam goal (v121), the same on every path: Tests filter, Settings, menu, Profile.
+   Step 1 "Select your goal" (NEET, IIT-JEE, CBSE Boards, CUET) → step 2 "Select your class" (only the classes that make
+   sense for that exam). Tapping a class saves it at once, no Save button. Saved in the profile as exam + cls, as always. */
+const GOALS=[
+ {k:'NEET',t:'NEET',s:'Medical entrance',i:'steth',cls:['Class 11','Class 12','Dropper']},
+ {k:'JEE',t:'IIT-JEE',s:'Engineering entrance',i:'atom',cls:['Class 11','Class 12','Dropper']},
+ {k:'CBSE',t:'CBSE Boards',s:'Class 9 to 12 board exams',i:'book',cls:['Class 9','Class 10','Class 11','Class 12']},
+ {k:'CUET',t:'CUET',s:'University entrance',i:'target',cls:['Class 12','Dropper']}];
+const goalOf=k=>GOALS.find(g=>g.k===k);
+const goalName=k=>(goalOf(k)||{}).t||k;
+let GOD=null;
+function goalSheet(){const d=GOD,cur=myCat();let h;
+  if(d.st===1){const row=g=>`<button type="button" class="gl-row${cur.e===g.k?' on':''}" data-a="goalPick" data-v="${g.k}"><span class="ti g">${ic(g.i,20)}</span><span class="gl-t"><b>${g.t}</b><small>${g.s}</small></span>${ic('right',18)}</button>`;
+   h=`<h2 id="sheetT">Select your goal</h2><p class="sub">The app shows the test series and tips for this. Change it any time.</p>
+    ${catOk()?`<p class="gl-h">Your goal now</p><div class="gl-cur">${ic('check',18)}<b>${esc3(goalName(cur.e))} · ${esc3(cur.c)}</b></div>`:''}
+    <p class="gl-h">Popular exams</p><div class="gl-pop">${GOALS.slice(0,2).map(g=>`<button type="button" class="gl-t2${cur.e===g.k?' on':''}" data-a="goalPick" data-v="${g.k}"><span class="ti g">${ic(g.i,22)}</span><b>${g.t}</b></button>`).join('')}</div>
+    <p class="gl-h">More exams</p><div class="gl-list">${GOALS.slice(2).map(row).join('')}</div>`}
+  else{const g=goalOf(d.exam);
+   h=`<div class="gl-top"><button type="button" class="gl-bk" data-a="goalBack" aria-label="Back">${ic('back',20)}</button><h2 id="sheetT">Select your class</h2></div><p class="gl-h">${esc3(g.t)}</p>
+    <div class="gl-list">${g.cls.map(c=>`<button type="button" class="gl-row${cur.e===g.k&&cur.c===c?' on':''}" data-a="goalCls" data-v="${c}"><span class="ti g">${ic(g.i,20)}</span><span class="gl-t"><b>${c}</b></span>${ic('right',18)}</button>`).join('')}</div>`}
+  if(layer===sheet){sheet.innerHTML='<div class="grab"></div>'+h;sheet.scrollTop=0}else openSheet(h)}
+A.catEdit=()=>{GOD={st:1,exam:''};if(layer&&layer!==sheet)closeLayer();if(layer===sheet){closeLayer();setTimeout(goalSheet,RM?0:180)}else goalSheet()};
+A.goalPick=el=>{if(!goalOf(el.dataset.v))return;GOD={st:2,exam:el.dataset.v};goalSheet()};
+A.goalBack=()=>{GOD={st:1,exam:''};goalSheet()};
+A.goalCls=el=>{const g=GOD&&goalOf(GOD.exam),c=el.dataset.v;if(!g||!g.cls.includes(c))return;
+  const t=scrOpen()&&top();if(t&&t.key==='prof'&&PFD)pfForm();
+  try{pfSave(Object.assign({},stuProf(),{cls:c,exam:g.k}));if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');return}
+  if(PFD){PFD.cls=c;PFD.exam=g.k}
+  TQ.all=false;closeLayer();hap(8);toast3('Now showing '+catTxt());setTimeout(()=>{if(S.tab==='test')drawT();if(t&&t.key==='prof'&&PFD)redraw();softRender()},300)};
 
 /* ---------- top: the poster from Admin → Tests page, edge to edge, with the search on it and the two big buttons on its bottom ---------- */
 function tabs2(){const c=myCount(),n=shop().filter(x=>x.buy_on!==false).length;
@@ -921,11 +939,11 @@ A.tqClear=()=>{TQ.q='';$('#tq').value='';drawT();$('#tq').focus()};
 A.tClear=()=>{TQ.q='';TQ.f={e:[],c:[],s:[]};const q=$('#tq');if(q)q.value='';drawT()};
 A.cat=el=>{TQ.cat=el.dataset.v;drawT()};
 A.mf=el=>{TQ.mf=el.dataset.v;redraw()};
-A.tFilter=()=>{loadLook();const G=[['e','Exam',LK().exams],['c','Class',LK().classes],['s','Subject',LK().subjects]].filter(g=>g[2].length);
-  /* v120: your class and exam (Change) and "show every series" live here, not on the page */
-  const mine=()=>catOk()&&STORE!==null?`<div class="catbar in"><span class="ti g">${ic('target',18)}</span><span class="catbar-t"><small>${TQ.all?'Showing every test series':'Test series for you'}</small><b>${esc3(catTxt())}</b></span><button class="btn sm" data-a="catEdit">${ic('pen',14)}Change</button></div>
-   <button class="lnk cat-all" data-ca>${TQ.all?'Show only my class and exam':'Show every test series'}</button>`:'';
-  const draw=()=>{sheet.innerHTML=`<div class="grab"></div><h2 id="sheetT">Filter</h2><p class="sub">Pick your exam, class and subject.</p>${mine()}
+A.tFilter=()=>{loadLook();const G=[['s','Subject',LK().subjects]].filter(g=>g[2].length);
+  /* v121: your exam goal sits at the top, one tap opens the goal picker; below it only Subject (exam and class are the goal) */
+  const mine=()=>`<button type="button" class="gl-cur gl-btn" data-a="catEdit"><span class="ti g">${ic('target',18)}</span><span class="gl-t"><small>${catOk()&&STORE!==null&&TQ.all?'Showing every test series':'Your exam goal'}</small><b>${catOk()?esc3(goalName(myCat().e)+' · '+myCat().c):'Choose your exam goal'}</b></span><span class="gl-ch">Change${ic('right',16)}</span></button>
+   ${catOk()&&STORE!==null?`<button class="lnk cat-all" data-ca>${TQ.all?'Show only my class and exam':'Show every test series'}</button>`:''}`;
+  const draw=()=>{sheet.innerHTML=`<div class="grab"></div><h2 id="sheetT">Filter</h2><p class="sub">Your exam goal and subject.</p>${mine()}
    ${G.map(([k,l,o])=>`<div class="fg"><h3>${l}</h3><div class="chips wrap">${o.map(v=>`<button class="${TQ.f[k].includes(v)?'on':''}" aria-pressed="${TQ.f[k].includes(v)}" data-fk="${k}" data-fv="${esc3(v)}">${esc3(v)}</button>`).join('')}</div></div>`).join('')}
    <div class="sheet-ft"><button class="btn ghost" data-fc>Clear</button><button class="btn" data-fa>Show ${(STORE||[]).filter(spass).length} test series</button></div>`};
   openSheet('');draw();sheet.onclick=e=>{const c=e.target.closest('[data-fk]');if(c){const a=TQ.f[c.dataset.fk],v=c.dataset.fv,i=a.indexOf(v);i>-1?a.splice(i,1):a.push(v);const y=sheet.scrollTop;draw();sheet.scrollTop=y;drawT();return}
@@ -1670,15 +1688,13 @@ function profileView(){return {t:'My profile',s:'Your details and progress',key:
     <div class="pfs"><div><b>${fmtN(xpNow())}</b><small>XP</small></div><div><b>${st.avg!=null?Math.round(st.avg):0}%</b><small>Average</small></div><div><b>${xpMe().streak||0}</b><small>Day streak</small></div></div></section>
    <form class="card pff" id="pfForm" autocomplete="on" onsubmit="return false">
     ${PF3.f.map(f=>`<label class="fl"><span>${f[1]}</span><input class="inp" name="${f[0]}" type="${f[2]}" placeholder="${f[3]}" autocomplete="${f[4]}" maxlength="80" value="${esc3(f[0]==='name'?nm:(o[f[0]]||''))}"></label>`).join('')}
-    <div class="fl"><span>Class</span><div class="chips wrap">${PF3.cls.map(c=>`<button type="button" class="${o.cls===c?'on':''}" aria-pressed="${o.cls===c}" data-a="pfPick" data-k="cls" data-v="${c}">${c}</button>`).join('')}</div></div>
-    <div class="fl"><span>Target exam</span><div class="chips wrap">${PF3.exam.map(c=>`<button type="button" class="${o.exam===c?'on':''}" aria-pressed="${o.exam===c}" data-a="pfPick" data-k="exam" data-v="${c}">${c}</button>`).join('')}</div></div>
+    <div class="fl"><span>Exam goal</span><button type="button" class="gl-cur gl-btn" data-a="catEdit"><span class="ti g">${ic('target',18)}</span><span class="gl-t"><b>${o.exam&&o.cls?esc3(goalName(o.exam)+' · '+o.cls):'Choose your exam goal'}</b></span><span class="gl-ch">Change${ic('right',16)}</span></button></div>
     <label class="fl"><span>About or goal</span><textarea class="inp" name="about" rows="3" maxlength="300" placeholder="e.g. Aim for 650+ in NEET">${esc3(o.about||'')}</textarea></label>
     <p class="hint" style="margin:0">All optional. Saved to your account, so it comes back on any phone.</p></form>
    <div class="buybar"><span class="mut" style="font-size:13px">Changes are saved when you tap Save</span><button class="btn" data-a="pfSave">${ic('check',16)}Save profile</button></div>`},
   after:()=>{const f=$('#pfFile');f&&f.addEventListener('change',()=>pfPhoto(f))}}}
 A.profile=()=>{PFD=Object.assign({},stuProf());closeLayer();push(profileView())};
 const pfForm=()=>{const F=$('#pfForm');if(!F)return;PF3.f.forEach(f=>{const i=F.querySelector(`[name="${f[0]}"]`);if(i)PFD[f[0]]=i.value.trim()});const a=F.querySelector('[name=about]');if(a)PFD.about=a.value.trim()};
-A.pfPick=el=>{pfForm();PFD[el.dataset.k]=el.dataset.v;redraw()};   // class and exam are always set (no tap-to-clear): the app is built around them
 A.pfSave=()=>{pfForm();const o=Object.assign({},stuProf(),PFD);if(AUTH&&o.name===(AUTH.name||'').trim())delete o.name;
   if(o.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.email)){toast3('Please check your email');return}
   try{pfSave(o);if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');return}
@@ -3197,20 +3213,20 @@ function obStep(){const d=OB.d,nm=String((AUTH&&AUTH.name)||'').trim().split(' '
     <p>A quick tour, then two choices: your class and your exam. The app shows the test series, tips and ranks made for you.</p>`;
   if(OB.st===1)return `${k}<h1>How the app works</h1><p>Everything you need for your exam, in one place.</p>
     <div class="ob-guide">${[['layers','Test series','Full syllabus, chapter-wise and mock tests in the real exam pattern'],['trophy','Live tests and All-India rank','Attempt with everyone at the same time and see where you stand'],['chart','Result analysis','Score, accuracy and time for each subject, and a mistake notebook'],['pyq','PYQ and question bank','Past year questions, chapter by chapter, to practise any time']].map((g,i)=>`<div class="ob-g" style="--i:${i}"><span class="ti g">${ic(g[0],20)}</span><span><b>${g[1]}</b><small>${g[2]}</small></span></div>`).join('')}</div>`;
-  if(OB.st===2)return `${k}<h1>Which class are you in?</h1><p>Tap one. You can change it later.</p>
-    <div class="ob-tiles cls" role="radiogroup" aria-label="Your class">${PF3.cls.map((c,i)=>`<button role="radio" class="ob-t${d.cls===c?' on':''}" aria-checked="${d.cls===c}" data-ob="cls" data-v="${c}" style="--i:${i}"><span class="ob-n">${OBC[c][0]}</span><b>${c}</b><small>${OBC[c][1]}</small><i class="ob-ck">${ic('check',14)}</i></button>`).join('')}</div>`;
-  if(OB.st===3)return `${k}<h1>What are you preparing for?</h1><p>Your test series and ranks follow this exam.</p>
-    <div class="ob-tiles ex" role="radiogroup" aria-label="Target exam">${PF3.exam.map((c,i)=>`<button role="radio" class="ob-t${d.exam===c?' on':''}" aria-checked="${d.exam===c}" data-ob="exam" data-v="${c}" style="--i:${i}"><span class="ti g">${ic(OBE[c][0],22)}</span><b>${c}</b><small>${OBE[c][1]}</small><i class="ob-ck">${ic('check',14)}</i></button>`).join('')}</div>`;
+  if(OB.st===3)return `${k}<h1>Which class are you in?</h1><p>Tap one. You can change it later.</p>
+    <div class="ob-tiles cls" role="radiogroup" aria-label="Your class">${(goalOf(d.exam)||{cls:PF3.cls}).cls.map((c,i)=>`<button role="radio" class="ob-t${d.cls===c?' on':''}" aria-checked="${d.cls===c}" data-ob="cls" data-v="${c}" style="--i:${i}"><span class="ob-n">${OBC[c][0]}</span><b>${c}</b><small>${OBC[c][1]}</small><i class="ob-ck">${ic('check',14)}</i></button>`).join('')}</div>`;
+  if(OB.st===2)return `${k}<h1>What are you preparing for?</h1><p>Your test series and ranks follow this exam.</p>
+    <div class="ob-tiles ex" role="radiogroup" aria-label="Target exam">${PF3.exam.map((c,i)=>`<button role="radio" class="ob-t${d.exam===c?' on':''}" aria-checked="${d.exam===c}" data-ob="exam" data-v="${c}" style="--i:${i}"><span class="ti g">${ic(OBE[c][0],22)}</span><b>${esc3(goalName(c))}</b><small>${OBE[c][1]}</small><i class="ob-ck">${ic('check',14)}</i></button>`).join('')}</div>`;
   const np=npOn3(),inst=standalone3();
-  return `<div class="ob-done"><span class="ob-ring">${ic('check',34)}</span></div><small class="ob-k">ALL SET</small><h1>Your app is ready for ${esc3(d.exam)} · ${esc3(d.cls)}</h1>
+  return `<div class="ob-done"><span class="ob-ring">${ic('check',34)}</span></div><small class="ob-k">ALL SET</small><h1>Your app is ready for ${esc3(goalName(d.exam))} · ${esc3(d.cls)}</h1>
     <p>Turn on alerts so you never miss a live test or a result.</p>
     <div class="card rows ob-rows"><button class="row" data-ob="np"><span class="ti g">${ic('bell',20)}</span><span><b>Phone notifications</b><small>${np?'On. You are all set.':'Test alerts, results and notices'}</small></span><span class="sw${np?' on':''}" aria-hidden="true"></span></button>
      ${inst?'':`<button class="row" data-ob="inst"><span class="ti g">${ic('dl',20)}</span><span><b>Install the app</b><small>Open it from your home screen</small></span>${ic('right',18)}</button>`}</div>`}
-function obDraw(dir){const el=OB.el;if(!el)return;const last=OB.st===OBN-1,ok=OB.st===2?!!OB.d.cls:OB.st===3?!!OB.d.exam:true;
+function obDraw(dir){const el=OB.el;if(!el)return;const last=OB.st===OBN-1,ok=OB.st===2?!!OB.d.exam:OB.st===3?!!OB.d.cls:true;
   el.innerHTML=`<div class="ob-in"><div class="ob-top"><div class="ob-dots" aria-hidden="true">${[...Array(OBN)].map((_,i)=>`<i class="${i===OB.st?'on':i<OB.st?'done':''}"></i>`).join('')}</div>${last?'<button class="ob-skip" data-ob="skip">Close</button>':'<span class="ob-need">Takes 1 minute</span>'}</div>
    <div class="ob-b ${dir||''}" aria-live="polite">${obStep()}</div>
    <div class="ob-ft">${OB.st?'<button class="btn ghost" data-ob="back">Back</button>':''}<button class="btn ${OB.st===0||last?'gold lg':''}" data-ob="next"${ok?'':' disabled'}>${OB.st===0?'Let’s start':last?'Go to my dashboard':OB.st===1?'Got it':'Continue'}${ic('right',16)}</button></div></div>`}
-function obNext(){if(OB.st===2&&!OB.d.cls||OB.st===3&&!OB.d.exam)return;
+function obNext(){if(OB.st===2&&!OB.d.exam||OB.st===3&&!OB.d.cls)return;
   if(OB.st===3){try{pfSave(Object.assign({},stuProf(),{cls:OB.d.cls,exam:OB.d.exam}));if(typeof pfHdr==='function')pfHdr()}catch(err){toast3('Could not save. Please try again.');return}lsSet(obKey(),1);TQ.all=false}
   if(OB.st===OBN-1){obClose(true);return}OB.st++;obDraw(RM?'':'fwd')}
 function openOnb(){const p=stuProf();OB.d={cls:PF3.cls.includes(p.cls)?p.cls:'',exam:PF3.exam.includes(p.exam)?p.exam:p.exam==='Boards'?'CBSE':''};OB.st=0;
@@ -3218,7 +3234,7 @@ function openOnb(){const p=stuProf();OB.d={cls:PF3.cls.includes(p.cls)?p.cls:'',
   requestAnimationFrame(()=>el.classList.add('open'));
   el.addEventListener('click',async e=>{const b=e.target.closest('[data-ob]');if(!b)return;const k=b.dataset.ob;
     /* a tile: tick it, then move on by itself after a short beat */
-    if(k==='cls'||k==='exam'){OB.d[k]=b.dataset.v;hap(8);el.querySelectorAll(`[data-ob="${k}"]`).forEach(t=>{const on=t===b;t.classList.toggle('on',on);t.setAttribute('aria-checked',on)});
+    if(k==='cls'||k==='exam'){OB.d[k]=b.dataset.v;if(k==='exam'&&OB.d.cls&&!(goalOf(OB.d.exam).cls.includes(OB.d.cls)))OB.d.cls='';hap(8);el.querySelectorAll(`[data-ob="${k}"]`).forEach(t=>{const on=t===b;t.classList.toggle('on',on);t.setAttribute('aria-checked',on)});
       const nx=el.querySelector('[data-ob="next"]');nx&&(nx.disabled=false);const st=OB.st;setTimeout(()=>{if(OB.el&&OB.st===st)obNext()},RM?0:420);return}
     if(k==='skip'){if(catOk())obClose(true);return}
     if(k==='back'){OB.st=Math.max(0,OB.st-1);obDraw(RM?'':'bwd');return}
@@ -3626,7 +3642,7 @@ draw=function(){if(!on()||!T||!P)return _draw.apply(this,arguments);
      <div class="x3os">${q.options.map(opt).join('')}</div>${pracFb(q,a)}
      ${a!=null&&!T.practice?'<button class="x3clr" onclick="clr()">Clear response</button>':''}</section>
     <aside class="x3side"><div class="x3who"><span>${esc(((AUTH&&AUTH.name)||'?').trim()[0].toUpperCase())}</span><div><b>${esc((AUTH&&AUTH.name)||'')}</b><small>Candidate</small></div></div>${xPal()}<button class="x3sub blk" onclick="submitAsk()">Submit test</button></aside></div>
-   <footer class="x3f">${lock?'':`<button class="x3nav" ${P.cur===0?'disabled':''} onclick="go(${P.cur-1})" aria-label="Previous question">${ic('left',20)}</button>`}
+   <footer class="x3f">${lock?'':`<button class="x3nav" ${P.cur===0?'disabled':''} onclick="go(${P.cur-1})" aria-label="Previous question">${ic('back',20)}</button>`}
     <button class="x3pb" onclick="pal(true)" aria-label="Question palette">${ic('grid',18)}<span>${done}/${n}</span></button>
     <button class="x3mn" onclick="markNext()">${ic('flag',16)}<span>Mark &amp; Next</span></button>
     <button class="x3sn" onclick="saveNext()"><span>${P.cur===n-1?'Save':'Save &amp; Next'}</span>${ic('right',18)}</button></footer>
@@ -3654,7 +3670,7 @@ if(typeof gDraw==='function'&&typeof gSt==='function'){const _gd=gDraw;
        <div class="x3os">${(q.options||[]).map((o,i)=>`<button class="x3op${a===i?' sel':''}" onclick="gSel(${i})" aria-pressed="${a===i}"><span class="k">${L[i]}</span><span class="t">${esc(o)}${imgTag(q.oimg&&q.oimg[i],'oi')}</span></button>`).join('')}</div>
        ${a!=null?'<button class="x3clr" onclick="gClr()">Clear response</button>':''}</section>
       <aside class="x3side"><div class="x3who"><span>${esc(((AUTH&&AUTH.name)||'?').trim()[0].toUpperCase())}</span><div><b>${esc((AUTH&&AUTH.name)||'')}</b><small>Candidate</small></div></div>${gPal3()}<button class="x3sub blk" onclick="gAsk()">Submit test</button></aside></div>
-     <footer class="x3f"><button class="x3nav" ${GP.cur===0?'disabled':''} onclick="gGo(${GP.cur-1})" aria-label="Previous question">${ic('left',20)}</button>
+     <footer class="x3f"><button class="x3nav" ${GP.cur===0?'disabled':''} onclick="gGo(${GP.cur-1})" aria-label="Previous question">${ic('back',20)}</button>
       <button class="x3pb" onclick="gPalT(true)" aria-label="Question palette">${ic('grid',18)}<span>${done}/${n}</span></button>
       <button class="x3mn" onclick="gMarkNext()">${ic('flag',16)}<span>Mark &amp; Next</span></button>
       <button class="x3sn" onclick="gSaveNext()"><span>${GP.cur===n-1?'Save':'Save &amp; Next'}</span>${ic('right',18)}</button></footer>
