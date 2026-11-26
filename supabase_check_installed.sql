@@ -134,7 +134,9 @@ select 39, 'supabase_v99_xp_marks.sql', case when to_regprocedure('cbt_private.l
   else 'MISSING — run this file (after v98)' end
 union all
 -- v100: 'ok' when the store can set a series for CBSE / CUET
-select 40, 'supabase_v100_student_category.sql', case when pg_get_functiondef(to_regprocedure('public.cbt_admin_store_layout(text,text,jsonb)')) like '%cuet%' then 'ok'
+-- (after v35 the real code is in cbt_private.cbt_admin_store_layout__core; the public one is only the permission wrapper)
+select 40, 'supabase_v100_student_category.sql', case when coalesce(pg_get_functiondef(to_regprocedure('cbt_private.cbt_admin_store_layout__core(text,text,jsonb)')),
+    pg_get_functiondef(to_regprocedure('public.cbt_admin_store_layout(text,text,jsonb)'))) like '%cuet%' then 'ok'
   else 'MISSING — run this file' end
 union all
 -- v101: 'ok' when My purchases (receipts) and the account deletion request are in
