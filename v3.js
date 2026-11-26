@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=115;
+const V3VER=116;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -2853,14 +2853,20 @@ function xpPill(n,tries){if(!root||n<=0)return;tries=tries||0;
   root.appendChild(p);p.addEventListener('click',()=>{p.remove();openLevel()});
   const r=chip&&chip.getBoundingClientRect();
   if(!chip||RM||!p.animate||r.bottom<0||r.top>innerHeight){setTimeout(()=>p.classList.add('out'),2600);setTimeout(()=>p.remove(),3200);return}
-  p.classList.add('fly');const w=p.offsetWidth,h=p.offsetHeight,x0=innerWidth/2-w/2,y0=innerHeight-150-h,
-    dx=r.left+r.width/2-w/2-x0,dy=r.top+r.height/2-h/2-y0,b=chip.querySelector('b'),to=xpNow(),from=Math.max(0,to-n),
-    k=v=>v>=10000?(Math.round(v/100)/10)+'k':fmtN(v);
-  p.style.left=x0+'px';p.style.top=y0+'px';if(b)b.textContent=k(from);
-  const a=p.animate([{opacity:0,transform:'translate(0,40px) scale(.7)'},{opacity:1,transform:'translate(0,0) scale(1.06)',offset:.18},{opacity:1,transform:'translate(0,0) scale(1)',offset:.42},
-    {opacity:1,transform:`translate(${dx}px,${dy}px) scale(.42)`,offset:.88},{opacity:0,transform:`translate(${dx}px,${dy}px) scale(.2)`}],{duration:1900,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
-  a.onfinish=()=>{p.remove();if(!chip.isConnected)return;chip.classList.add('xp-hit');setTimeout(()=>chip.classList.remove('xp-hit'),900);
-    const t0=performance.now(),d=Math.min(1100,400+n*3),f=t=>{const q=Math.min(1,(t-t0)/d);if(b&&b.isConnected)b.textContent=k(Math.round(from+(to-from)*(1-Math.pow(1-q,3))));if(q<1)requestAnimationFrame(f)};requestAnimationFrame(f)}}
+  p.classList.add('fly');p.innerHTML=`<i class="xhex">${ic('xp',16)}</i><b>+${fmtN(n)} XP</b>`;
+  const w=p.offsetWidth,h=p.offsetHeight,x0=innerWidth/2-w/2,y0=innerHeight-170-h,x1=r.left+r.width/2-w/2,y1=r.top+r.height/2-h/2,
+    b=chip.querySelector('b'),to=xpNow(),from=Math.max(0,to-n),k=v=>v>=10000?(Math.round(v/100)/10)+'k':fmtN(v),
+    ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,sw=(x1<innerWidth/2?-1:1)*Math.min(70,innerWidth*.16);   // a gentle curve, not a straight line
+  p.style.left='0px';p.style.top='0px';if(b)b.textContent=k(from);
+  const T=4200,K=[],pt=(x,y,sc,o,off)=>K.push({transform:`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${sc})`,opacity:o,offset:off});
+  pt(x0,y0+36,.6,0,0);pt(x0,y0-4,1.07,1,.13);pt(x0,y0,1,1,.2);pt(x0,y0-6,1,1,.36);   // rises in softly, rests, floats a little
+  for(let q=1;q<=30;q++){const u=q/30,e=ease(u),cx=(x0+x1)/2+sw,cy=(y0+y1)/2,   // then glides up to the XP number, shrinking
+    x=(1-e)*(1-e)*x0+2*(1-e)*e*cx+e*e*x1,y=(1-e)*(1-e)*(y0-6)+2*(1-e)*e*cy+e*e*y1;pt(x,y,1-.58*e,u>.9?(1-u)*8+.2:1,.36+.56*u)}
+  pt(x1,y1,.3,0,1);
+  const a=p.animate(K,{duration:T,easing:'linear',fill:'forwards'});
+  const land=()=>{if(!chip.isConnected)return;chip.classList.add('xp-hit');setTimeout(()=>chip.classList.remove('xp-hit'),1300);
+    const t0=performance.now(),d=Math.min(2400,900+n*7),f=t=>{const q=Math.min(1,(t-t0)/d);if(b&&b.isConnected)b.textContent=k(Math.round(from+(to-from)*(1-Math.pow(1-q,3))));if(q<1)requestAnimationFrame(f)};requestAnimationFrame(f)};
+  setTimeout(land,T*.9);a.onfinish=()=>p.remove()}
 
 /* ---- climb celebration: rays, the new crest, confetti (not in lite mode / reduced motion) ---- */
 function lvCelebrate(i,last){if(!root)return;const L=lvAt(i+1),dr=i===DR3,lite=document.documentElement.hasAttribute('data-lite');
