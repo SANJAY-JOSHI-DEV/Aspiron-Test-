@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=118;
+const V3VER=119;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -879,7 +879,9 @@ addEventListener('scroll',()=>{if(!root||!main||pstRaf)return;if(S.tab!=='test'&
 addEventListener('resize',()=>{if(root&&S.tab==='test')pstSync(true)},{passive:true});
 
 /* ---------- store view ---------- */
-function offer3(){const L=shop().filter(x=>x.buy_on!==false&&x.price).sort((a,b)=>offPct(b)-offPct(a)).slice(0,3);if(L.length<2)return '';
+function offer3(){const ok=x=>x.buy_on!==false&&x.price,mine=shop().filter(ok).sort((a,b)=>offPct(b)-offPct(a)),ids=new Set(mine.map(x=>x.id));
+  // v119: the three offer cards always show: the student's own class/exam first, then the best offers from other categories (the category filter had left only one)
+  const more=(STORE||[]).filter(x=>!bought(x)&&ok(x)&&!ids.has(x.id)).sort((a,b)=>offPct(b)-offPct(a)),L=mine.concat(more).slice(0,3);if(L.length<2)return '';
   return `<section class="sec"><div class="off3">${L.map(x=>`<button class="o3" data-a="xp" data-id="${esc3(x.id)}"><span class="o3i">${ic('spark',20)}</span><b>${esc3(x.title)}</b><em>${offPct(x)?`${offPct(x)}% off, now ₹${fmtN(x.price)}`:`Now @ ₹${fmtN(x.price)}`}</em></button>`).join('')}</div></section>`}
 function iCard(x){const r=rvOf(x),soon=x.buy_on===false;
   return `<article class="card ic2"><button class="cv" data-a="xp" data-id="${esc3(x.id)}" aria-label="Explore ${esc3(x.title)}">${coverOf(x)}${offPct(x)?`<span class="badge off cvb">${offPct(x)}% off</span>`:''}${soon?'<span class="badge pro cvb">Coming soon</span>':x.badge?`<span class="badge pro cvb">${esc3(x.badge)}</span>`:''}</button>
