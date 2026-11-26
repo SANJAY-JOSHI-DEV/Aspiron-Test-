@@ -3462,10 +3462,13 @@ sup,sub{font-size:.72em;line-height:0}
 .rcp-ck .i{stroke-width:3.2}
 .rcp-h{font-size:15.5px;font-weight:650;letter-spacing:-.01em}
 .rcp-amt{font-style:normal;font-size:28px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
-.rcp-rows{width:100%;margin-top:4px;border-top:1.5px dashed var(--line);padding-top:2px}
-.rcp-rows>div{display:flex;justify-content:space-between;gap:14px;padding:7px 0;font-size:13px;text-align:left;border-bottom:1px dashed var(--line)}
-.rcp-rows span{color:var(--mut);flex:none}.rcp-rows b{font-weight:600;text-align:right;word-break:break-word}
-.rcp-rows .tot{border-bottom:0;font-size:14.5px}.rcp-rows .tot span,.rcp-rows .tot b{color:var(--tx);font-weight:700}
+.rcp-br{display:flex;align-items:center;gap:10px;width:100%;padding-bottom:10px;border-bottom:2px solid var(--acc1);text-align:left}
+.rcp-br img{width:34px;height:34px;border-radius:9px;flex:none}.rcp-br span{display:flex;flex-direction:column}.rcp-br b{font-size:14.5px;font-weight:650}.rcp-br small{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.rcp-rows{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;overflow:hidden;text-align:left}
+.rcp-rows>div{display:grid;grid-template-columns:36% 1fr;font-size:12.5px;border-bottom:1px solid var(--line)}
+.rcp-rows>div:last-child{border-bottom:0}
+.rcp-rows span{color:var(--mut);background:var(--surface2);padding:7px 10px;border-right:1px solid var(--line)}.rcp-rows b{font-weight:600;padding:7px 10px;word-break:break-word}
+.rcp-rows .tot span,.rcp-rows .tot b{font-size:14px;font-weight:700;color:var(--tx);background:color-mix(in srgb,var(--acc1) 28%,transparent)}
 .rcp-f{font-size:11.5px;color:var(--faint);margin:4px 0 2px}
 /* the finger: shows how to swipe the paper down */
 .rcp-fg{position:absolute;left:50%;top:38%;width:40px;height:40px;margin-left:-14px;opacity:0;pointer-events:none;color:var(--ink);filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))}

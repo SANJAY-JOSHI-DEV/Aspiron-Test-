@@ -7,6 +7,8 @@ window.CBT_CONFIG = {
   // Email + password and Google sign-in: false = shown but locked (nothing can be typed or sent). Set true after PENDING.md 4.3.
   EMAIL_LOGIN: true,
   SITE_NAME: "Aspiron Education",
+  // Printed on the student's downloaded receipt (My purchases). Leave "" to hide a line. Fill in only real details.
+  INVOICE: { address: "", gstin: "", email: "" },
   // Student support (chat only, no calls) — shown everywhere a student can ask for help: app, store, payment verify
   SUPPORT_URL: "https://t.me/Students_support_teams",      // Telegram
   SUPPORT_WA: "https://wa.me/message/47QZ42AJBL4AE1",      // WhatsApp: a wa.me link, or a number with country code ("" hides WhatsApp)
