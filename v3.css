@@ -3374,3 +3374,5 @@ sup,sub{font-size:.72em;line-height:0}
 
 /* the Done button on the 'Test submitted' screen: solid colour, white text, always readable */
 .btn.held-done{color:#fff!important;font-weight:700;opacity:1!important;filter:none!important;background:linear-gradient(180deg,#4a4290,#2f2863)!important;border:1px solid rgba(255,255,255,.22);box-shadow:0 12px 26px -14px rgba(47,40,99,.9),inset 0 1px 0 rgba(255,255,255,.22)}
+
+.catbar.in{margin:10px 0 4px}.cat-all{display:block;margin:2px 0 14px;font-size:13.5px}
