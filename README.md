@@ -75,7 +75,7 @@ the OCR worker and language data still load from jsDelivr / tessdata as before),
 - **Account deletion** (Settings → Additional settings, or Profile ⋮): warning, then a sheet that needs the word DELETE, then `cbt_delete_request`. It is only a request in
   `cbt_private.delete_requests`; the owner deletes the student in Admin and sets the request to `done`. The student can withdraw it (`cbt_delete_cancel`).
 - **Who handles a deletion request:** the owner, in Admin → Students & accounts → Deletion requests (`cx/m-delreq.js`, `supabase_v102_delete_requests.sql`, then v35 again). Needs Full access to Students; a viewer can only look.
-  The app shows the student a 24-hour countdown; the app and the server never delete by themselves. Delete now = Students → Delete, and the request keeps only the last 4 digits of the number.
+  The app shows the student the 24-hour promise; the app and the server never delete by themselves. Delete now = Students → Delete, and the request keeps only the last 4 digits of the number.
 - Log out asks "Do you want to log out?" first (same sheet from the menu, Settings and Profile).
 - Test by hand: `PGDATABASE=e2e node tests/e2e/purchases.js` (SHOTS=dir for screenshots). `break_it.sql` sections 58 and 59 cover the SQL; `tests/e2e/delreq_admin.js` the admin page.
 

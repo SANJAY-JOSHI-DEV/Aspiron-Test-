@@ -108,7 +108,7 @@ const MOB = '9000000001', CODE = 'AAAA1111';
     ok(!(await S(p, 'return root.querySelector("#delB").disabled')), 'delete 3 typing DELETE turns Submit on');
     await click(p, '#delB'); await wait(1500);
     t = await scr();
-    ok(/Request submitted/.test(t) && /Withdraw request/.test(t) && /within 24 hours/.test(t) && /\b2[34]:\d\d:\d\d\b/.test(t), 'delete 4 the request is sent and shown with a 24-hour countdown');
+    ok(/Request submitted/.test(t) && /Withdraw request/.test(t) && /deleted within 24 hours/.test(t) && !/Time left/i.test(t), 'delete 4 the request is sent and shown (deleted within 24 hours, no timer)');
     const rq = await q(`select status, reason from cbt_private.delete_requests where mobile = $1`, [MOB]);
     ok(rq.length === 1 && rq[0].status === 'pending' && rq[0].reason === 'I have another account', 'delete 5 one pending request is stored with the reason');
     ok((await q(`select 1 from cbt_private.students where mobile = $1`, [MOB])).length === 1, 'delete 6 nothing is deleted by the app itself');

@@ -58,8 +58,8 @@ Live database Claude ko nahi dikhta. Jo kaam pehle hi ho chuka ho, use seedha ti
   after you check one, delete the student in Admin → Students, then set the request's status to `done`.
   *Check:* `supabase_check_installed.sql` row 41 says ok; app → Profile → ⋮ → My purchases lists the student's paid and free orders; tap one for the receipt.
 - [ ] **1.20 Deletion requests in the admin (who handles them):** Supabase → SQL Editor: `supabase_v102_delete_requests.sql` (after v101) → `supabase_v35_admin_team.sql`.
-  Then Admin → Students & accounts → **Deletion requests**: each request shows with Reject / Delete now. The student sees a 24-hour countdown; nothing is deleted by itself, an old request turns red (Overdue) and shows in the dashboard's attention list.
-  Delete now removes the student and their data (like Students → Delete). Store orders / payment records stay; the student's Supabase login (email / Google) stays until you remove it in Supabase → Authentication → Users.
+  Then Admin → Students & accounts → **Deletion requests**: each request shows with Reject / Delete now. The student sees the 24-hour promise; nothing is deleted by itself, an old request turns red (Overdue) and shows in the dashboard's attention list.
+  Accept and delete removes the student and their data (like Students → Delete). Store orders / payment records stay; the student's Supabase login (email / Google) stays until you remove it in Supabase → Authentication → Users.
   *Check:* `supabase_check_installed.sql` row 42 says ok.
 - [ ] **1.9** Backup password aur 2FA recovery codes kagaz par likh kar offline rakho.
 

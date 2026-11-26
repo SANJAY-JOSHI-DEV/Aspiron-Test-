@@ -68,7 +68,7 @@ async function rpcRoute(route) {
       await page.fill('#lg-p', 'OwnerPass2026x'); await page.click('#lg-go'); await page.waitForSelector('#ax-page');
       await page.goto(BASE + 'cp-dt764twzf54s5m.html#/delreq'); await page.waitForTimeout(1500);
       let t = await page.innerText('#ax-page');
-      ok(/Deletion requests/.test(t) && /Overdue/.test(t) && /Stayer Two/.test(t) && /Delete now/.test(t), tag + ' 1 the page lists the waiting requests, the old one is Overdue');
+      ok(/Deletion requests/.test(t) && /Overdue/.test(t) && /Stayer Two/.test(t) && /Accept and delete/.test(t), tag + ' 1 the page lists the waiting requests, the old one is Overdue');
       ok(await page.evaluate(() => window.__x === undefined) && /<b>One<\/b>/.test(t), tag + ' 2 a name or reason typed by a student is shown as text, never run');
       if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, 'admin-delreq-' + tag + '.png') }); }
       if (vw.width === 1280) {
@@ -77,7 +77,7 @@ async function rpcRoute(route) {
         const st = (await q(`select status from cbt_private.delete_requests where mobile='9840000001' or mobile='9840000002' order by mobile`)).map(r => r.status);
         ok(st.includes('rejected') && st.includes('pending'), tag + ' 3 Reject closes one request and keeps the student');
         await page.click('[data-act=del][data-id]'); await page.waitForSelector('.modal .btn.danger'); await page.click('.modal .btn.danger'); await page.waitForTimeout(1200);
-        ok((await q(`select 1 from cbt_private.students where mobile in ('9840000001','9840000002')`)).length === 1 && (await q(`select status from cbt_private.delete_requests where status='done'`)).length === 1, tag + ' 4 Delete now removes the student and marks the request done');
+        ok((await q(`select 1 from cbt_private.students where mobile in ('9840000001','9840000002')`)).length === 1 && (await q(`select status from cbt_private.delete_requests where status='done'`)).length === 1, tag + ' 4 Accept removes the student and marks the request done');
       }
       ok(errs.length === 0, tag + ' no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
       await ctx.close();

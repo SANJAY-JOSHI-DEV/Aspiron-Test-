@@ -2,7 +2,7 @@
    Deletion requests: a student asks (in the app: Profile → Account deletion) for the account and data to be removed.
    Server: cbt_admin_delreq (supabase_v102_delete_requests.sql). Who may use it: the Students module
    (View = read, Full access = delete / reject). "Delete now" removes the student for good, like Students → Delete.
-   The student sees a 24-hour countdown; nothing is deleted by itself when it ends, it only turns red here.
+   The student is told it is done within 24 hours; nothing is deleted by itself, an old request turns red here.
    ===================================================================== */
 (function () {
 'use strict';
@@ -17,10 +17,10 @@ const left = x => { const m = x.at + DAY - Date.now(); if (m <= 0) return null; 
 
 AX.mod({
   id: 'delreq', title: 'Deletion requests', short: 'Deletions', icon: 'trash', group: 'Students & accounts', order: 18, perm: 'students',
-  sub: 'Students who asked to delete their account and data. You decide: Delete now, or Reject.',
+  sub: 'Students who asked to delete their account and data. You decide: Accept (the account is deleted) or Reject.',
   async render(ctx) {
     const f = ctx.q.f || 'pending';
-    ctx.head({ title: 'Deletion requests', sub: 'A student asks from the app (Profile → Account deletion) and sees a 24-hour countdown. Nothing is deleted until you press Delete now. Store orders and payment records are kept for your accounts.' });
+    ctx.head({ title: 'Deletion requests', sub: 'A student asks from the app (Profile → Account deletion) and is told the account will be deleted within 24 hours. Nothing is deleted until you press Accept and delete (Reject keeps the account). Store orders and payment records are kept for your accounts.' });
     AX.set(ctx.el, UI.skeleton(3));
     AX.cache.drop('delreq');
     const r = await load();
@@ -40,13 +40,13 @@ AX.mod({
           ${x.status === 'pending' && !x.alive ? UI.pill('Account already gone', '') : ''}</div>
           <div class="xs mut">${x.status === 'done' ? x.mobile : fmt.mobile(x.mobile)} · asked ${fmt.dt(x.at)}${x.closed ? ' · closed ' + fmt.dt(x.closed) : ''}</div>
           ${x.reason ? h`<p class="mt8 sm">Reason: ${x.reason}</p>` : ''}</div></div>
-        ${x.status === 'pending' && can() ? h`<div class="row wrap mt12 end"><button class="btn sm" data-act="rej" data-id="${x.id}">Reject (keep account)</button><button class="btn sm danger" data-act="del" data-id="${x.id}">${icon('trash', 14)} Delete now</button></div>` : ''}</div>`; };
+        ${x.status === 'pending' && can() ? h`<div class="row wrap mt12 end"><button class="btn sm" data-act="rej" data-id="${x.id}">Reject</button><button class="btn sm danger" data-act="del" data-id="${x.id}">${icon('check', 14)} Accept and delete</button></div>` : ''}</div>`; };
     AX.set(ctx.el, h`<div class="chips">${join([['pending', 'Waiting'], ['done', 'Deleted'], ['rejected', 'Kept'], ['cancelled', 'Withdrawn'], ['all', 'All']], ([k, l]) => h`<a class="chip ${f === k ? 'on' : ''}" href="#/delreq?f=${k}">${l}${cnt(k) ? ' ' + cnt(k) : ''}</a>`)}</div>
       <div class="col gap16 mt16">${L.length ? join(L, row) : h`<div class="card">${UI.empty({ icon: 'trash', title: 'No requests here', text: 'When a student asks to delete their account it shows up here.' })}</div>`}</div>`);
     const act = async (id, action, msg) => { const x = await AX.api.call('cbt_admin_delreq', action, { id }); if (!x.ok) return UI.err(x); UI.toast(msg); AX.cache.drop('delreq'); AX.cache.drop('students'); AX.emit('data:changed'); ctx.reload(); };
     AX.act(ctx.el, {
       async del(el) { const x = D.items.find(i => i.id === el.dataset.id); if (!x) return;
-        if (!(await UI.confirm({ title: 'Delete ' + (x.name || 'this student') + ' for good?', text: 'The account and everything tied to it (results, XP, notes, doubts, devices) is removed. This cannot be undone. Store orders and payment records stay. Their Supabase login (if they used email or Google) stays until you remove it in Supabase → Authentication → Users.', yes: 'Delete now', tone: 'danger' }))) return;
+        if (!(await UI.confirm({ title: 'Accept the request and delete ' + (x.name || 'this student') + ' for good?', text: 'The account and everything tied to it (results, XP, notes, doubts, devices) is removed. This cannot be undone. Store orders and payment records stay. Their Supabase login (if they used email or Google) stays until you remove it in Supabase → Authentication → Users.', yes: 'Accept and delete', tone: 'danger' }))) return;
         act(x.id, 'delete', 'Account deleted'); },
       async rej(el) { const x = D.items.find(i => i.id === el.dataset.id); if (!x) return;
         if (!(await UI.confirm({ title: 'Keep this account?', text: 'The request is closed and the student keeps the account. Their app goes back to normal.', yes: 'Reject request' }))) return;
