@@ -3392,3 +3392,14 @@ sup,sub{font-size:.72em;line-height:0}
 .gl-cur{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;border:1.5px solid var(--acc);background:color-mix(in srgb,var(--acc) 9%,var(--surface));font-size:15px}
 .gl-btn{display:grid;grid-template-columns:38px 1fr auto;width:100%;text-align:left;color:var(--ink);margin:12px 0 4px}
 .gl-btn .ti{width:38px;height:38px}.gl-ch{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:600;color:var(--acc)}
+
+/* v121-122: smooth motion for the goal picker, same curve as the setup and the menu */
+.gl-body.fwd{animation:obf .42s var(--out)}.gl-body.bwd{animation:obb .42s var(--out)}
+.gl-body .gl-cur,.gl-body .gl-row,.gl-body .gl-t2{animation:obin .44s var(--out) backwards;animation-delay:calc(var(--i,0) * 55ms + 40ms)}
+.gl-row,.gl-t2,.gl-bk,.gl-btn{transition:transform .18s var(--out),background .25s,border-color .25s,box-shadow .25s}
+.gl-row>svg:last-child{transition:transform .25s var(--out),color .25s}
+.gl-row:active>svg:last-child{transform:translateX(4px)}
+.gl-bk:active{transform:scale(.9)}.gl-btn:active{transform:scale(.985)}
+.gl-row.pick,.gl-t2.on{animation:obpop .32s var(--out)}
+.gl-row.on{box-shadow:0 8px 20px -14px var(--acc)}
+@media (prefers-reduced-motion:reduce){.gl-body,.gl-body .gl-cur,.gl-body .gl-row,.gl-body .gl-t2,.gl-row.pick{animation:none}}

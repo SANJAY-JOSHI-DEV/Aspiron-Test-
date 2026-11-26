@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=121;
+const V3VER=122;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -812,24 +812,27 @@ const GOALS=[
 const goalOf=k=>GOALS.find(g=>g.k===k);
 const goalName=k=>(goalOf(k)||{}).t||k;
 let GOD=null;
-function goalSheet(){const d=GOD,cur=myCat();let h;
-  if(d.st===1){const row=g=>`<button type="button" class="gl-row${cur.e===g.k?' on':''}" data-a="goalPick" data-v="${g.k}"><span class="ti g">${ic(g.i,20)}</span><span class="gl-t"><b>${g.t}</b><small>${g.s}</small></span>${ic('right',18)}</button>`;
+function goalSheet(dir){const d=GOD,cur=myCat();let h,n=0;const st=()=>`style="--i:${n++}"`;
+  if(d.st===1){const row=g=>`<button type="button" class="gl-row${cur.e===g.k?' on':''}" data-a="goalPick" data-v="${g.k}" ${st()}><span class="ti g">${ic(g.i,20)}</span><span class="gl-t"><b>${g.t}</b><small>${g.s}</small></span>${ic('right',18)}</button>`;
    h=`<h2 id="sheetT">Select your goal</h2><p class="sub">The app shows the test series and tips for this. Change it any time.</p>
-    ${catOk()?`<p class="gl-h">Your goal now</p><div class="gl-cur">${ic('check',18)}<b>${esc3(goalName(cur.e))} · ${esc3(cur.c)}</b></div>`:''}
-    <p class="gl-h">Popular exams</p><div class="gl-pop">${GOALS.slice(0,2).map(g=>`<button type="button" class="gl-t2${cur.e===g.k?' on':''}" data-a="goalPick" data-v="${g.k}"><span class="ti g">${ic(g.i,22)}</span><b>${g.t}</b></button>`).join('')}</div>
+    ${catOk()?`<p class="gl-h">Your goal now</p><div class="gl-cur" ${st()}>${ic('check',18)}<b>${esc3(goalName(cur.e))} · ${esc3(cur.c)}</b></div>`:''}
+    <p class="gl-h">Popular exams</p><div class="gl-pop">${GOALS.slice(0,2).map(g=>`<button type="button" class="gl-t2${cur.e===g.k?' on':''}" data-a="goalPick" data-v="${g.k}" ${st()}><span class="ti g">${ic(g.i,22)}</span><b>${g.t}</b></button>`).join('')}</div>
     <p class="gl-h">More exams</p><div class="gl-list">${GOALS.slice(2).map(row).join('')}</div>`}
   else{const g=goalOf(d.exam);
    h=`<div class="gl-top"><button type="button" class="gl-bk" data-a="goalBack" aria-label="Back">${ic('back',20)}</button><h2 id="sheetT">Select your class</h2></div><p class="gl-h">${esc3(g.t)}</p>
-    <div class="gl-list">${g.cls.map(c=>`<button type="button" class="gl-row${cur.e===g.k&&cur.c===c?' on':''}" data-a="goalCls" data-v="${c}"><span class="ti g">${ic(g.i,20)}</span><span class="gl-t"><b>${c}</b></span>${ic('right',18)}</button>`).join('')}</div>`}
+    <div class="gl-list">${g.cls.map(c=>`<button type="button" class="gl-row${cur.e===g.k&&cur.c===c?' on':''}" data-a="goalCls" data-v="${c}" ${st()}><span class="ti g">${ic(g.i,20)}</span><span class="gl-t"><b>${c}</b></span>${ic('right',18)}</button>`).join('')}</div>`}
+  h=`<div class="gl-body ${dir||''}">${h}</div>`;
   if(layer===sheet){sheet.innerHTML='<div class="grab"></div>'+h;sheet.scrollTop=0}else openSheet(h)}
 A.catEdit=()=>{GOD={st:1,exam:''};if(layer&&layer!==sheet)closeLayer();if(layer===sheet){closeLayer();setTimeout(goalSheet,RM?0:180)}else goalSheet()};
-A.goalPick=el=>{if(!goalOf(el.dataset.v))return;GOD={st:2,exam:el.dataset.v};goalSheet()};
-A.goalBack=()=>{GOD={st:1,exam:''};goalSheet()};
-A.goalCls=el=>{const g=GOD&&goalOf(GOD.exam),c=el.dataset.v;if(!g||!g.cls.includes(c))return;
+A.goalPick=el=>{if(!goalOf(el.dataset.v))return;GOD={st:2,exam:el.dataset.v};hap(6);goalSheet(RM?'':'fwd')};
+A.goalBack=()=>{GOD={st:1,exam:''};goalSheet(RM?'':'bwd')};
+A.goalCls=el=>{const g=GOD&&goalOf(GOD.exam),c=el.dataset.v;if(!g||!g.cls.includes(c)||GOD.busy)return;GOD.busy=1;hap(8);
+  sheet.querySelectorAll('.gl-row').forEach(r=>r.classList.toggle('on',r===el));el.classList.add('pick');setTimeout(()=>goalSave(g,c),RM?0:280)};
+function goalSave(g,c){
   const t=scrOpen()&&top();if(t&&t.key==='prof'&&PFD)pfForm();
-  try{pfSave(Object.assign({},stuProf(),{cls:c,exam:g.k}));if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');return}
+  try{pfSave(Object.assign({},stuProf(),{cls:c,exam:g.k}));if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');GOD.busy=0;return}
   if(PFD){PFD.cls=c;PFD.exam=g.k}
-  TQ.all=false;closeLayer();hap(8);toast3('Now showing '+catTxt());setTimeout(()=>{if(S.tab==='test')drawT();if(t&&t.key==='prof'&&PFD)redraw();softRender()},300)};
+  TQ.all=false;closeLayer();toast3('Now showing '+catTxt());setTimeout(()=>{if(S.tab==='test')drawT();if(t&&t.key==='prof'&&PFD)redraw();softRender()},300)};
 
 /* ---------- top: the poster from Admin → Tests page, edge to edge, with the search on it and the two big buttons on its bottom ---------- */
 function tabs2(){const c=myCount(),n=shop().filter(x=>x.buy_on!==false).length;
