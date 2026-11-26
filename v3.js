@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 if(window.__v3)return;window.__v3=1;
-const V3VER=129;
+const V3VER=130;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 /* the new design is the only design now: the old cbt_v3=false choice is ignored. cbt_v3_ci is set only by the
@@ -327,7 +327,7 @@ try{if(window.visualViewport){const vv=visualViewport;let kbUp=false,last=-1;
 /* ---------- full-screen pages; the phone's back button closes them ---------- */
 let STK=[],scr,undT=0;
 const top=()=>STK[STK.length-1],scrOpen=()=>STK.length>0;
-function drawScr(dir){const v=top();if(!v)return;scr.classList.toggle('bleed',!!v.bleed);scr.classList.remove('solid');$('#scrT').textContent=v.t;$('#scrS').textContent=v.s||'';$('#scrR').innerHTML=v.right?v.right():'';
+function drawScr(dir){const v=top();if(!v)return;scr.classList.toggle('bleed',!!v.bleed);scr.classList.remove('solid','pfmini');$('#scrT').textContent=v.t;$('#scrS').textContent=v.s||'';$('#scrR').innerHTML=v.right?v.right():'';
   $('#scrB').innerHTML=`<div class="scr-in${dir?' '+dir:''}">${v.html()}</div>`;v.after&&v.after();entr($('#scrB'))}
 /* Entrance: a tap (open a page, change a tab or a group) arms it; the first drawn content (no skeleton) within 2 s plays it
    once: cards rise one after another (the first 8 on screen), a series tab slides in from its side. Data that arrives
@@ -1699,27 +1699,47 @@ const PF3={cls:['Class 9','Class 10','Class 11','Class 12','Dropper'],exam:['NEE
   f:[['name','Full name','text','Your name','name'],['email','Email','email','name@example.com','email'],['phone','Alternate phone','tel','Optional','tel'],['school','School / Coaching','text','School or coaching name','organization'],['city','City','text','Your city','address-level2']]};
 let PFD=null;
 function pfAv(sz){const o=stuProf();return o.photo&&/^data:image\//.test(o.photo)?`<img src="${esc3(o.photo)}" alt="" style="width:100%;height:100%;object-fit:cover">`:`<b style="font-size:${Math.round(sz*.4)}px">${initial()}</b>`}
-function profileView(){return {t:'My profile',s:'Your details and progress',key:'prof',bleed:1,right:()=>`<button class="ib" data-a="pfMore" aria-label="More options" aria-haspopup="dialog">${ic('dots',20)}</button>`,html:()=>{const o=PFD,R=allRes(),st=stats(R),nm=(o.name||(AUTH&&AUTH.name)||'').trim();
-  return `<section class="pfh pfh2"><i class="pfh2-gl"></i><label class="pfa${isDr()?' dr':''}" for="pfFile" aria-label="Change photo">${pfAv(92)}${isDr()?`<i class="pfa-st">${ic('steth',18)}</i>`:''}<span class="pfc">${ic('pen',14)}</span></label><input id="pfFile" type="file" accept="image/*" hidden>
-    <div class="pfn"><b>${nmH(nm||'Student',isDr())}</b><small>+91 ${esc3(typeof maskMob==='function'&&AUTH?maskMob(AUTH.mobile):'')}</small><button class="pflv" data-a="lvl">${crest(myLv().i,22)}Level ${myLv().n} · ${esc3(myLv().name)}</button>${isDr()?`<span class="pfgs">${ic('steth',14)}Golden Stethoscope</span>`:''}${stuProf().photo?'<button class="lnk" data-a="pfRm">Remove photo</button>':''}</div>
-    <div class="pfs"><div><b>${fmtN(xpNow())}</b><small>XP</small></div><div><b>${st.avg!=null?Math.round(st.avg):0}%</b><small>Average</small></div><div><b>${xpMe().streak||0}</b><small>Day streak</small></div></div></section>
-   <form class="card pff" id="pfForm" autocomplete="on" onsubmit="return false">
-    ${PF3.f.map(f=>`<label class="fl"><span>${f[1]}</span><input class="inp" name="${f[0]}" type="${f[2]}" placeholder="${f[3]}" autocomplete="${f[4]}" maxlength="80" value="${esc3(f[0]==='name'?nm:(o[f[0]]||''))}"></label>`).join('')}
-    <div class="fl"><span>Exam goal</span><button type="button" class="gl-cur gl-btn" data-a="catEdit"><span class="ti g">${ic('target',18)}</span><span class="gl-t"><b>${o.exam&&o.cls?esc3(goalName(o.exam)+' · '+o.cls):'Choose your exam goal'}</b></span><span class="gl-ch">Change${ic('right',16)}</span></button></div>
-    <label class="fl"><span>About or goal</span><textarea class="inp" name="about" rows="3" maxlength="300" placeholder="e.g. Aim for 650+ in NEET">${esc3(o.about||'')}</textarea></label>
-    <p class="hint" style="margin:0">All optional. Saved to your account, so it comes back on any phone.</p></form>
-   <div class="buybar"><span class="mut" style="font-size:13px">Changes are saved when you tap Save</span><button class="btn" data-a="pfSave">${ic('check',16)}Save profile</button></div>`},
-  after:()=>{const f=$('#pfFile');f&&f.addEventListener('change',()=>pfPhoto(f));const b=$('#scrB');if(!b.dataset.bl){b.dataset.bl=1;b.addEventListener('scroll',()=>scr.classList.toggle('solid',!!(top()&&top().bleed)&&b.scrollTop>150),{passive:true})}scr.classList.toggle('solid',!!(top()&&top().bleed)&&b.scrollTop>150)}}}
-A.profile=()=>{PFD=Object.assign({},stuProf());closeLayer();push(profileView())};
-const pfForm=()=>{const F=$('#pfForm');if(!F)return;PF3.f.forEach(f=>{const i=F.querySelector(`[name="${f[0]}"]`);if(i)PFD[f[0]]=i.value.trim()});const a=F.querySelector('[name=about]');if(a)PFD.about=a.value.trim()};
-A.pfSave=()=>{pfForm();const o=Object.assign({},stuProf(),PFD);if(AUTH&&o.name===(AUTH.name||'').trim())delete o.name;
+/* v130: ONE calm profile page. A dark hero with the photo, name and three plain numbers; the details slide over it as you
+   scroll (the hero fades and the photo + name move up into the top bar). Details are read-only; "Edit" opens a sheet. */
+const pfHint='<i class="pf3-no">Not added</i>';
+function profileView(){return {t:'My profile',s:'',key:'prof',bleed:1,right:()=>`<button class="ib" data-a="pfMore" aria-label="More options" aria-haspopup="dialog">${ic('dots',20)}</button>`,html:()=>{
+  const o=stuProf(),R=allRes(),st=stats(R),nm=(o.name||(AUTH&&AUTH.name)||'').trim()||'Student',v=x=>x?esc3(x):pfHint,row=(k,x)=>`<div class="pf3-r"><span>${k}</span><b>${x}</b></div>`;
+  return `<section class="pf3" style="--p:0"><div class="pf3-hero"><i class="pfh2-gl"></i><div class="pf3-in">
+    <label class="pf3-ava${isDr()?' dr':''}" for="pfFile" aria-label="Change photo"><span class="pf3-img">${pfAv(96)}</span>${isDr()?`<i class="pfa-st">${ic('steth',16)}</i>`:''}<span class="pf3-pen">${ic('pen',13)}</span></label>
+    <b class="pf3-n">${nmH(nm,isDr())}</b><small class="pf3-p">+91 ${esc3(typeof maskMob==='function'&&AUTH?maskMob(AUTH.mobile):'')}</small>
+    <button class="pflv" data-a="lvl">${crest(myLv().i,20)}Level ${myLv().n} · ${esc3(myLv().name)}</button>${isDr()?`<span class="pfgs">${ic('steth',14)}Golden Stethoscope</span>`:''}
+    <div class="pf3-st"><div><b>${fmtN(xpNow())}</b><small>XP</small></div><div><b>${st.avg!=null?Math.round(st.avg):0}%</b><small>Average</small></div><div><b>${xpMe().streak||0}</b><small>Day streak</small></div></div>
+   </div></div>
+   <div class="pf3-sheet">
+    <div class="pf3-c"><div class="pf3-h"><h3>Personal details</h3><button class="pf3-ed" data-a="pfEdit">${ic('pen',14)}Edit</button></div>
+     ${row('Name',esc3(nm))}${row('Mobile number','+91 '+esc3(AUTH?AUTH.mobile:''))}${row('E-mail',v(o.email))}${row('Alternate phone',v(o.phone))}${row('School / Coaching',v(o.school))}${row('City / Village / Town',v(o.city))}${o.about?row('About or goal',esc3(o.about)):''}</div>
+    <div class="pf3-c"><div class="pf3-h"><h3>Exam goal</h3><button class="pf3-ed" data-a="catEdit">${ic('target',14)}Change</button></div>
+     ${row('Preparing for',o.exam&&o.cls?esc3(goalName(o.exam)+' · '+o.cls):pfHint)}</div>
+    <p class="hint" style="text-align:center">Saved to your account, so it comes back on any phone.</p>
+   </div></section><input id="pfFile" type="file" accept="image/*" hidden>`},
+  after:()=>{const f=$('#pfFile');f&&f.addEventListener('change',()=>pfPhoto(f));const b=$('#scrB');if(!b.dataset.pf){b.dataset.pf=1;b.addEventListener('scroll',pfScroll,{passive:true})}pfScroll()},
+  leave:()=>{scr.classList.remove('pfmini')}}}
+/* the photo and name move up into the top bar as the details cover the hero */
+const PFM={on:false};
+function pfScroll(){const t=top();if(!t||t.key!=='prof')return;const b=$('#scrB'),y=b.scrollTop,p=Math.max(0,Math.min(1,y/190)),R=$('.pf3');if(R)R.style.setProperty('--p',p.toFixed(3));
+  const on=p>=.9;scr.classList.toggle('solid',on);if(on===PFM.on&&scr.classList.contains('pfmini')===on)return;PFM.on=on;scr.classList.toggle('pfmini',on);
+  const h=$('#scrT');if(h){if(on){const o=stuProf();h.innerHTML=`<span class="pf3-mt">${avatar('pf3-mav')}<b>${esc3((o.name||(AUTH&&AUTH.name)||'Student').trim())}</b></span>`}else h.textContent='My profile'}}
+A.profile=()=>{PFD=Object.assign({},stuProf());closeLayer();PFM.on=false;push(profileView())};
+const pfForm=()=>{};
+A.pfEdit=()=>{const o=stuProf(),nm=(o.name||(AUTH&&AUTH.name)||'').trim();
+  openSheet(`<h2 id="sheetT" style="text-align:center;margin-bottom:14px">Edit profile</h2><div class="fo-g">
+   ${PF3.f.map(f=>`<label class="fo"><span>${f[1]}</span><input name="${f[0]}" type="${f[2]}" placeholder="${f[3]}" autocomplete="${f[4]}" maxlength="80" value="${esc3(f[0]==='name'?nm:(o[f[0]]||''))}"></label>`).join('')}
+   <label class="fo"><span>About or goal</span><textarea name="about" rows="3" maxlength="300" placeholder="e.g. Aim for 650+ in NEET">${esc3(o.about||'')}</textarea></label>
+   ${o.photo?'<button class="lnk" data-a="pfRm" style="align-self:center">Remove photo</button>':''}</div>
+   <button class="btn lg" data-a="pfSave" style="margin-top:16px">Update details</button>`)};
+A.pfSave=()=>{const o=Object.assign({},stuProf());sheet.querySelectorAll('[name]').forEach(i=>{o[i.name]=i.value.trim()});if(!o.name||(AUTH&&o.name===(AUTH.name||'').trim()))delete o.name;
   if(o.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.email)){toast3('Please check your email');return}
   try{pfSave(o);if(typeof pfHdr==='function')pfHdr()}catch(e){toast3('Could not save. Please try again.');return}
-  toast3('Profile saved');back();setTimeout(()=>softRender(),350)};
-A.pfRm=()=>{const o=Object.assign({},stuProf());delete o.photo;try{pfSave(o)}catch(e){}PFD=Object.assign(PFD||{},{photo:undefined});delete PFD.photo;redraw();toast3('Photo removed')};
+  closeLayer();toast3('Profile saved');if(top()&&top().key==='prof'){PFM.on=false;redraw()}setTimeout(()=>softRender(),350)};
+A.pfRm=()=>{const o=Object.assign({},stuProf());delete o.photo;try{pfSave(o);if(typeof pfHdr==='function')pfHdr()}catch(e){}closeLayer();if(top()&&top().key==='prof'){PFM.on=false;redraw()}toast3('Photo removed')};
 function pfPhoto(inp){const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{const im=document.createElement('img');im.onload=()=>{const S=256,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d'),m=Math.min(im.width,im.height);
-    g.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,S,S);const o=Object.assign({},stuProf());o.photo=c.toDataURL('image/jpeg',.82);try{pfSave(o)}catch(e){}pfForm();PFD.photo=o.photo;redraw();toast3('Photo updated')};
+    g.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,S,S);const o=Object.assign({},stuProf());o.photo=c.toDataURL('image/jpeg',.82);try{pfSave(o);if(typeof pfHdr==='function')pfHdr()}catch(e){}PFM.on=false;redraw();toast3('Photo updated')};
    im.onerror=()=>toast3('Could not read this picture');im.src=r.result};r.readAsDataURL(f)}
 
 /* ---------- exam countdown editor ---------- */

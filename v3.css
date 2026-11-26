@@ -3502,3 +3502,45 @@ sup,sub{font-size:.72em;line-height:0}
 .del-n{margin-top:12px;padding:14px;border:1.5px dashed color-mix(in srgb,var(--err) 55%,transparent);border-radius:14px;text-align:center;font-size:14.5px;font-weight:500;color:var(--err);background:color-mix(in srgb,var(--err) 6%,transparent)}
 .del-l{margin:14px 4px 0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--mut);line-height:1.5}
 .del-b{gap:10px}.del-b .btn{flex:1;padding:0 12px}
+
+/* ================= PROFILE v130: one page, the details slide over the hero ================= */
+.pf3{display:block}
+.pf3-hero{position:sticky;top:0;z-index:0;overflow:hidden;margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:calc(64px + env(safe-area-inset-top,0px)) 20px 52px;color:#fff;
+  background:radial-gradient(90% 60% at 85% 0%,color-mix(in srgb,var(--acc1) 26%,transparent),transparent 70%),linear-gradient(170deg,var(--hero1),var(--hero2))}
+.pf3-in{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;transform-origin:50% 0;
+  opacity:calc(1 - var(--p,0) * 1.2);transform:translateY(calc(var(--p,0) * -34px)) scale(calc(1 - var(--p,0) * .08))}
+.pf3-ava{position:relative;display:block;width:96px;height:96px;margin-bottom:8px;cursor:pointer;animation:pfPop .6s var(--spring) both}
+.pf3-img{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25);color:#fff}
+.pf3-pen{position:absolute;right:-2px;bottom:-2px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--acc1);color:var(--onAcc);box-shadow:0 0 0 3px var(--hero1),0 6px 12px -4px rgba(0,0,0,.5)}
+.pf3-ava .pfa-st{left:-6px;right:auto;bottom:4px}
+.pf3-n{font-size:22px;font-weight:620;letter-spacing:-.02em}
+.pf3-p{font-size:13.5px;color:var(--heroMut)}
+.pf3-in .pflv{margin-top:4px}
+.pf3-st{display:flex;width:100%;max-width:330px;margin-top:14px}
+.pf3-st>div{flex:1;display:flex;flex-direction:column;gap:1px}
+.pf3-st>div+div{border-left:1px solid rgba(255,255,255,.16)}
+.pf3-st b{font-size:20px;font-weight:620;font-variant-numeric:tabular-nums}.pf3-st small{font-size:12px;color:var(--heroMut)}
+.pf3-sheet{position:relative;z-index:2;margin:-30px calc(-1*max(16px,env(safe-area-inset-left,0px))) 0;padding:22px max(16px,env(safe-area-inset-left,0px)) 40px;min-height:calc(100vh - 70px);
+  background:var(--bg);border-radius:30px 30px 0 0;box-shadow:0 -16px 34px -18px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:16px}
+.pf3-c{background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.pf3-h{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px}
+.pf3-h h3{font-size:16px;font-weight:620;letter-spacing:-.01em}
+.pf3-ed{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:99px;font-size:13.5px;font-weight:550;color:var(--acc);background:var(--accSoft);transition:transform .2s var(--out)}
+.pf3-ed:active{transform:scale(.95)}
+.pf3-r{padding:12px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:3px}
+.pf3-r span{font-size:12.5px;color:var(--mut)}.pf3-r b{font-size:15.5px;font-weight:500;word-break:break-word}
+.pf3-no{font-style:normal;font-weight:400;color:var(--faint)}
+.pf3-mt{display:flex;align-items:center;gap:10px;animation:pfMt .35s var(--out) both}
+.pf3-mt b{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.pf3-mt .av{width:30px;height:30px;font-size:13px;flex:none}
+.scr.pfmini .scr-h>div{text-align:left}
+@keyframes pfMt{from{opacity:0;transform:translateY(10px)}}
+/* edit sheet: outlined fields with the label on the line */
+.fo-g{display:flex;flex-direction:column;gap:18px;padding-top:6px}
+.fo{position:relative;display:block}
+.fo>span{position:absolute;left:12px;top:-9px;z-index:1;padding:0 6px;background:var(--surface);font-size:12.5px;font-weight:500;color:var(--mut)}
+.fo input,.fo textarea{width:100%;min-height:54px;padding:15px 16px;border-radius:14px;border:1.5px solid var(--line);background:transparent;color:var(--tx);font:inherit;font-size:16px;outline:none;transition:border-color .2s}
+.fo textarea{resize:none;line-height:1.5}
+.fo input:focus,.fo textarea:focus{border-color:var(--ink)}
+.fo:focus-within>span{color:var(--tx)}
+.btn.lg:not(.ghost):not(.gold):not(.danger3){color:var(--onInk)}

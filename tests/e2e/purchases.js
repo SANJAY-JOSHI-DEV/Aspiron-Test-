@@ -76,9 +76,21 @@ const MOB = '9000000001', CODE = 'AAAA1111';
     ok(vj === vi, 'cache 1 V3VER in v3.js (' + vj + ') matches v3.js?v= in index.html (' + vi + ')');
     // profile: opened from the picture menu, full screen with a three-dot button
     await click(p, '#dav'); await wait(400); await click(p, '#dmenu [data-k=profile]'); await wait(1200);
-    ok(await S(p, 'return root.querySelector(".scr.bleed .pfh2")!==null'), 'profile 1 the profile opens full screen (hero to the top)');
+    ok(await S(p, 'return root.querySelector(".scr.bleed .pf3-hero")!==null&&!root.querySelector(".pf3 .pff")'), 'profile 1 the profile opens full screen (hero to the top), details are read-only');
     ok(await S(p, 'return !!root.querySelector("#scrR [data-a=pfMore]")'), 'profile 2 the three-dot button is in the top bar');
     await shot(p, 'profile');
+    // scrolling: the hero fades, the photo and name move up into the top bar
+    await S(p, 'root.querySelector("#scrB").scrollTop=300'); await wait(500);
+    ok(await S(p, 'return root.querySelector(".scr").classList.contains("pfmini")&&/Free Student/.test(root.querySelector("#scrT").innerText)&&parseFloat(getComputedStyle(root.querySelector(".pf3-in")).opacity)<0.2'), 'profile 1b scrolled: the name and photo are in the top bar, the hero has faded');
+    await shot(p, 'profile-scrolled');
+    await S(p, 'root.querySelector("#scrB").scrollTop=0'); await wait(400);
+    // Edit opens a sheet; Update details saves and the page shows it
+    await click(p, '#scrB [data-a=pfEdit]'); await wait(700);
+    ok(await S(p, 'return !!root.querySelector("#sheet .fo [name=city]")&&/Update details/.test(root.querySelector("#sheet").innerText)'), 'profile 1c Edit opens the sheet with outlined fields and Update details');
+    await shot(p, 'profile-edit');
+    await p.evaluate(() => { const r = [...document.querySelectorAll('*')].find(e => e.shadowRoot && e.id === 'v3host').shadowRoot; const i = r.querySelector('#sheet [name=city]'); i.value = 'Jaipur'; });
+    await click(p, '#sheet [data-a=pfSave]'); await wait(900);
+    ok(/Jaipur/.test(await scr()), 'profile 1d Update details saves and the page shows the new city');
     await click(p, '#scrR [data-a=pfMore]'); await wait(700);
     const sh = await S(p, 'return root.querySelector("#sheet").innerText');
     ok(/My purchases/.test(sh) && /Account deletion/.test(sh) && /Log out/.test(sh), 'profile 3 the three-dot menu: My purchases, Account deletion, Log out');
