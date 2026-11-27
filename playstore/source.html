@@ -38,8 +38,8 @@ h1 em{font-style:normal;background:linear-gradient(100deg,var(--gold1),var(--gol
 .sb{position:absolute;top:0;left:0;right:0;height:54px;display:flex;justify-content:space-between;align-items:center;padding:6px 34px 0;font-size:15px;font-weight:700;z-index:15;color:var(--tx)}
 .sb span:last-child{display:flex;gap:6px;align-items:center}
 /* app tokens */
-.app{--bg:#f5f5f3;--surf:#fff;--surf2:#efeeea;--tx:#17181b;--mut:#6a6c72;--line:#e6e5e0;--acc:#85672c;--accS:#f6eedb;--ok:#2d7a58;--okS:#dff1e7;--err:#b3433d;--errS:#f7e1df;--info:#3f72b8}
-.app.dk{--bg:#0e0f12;--surf:#1a1b20;--surf2:#24262b;--tx:#f3f2ee;--mut:#9a9ca3;--line:#2b2d33;--acc:#e6cf9a;--accS:#2b2518;--ok:#58c08f;--okS:#17301f;--err:#e5736b;--errS:#35191a;--info:#7aa7e6}
+.app{--bg:#f5f5f3;--surf:#fff;--surf2:#efeeea;--tx:#17181b;--mut:#6a6c72;--line:#e6e5e0;--acc:#85672c;--accS:#f6eedb;--ok:#2d7a58;--okS:#dff1e7;--err:#b3433d;--errS:#f7e1df;--info:#3f72b8;--prib:#17181b;--prit:#fff}
+.app.dk{--bg:#0e0f12;--surf:#1a1b20;--surf2:#24262b;--tx:#f3f2ee;--mut:#9a9ca3;--line:#2b2d33;--acc:#e6cf9a;--accS:#2b2518;--ok:#58c08f;--okS:#17301f;--err:#e5736b;--errS:#35191a;--info:#7aa7e6;--prib:linear-gradient(135deg,#f0dca4,#c9a259);--prit:#1d1608}
 .pad{padding:62px 18px 0}
 .row{display:flex;align-items:center}
 .gold{background:linear-gradient(135deg,var(--gold1),var(--gold2) 60%,var(--gold3));color:#1d1608}
@@ -62,6 +62,25 @@ h1 em{font-style:normal;background:linear-gradient(100deg,var(--gold1),var(--gol
 .chip.ltc{background:rgba(255,255,255,.92);color:#17181b;border:1px solid rgba(0,0,0,.06)}
 .chip.dkc .bub{background:linear-gradient(135deg,var(--gold1),var(--gold3));color:#1d1608}
 .chip.ltc .bub{background:linear-gradient(135deg,#232428,#0e0e10);color:var(--gold1)}
+
+.phone{background:linear-gradient(145deg,#fbe9b0,#c9a259 30%,#7a5718 55%,#e9c978 80%,#a47a2e)!important;padding:8px!important;
+ box-shadow:0 0 0 1.5px #5a4010,0 60px 110px -20px rgba(0,0,0,.65),0 0 90px -10px rgba(230,200,120,.35)!important}
+.phone:before,.phone:after{background:#b98a3e!important;box-shadow:none}
+.phone:after{box-shadow:0 80px 0 #b98a3e!important}
+.scr{border:7px solid #050506;border-radius:58px}
+.isl{top:16px!important}
+.sb{padding:12px 38px 0!important}
+.copy{left:50px;right:50px;top:110px;text-align:center}
+.copy h1{font-size:104px;line-height:1.02;margin-top:0}
+.copy .sub{margin:26px auto 0;font-size:36px;max-width:900px}
+.bg-dk{background:radial-gradient(900px 700px at 85% 75%,rgba(214,170,80,.40),transparent 70%),radial-gradient(700px 600px at 0% 100%,rgba(143,109,44,.35),transparent 70%),linear-gradient(170deg,#1a1814 0%,#0b0b0d 60%,#050506 100%);color:#fff}
+.bg-dk .sub{color:rgba(255,255,255,.72)}
+.bg-iv{background:radial-gradient(800px 650px at 15% 78%,rgba(230,200,130,.55),transparent 70%),linear-gradient(170deg,#fffdf8,#f3ede0);color:#17181b}
+.bg-iv:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(143,109,44,.10) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(143,109,44,.10) 1.5px,transparent 1.5px);background-size:120px 120px;mask-image:linear-gradient(transparent 28%,#000 75%);-webkit-mask-image:linear-gradient(transparent 28%,#000 75%)}
+.bg-iv .sub{color:#5e6066}
+.bg-iv h1 em{background:linear-gradient(100deg,#b08945,#85672c 60%,#5e4414);-webkit-background-clip:text;background-clip:text;color:transparent}
+.streak{position:absolute;height:150px;width:1700px;left:-300px;transform-origin:center;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(240,210,130,.0) 15%,rgba(240,210,130,.34) 50%,rgba(240,210,130,0) 85%,transparent);filter:blur(6px)}
+.spk{position:absolute;pointer-events:none}
 </style></head><body>
 <div id="root"></div>
 <script>
@@ -109,22 +128,22 @@ S.home=(dk)=>`<div class="app ${dk?'dk':''} scr">${status()}<div class="pad">
  </div>
  </div>${nav(0)}</div>`;
 
-S.exam=()=>`<div class="app scr"><div style="--tx:#fff;color:#fff;position:relative;z-index:16">${status()}</div>
+S.exam=(dk)=>`<div class="app ${dk?'dk':''} scr"><div style="--tx:#fff;color:#fff;position:relative;z-index:16">${status()}</div>
  <div style="position:absolute;top:0;left:0;right:0;height:128px;background:linear-gradient(160deg,#2b2d32,#111215);color:#fff;padding:62px 18px 0">
   <div class="row" style="justify-content:space-between"><div><div style="font-size:11px;opacity:.6;font-weight:600">NEET Full Syllabus</div><div style="font-size:16px;font-weight:800">Test 12</div></div>
   <div class="row gold" style="gap:7px;padding:8px 13px;border-radius:13px;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums">${ic('clock','width:17px;height:17px')}02:14:36</div></div></div>
  <div style="position:absolute;top:128px;left:0;right:0;padding:14px 18px">
-  <div class="row" style="gap:8px">${['Physics','Chemistry','Biology'].map((x,i)=>`<div style="flex:1;text-align:center;padding:10px 0;border-radius:13px;font-size:13px;font-weight:700;${i==2?'background:var(--ink);color:#fff;background:#17181b':'background:var(--surf);border:1px solid var(--line);color:var(--mut)'}">${x}</div>`).join('')}</div>
+  <div class="row" style="gap:8px">${['Physics','Chemistry','Biology'].map((x,i)=>`<div style="flex:1;text-align:center;padding:10px 0;border-radius:13px;font-size:13px;font-weight:700;${i==2?'background:var(--prib);color:var(--prit)':'background:var(--surf);border:1px solid var(--line);color:var(--mut)'}">${x}</div>`).join('')}</div>
   <div class="row" style="justify-content:space-between;margin:18px 2px 10px"><span style="font-weight:800;font-size:15px">Question 87 <span class="mut" style="font-weight:600">of 180</span></span><span class="row" style="gap:6px"><span class="pill" style="background:var(--okS);color:var(--ok)">+4</span><span class="pill" style="background:var(--errS);color:var(--err)">−1</span></span></div>
   <div class="card" style="padding:18px"><div style="font-size:16.5px;line-height:1.5;font-weight:600;letter-spacing:-.01em">Which cell organelle is the main site of aerobic respiration in a eukaryotic cell?</div></div>
   ${[['A','Ribosome'],['B','Mitochondria'],['C','Golgi apparatus'],['D','Lysosome']].map((x,i)=>`<div class="row" style="gap:12px;margin-top:10px;padding:14px;border-radius:17px;background:${i==1?'var(--accS)':'var(--surf)'};border:1.5px solid ${i==1?'#c9a259':'var(--line)'}"><span style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;${i==1?'background:linear-gradient(135deg,#f0dca4,#b08945);color:#1d1608':'background:var(--surf2);color:var(--mut)'}">${x[0]}</span><span style="font-size:15px;font-weight:${i==1?800:600}">${x[1]}</span>${i==1?`<span style="margin-left:auto;color:var(--acc)">${ic('check')}</span>`:''}</div>`).join('')}
-  <div class="row" style="gap:10px;margin-top:16px"><div class="card" style="flex:1;height:46px;display:grid;place-items:center;font-size:13px;font-weight:700;border-radius:15px">Mark for review</div><div style="flex:1;height:46px;border-radius:15px;background:#17181b;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800">Save & Next</div></div>
+  <div class="row" style="gap:10px;margin-top:16px"><div class="card" style="flex:1;height:46px;display:grid;place-items:center;font-size:13px;font-weight:700;border-radius:15px">Mark for review</div><div style="flex:1;height:46px;border-radius:15px;background:var(--prib);color:var(--prit);display:grid;place-items:center;font-size:13px;font-weight:800">Save & Next</div></div>
   <div class="h2" style="margin:18px 2px 10px;font-size:13px">Question palette</div>
   <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:7px">${Array.from({length:27},(_,i)=>{const n=i+79;const st=n<87?(n%4==0?'r':'a'):(n==87?'c':'n');const m={a:'background:#2d7a58;color:#fff',r:'background:#7b5bb8;color:#fff',c:'background:linear-gradient(135deg,#f0dca4,#b08945);color:#1d1608',n:'background:var(--surf);border:1px solid var(--line);color:var(--mut)'}[st];return `<div style="aspect-ratio:1;border-radius:9px;display:grid;place-items:center;font-size:11px;font-weight:700;${m}">${n}</div>`}).join('')}</div>
  </div></div>`;
 
 const ring=(pct,size,label,sub,col='#c9a259')=>{const r=size/2-9,c=2*Math.PI*r;return `<div style="position:relative;width:${size}px;height:${size}px"><svg width="${size}" height="${size}" style="transform:rotate(-90deg)"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="12"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="url(#gg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${c*pct} ${c}"/></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:${size/4.2}px;font-weight:800;letter-spacing:-.04em">${label}</div><div style="font-size:11px;opacity:.65;font-weight:600">${sub}</div></div></div>`};
-S.result=()=>`<div class="app scr">${status()}<div class="pad">
+S.result=(dk)=>`<div class="app ${dk?'dk':''} scr">${status()}<div class="pad">
  <svg width="0" height="0"><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0dca4"/><stop offset="1" stop-color="#b08945"/></linearGradient></defs></svg>
  ${bar(['NEET Full Syllabus · Test 12','Your Result'],`<div class="pill" style="background:var(--okS);color:var(--ok)">Submitted</div>`)}
  <div style="border-radius:28px;padding:22px 20px;color:#fff;background:radial-gradient(110% 80% at 0% 0%,rgba(230,207,154,.3),transparent 60%),linear-gradient(160deg,#2b2d32,#111215)">
@@ -140,8 +159,8 @@ S.result=()=>`<div class="app scr">${status()}<div class="pad">
  <div class="row" style="gap:10px;margin-top:12px"><div class="gold" style="flex:1;height:46px;border-radius:15px;display:grid;place-items:center;font-weight:800;font-size:13.5px">View solutions</div><div class="card" style="flex:1;height:46px;display:grid;place-items:center;font-weight:800;font-size:13.5px;border-radius:15px">Leaderboard</div></div>
  </div>${nav(1)}</div>`;
 
-S.analysis=()=>{const pts=[412,455,438,502,531,498,566,612];const mx=640,mn=380,W=330,H=120;const xy=pts.map((v,i)=>[i*(W/7)+10,H-((v-mn)/(mx-mn))*H+8]);const d=xy.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
- return `<div class="app scr">${status()}<div class="pad">
+S.analysis=(dk)=>{const pts=[412,455,438,502,531,498,566,612];const mx=640,mn=380,W=330,H=120;const xy=pts.map((v,i)=>[i*(W/7)+10,H-((v-mn)/(mx-mn))*H+8]);const d=xy.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+ return `<div class="app ${dk?'dk':''} scr">${status()}<div class="pad">
  ${bar(['Performance','Analysis'])}
  <div class="card" style="padding:16px"><div class="row" style="justify-content:space-between"><div><div style="font-size:12px;color:var(--mut);font-weight:600">Score trend · last 8 tests</div><div style="font-size:30px;font-weight:800;letter-spacing:-.04em;margin-top:2px">612 <span class="pill" style="background:var(--okS);color:var(--ok);vertical-align:middle">▲ +200</span></div></div></div>
  <svg viewBox="0 0 350 150" style="width:100%;margin-top:6px"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9a259" stop-opacity=".35"/><stop offset="1" stop-color="#c9a259" stop-opacity="0"/></linearGradient><linearGradient id="ln" x1="0" x2="1"><stop offset="0" stop-color="#b08945"/><stop offset="1" stop-color="#e6cf9a"/></linearGradient></defs>
@@ -153,44 +172,46 @@ S.analysis=()=>{const pts=[412,455,438,502,531,498,566,612];const mx=640,mn=380,
  <div class="card row" style="padding:14px;gap:12px;background:var(--accS);border-color:transparent"><div style="width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:#17181b;color:#f0dca4">${ic('target')}</div><div><div style="font-size:14px;font-weight:800">14 mistakes to revisit</div><div style="font-size:11.5px;color:var(--mut);font-weight:600">Redo them to lock in marks</div></div></div>
  </div>${nav(3)}</div>`};
 
-S.pyq=()=>`<div class="app scr">${status()}<div class="pad">
+S.pyq=(dk)=>`<div class="app ${dk?'dk':''} scr">${status()}<div class="pad">
  ${bar(['Practice','PYQ & Question Bank'])}
  <div class="card row" style="gap:10px;padding:12px 14px;border-radius:16px"><span class="mut">${ic('search')}</span><span class="mut" style="font-size:14px;font-weight:600">Search chapter or topic</span></div>
- <div class="row" style="gap:8px;margin:14px 0 4px">${['All','2024','2023','2022','2021'].map((x,i)=>`<div style="padding:9px 15px;border-radius:99px;font-size:12.5px;font-weight:700;${i==1?'background:#17181b;color:#fff':'background:var(--surf);border:1px solid var(--line);color:var(--mut)'}">${x}</div>`).join('')}</div>
+ <div class="row" style="gap:8px;margin:14px 0 4px">${['All','2024','2023','2022','2021'].map((x,i)=>`<div style="padding:9px 15px;border-radius:99px;font-size:12.5px;font-weight:700;${i==1?'background:var(--prib);color:var(--prit)':'background:var(--surf);border:1px solid var(--line);color:var(--mut)'}">${x}</div>`).join('')}</div>
  <div class="h2" style="margin:14px 2px 10px">Chapter-wise practice</div>
  ${[['Cell: The Unit of Life','Biology','flask','#1f9a72',42,50],['Laws of Motion','Physics','bolt','#3f72b8',31,45],['Chemical Kinetics','Chemistry','target','#c4692e',27,40],['Human Physiology','Biology','flask','#1f9a72',18,60],['Current Electricity','Physics','bolt','#3f72b8',12,38]].map(x=>`<div class="card row" style="padding:13px 14px;margin-bottom:9px;gap:13px"><div style="width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:${x[3]}22;color:${x[3]};flex:none">${ic(x[2])}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700">${x[0]}</div><div style="font-size:11.5px;color:var(--mut);font-weight:600;margin-top:2px">${x[1]} · ${x[4]}/${x[5]} solved</div><div style="height:6px;border-radius:6px;background:var(--surf2);margin-top:8px"><div style="height:100%;width:${x[4]/x[5]*100}%;border-radius:6px;background:${x[3]}"></div></div></div></div>`).join('')}
  </div>${nav(2)}</div>`;
 
-S.store=()=>`<div class="app scr">${status()}<div class="pad">
+S.store=(dk)=>`<div class="app ${dk?'dk':''} scr">${status()}<div class="pad">
  ${bar(['Aspiron Education','Test Series'])}
- <div class="row" style="gap:8px">${['NEET','JEE','CBSE','CUET'].map((x,i)=>`<div style="padding:9px 16px;border-radius:99px;font-size:12.5px;font-weight:800;${i==0?'background:#17181b;color:#fff':'background:var(--surf);border:1px solid var(--line);color:var(--mut)'}">${x}</div>`).join('')}</div>
+ <div class="row" style="gap:8px">${['NEET','JEE','CBSE','CUET'].map((x,i)=>`<div style="padding:9px 16px;border-radius:99px;font-size:12.5px;font-weight:800;${i==0?'background:var(--prib);color:var(--prit)':'background:var(--surf);border:1px solid var(--line);color:var(--mut)'}">${x}</div>`).join('')}</div>
  ${[['Full Syllabus','Complete NEET paper pattern, 180 Qs',['Hindi + English','Live rank'],'linear-gradient(150deg,#2b2d32,#111215)','#fff'],['Subject-wise','Physics, Chemistry & Biology tests',['Analysis','Solutions'],'linear-gradient(150deg,#f6e9c6,#dcbd7a)','#17140b'],['Chapter-wise','Test every chapter after you finish it',['PYQ','Question bank'],'linear-gradient(150deg,#e9eef7,#c9d6ea)','#14213a']].map((x,i)=>`<div style="margin-top:14px;border-radius:24px;padding:18px;background:${x[3]};color:${x[4]};position:relative;overflow:hidden">${i==0?'<div style="position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(230,207,154,.5),transparent 70%)"></div>':''}<div style="font-size:11px;font-weight:800;letter-spacing:.14em;opacity:.65">NEET 2027</div><div style="font-size:22px;font-weight:800;letter-spacing:-.03em;margin-top:4px">${x[0]}</div><div style="font-size:12.5px;font-weight:600;opacity:.75;margin-top:4px">${x[1]}</div><div class="row" style="gap:7px;margin-top:14px">${x[2].map(t=>`<span class="pill" style="background:${i==0?'rgba(255,255,255,.14)':'rgba(0,0,0,.08)'}">${t}</span>`).join('')}<span style="margin-left:auto;font-size:13px;font-weight:800">Explore →</span></div></div>`).join('')}
  <div class="card row" style="margin-top:14px;padding:14px;gap:12px"><div class="gold" style="width:44px;height:44px;border-radius:14px;display:grid;place-items:center">${ic('gift')}</div><div><div style="font-size:14px;font-weight:800">Refer & Earn</div><div style="font-size:11.5px;color:var(--mut);font-weight:600">Invite friends, earn rewards</div></div></div>
  </div>${nav(1)}</div>`;
 
-/* ---------- slides ---------- */
+/* ---------- slides v2 ---------- */
+let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+const sparkles=(n,dark)=>{let h='';for(let i=0;i<n;i++){const x=rnd()*1080,y=420+rnd()*1500,r=1.5+rnd()*3.5,o=.25+rnd()*.7;
+ h+= rnd()<.15?`<svg class="spk" style="left:${x}px;top:${y}px;opacity:${o}" width="${r*7}" height="${r*7}" viewBox="0 0 20 20"><path d="M10 0C11 7 13 9 20 10 13 11 11 13 10 20 9 13 7 11 0 10 7 9 9 7 10 0Z" fill="#f0dca4"/></svg>`:`<div class="spk" style="left:${x}px;top:${y}px;width:${r}px;height:${r}px;border-radius:50%;background:#f0dca4;opacity:${o};box-shadow:0 0 ${r*3}px #f0dca4"></div>`}return h};
 const ph=(scr,x,y,s,r,z=1)=>`<div class="phone" style="left:${x}px;top:${y}px;transform:translate(-50%,-50%) scale(${s}) rotate(${r}deg);z-index:${z}"><div class="isl"></div>${scr}</div>`;
-const copy=(k,h,s)=>`<div class="copy"><div class="kick"><i></i>${k}</div><h1>${h}</h1><div class="sub">${s}</div></div>`;
-const chip=(cls,st,ico,b,sm)=>`<div class="chip ${cls}" style="${st}"><div class="bub">${ic(ico)}</div><div><b>${b}</b><small>${sm}</small></div></div>`;
-const bgGlow=(a,b)=>`<div class="glow" style="width:760px;height:760px;right:-260px;top:520px;background:radial-gradient(circle,${a},transparent 68%)"></div><div class="glow" style="width:620px;height:620px;left:-260px;top:1150px;background:radial-gradient(circle,${b},transparent 68%)"></div><div class="dots"></div>`;
-
+const copy=(h,s)=>`<div class="copy"><h1>${h}</h1><div class="sub">${s}</div></div>`;
+const dkBg=()=>`<div class="streak" style="top:1200px;transform:rotate(-24deg)"></div><div class="streak" style="top:1500px;transform:rotate(-24deg);opacity:.6"></div>${sparkles(70)}`;
+// pair: front phone right (side=1) or left (side=-1)
+const pair=(front,back,side)=>{const fx=540+side*95,bx=540-side*300;
+ return ph(back,bx,1290,1.55,side*-1*13+0,1)+ph(front,fx,1420,1.78,side*7,2)};
 const slides=[
- ()=>`<div class="slide t-ink">${bgGlow('rgba(230,207,154,.30)','rgba(143,109,44,.35)')}${copy('NEET · JEE · CBSE','Your complete <em>exam prep</em>, in one app','Mock tests, PYQs, analysis and live rank — right in your pocket.')}${ph(S.home(),520,1450,1.72,-7)}${chip('ltc','left:60px;top:565px','trophy','Rank #128','Live leaderboard')}</div>`,
- ()=>`<div class="slide t-ivory">${bgGlow('rgba(230,207,154,.55)','rgba(201,162,89,.28)')}${copy('Real CBT Experience','Practice on the <em>real exam</em> interface','Timer, question palette and marking — exactly like exam day.')}${ph(S.exam(),560,1450,1.72,6)}${chip('dkc','right:60px;top:600px','clock','02:14:36','Live exam timer')}</div>`,
- ()=>`<div class="slide t-night">${bgGlow('rgba(230,207,154,.26)','rgba(63,114,184,.45)')}${copy('Instant Results','Score, rank &amp; <em>percentile</em> in seconds','Know where you stand the moment you submit your test.')}${ph(S.result(),520,1450,1.72,-6)}${chip('ltc','right:60px;top:575px','bolt','Top 3%','Among all students')}</div>`,
- ()=>`<div class="slide t-champ"><div class="glow" style="width:700px;height:700px;right:-240px;top:500px;background:radial-gradient(circle,rgba(255,255,255,.55),transparent 68%)"></div><div class="dots" style="color:#6b4f17"></div>${copy('Smart Analysis','Find weak chapters. <em>Fix them fast.</em>','Chapter-wise accuracy, score trends and a mistakes notebook.')}${ph(S.analysis(),560,1450,1.72,7)}${chip('dkc','left:60px;top:590px','chart','+200','Marks in 8 tests')}</div>`,
- ()=>`<div class="slide t-ink">${bgGlow('rgba(230,207,154,.30)','rgba(143,109,44,.35)')}${copy('PYQ &amp; Question Bank','Practise every chapter, <em>year by year</em>','Previous year questions and chapter-wise practice for NEET &amp; JEE.')}${ph(S.pyq(),520,1450,1.72,-7)}${chip('ltc','right:60px;top:565px','book','Chapter-wise','PYQ · Question bank')}</div>`,
- ()=>`<div class="slide t-ivory">${bgGlow('rgba(230,207,154,.55)','rgba(201,162,89,.28)')}${copy('Made for Every Aspirant','Hindi + English.<br><em>Light + Dark.</em>','Test series for every goal, in the language and theme you prefer.')}${ph(S.home(true),830,1470,1.55,8,1)}${ph(S.store(),370,1420,1.62,-6,2)}</div>`
+ ()=>`<div class="slide bg-dk">${dkBg()}${copy('Your complete<br><em>exam prep</em> app','NEET · JEE · CBSE mock tests with live rank')}${pair(S.home(true),S.store(true),1)}</div>`,
+ ()=>`<div class="slide bg-iv">${copy('Practice on the<br><em>real exam</em> interface','Timer, palette and marking — just like exam day')}${pair(S.exam(true),S.pyq(true),-1)}</div>`,
+ ()=>`<div class="slide bg-dk">${dkBg()}${copy('Instant score,<br><em>live rank</em>','Result and percentile the moment you submit')}${pair(S.result(true),S.analysis(true),1)}</div>`,
+ ()=>`<div class="slide bg-iv">${copy('Find weak chapters.<br><em>Fix them fast.</em>','Chapter-wise analysis and a mistakes notebook')}${pair(S.analysis(true),S.result(true),-1)}</div>`,
+ ()=>`<div class="slide bg-dk">${dkBg()}${copy('PYQ &amp; Question Bank<br><em>year by year</em>','Chapter-wise practice for NEET &amp; JEE')}${pair(S.pyq(true),S.exam(true),1)}</div>`,
+ ()=>`<div class="slide bg-iv">${copy('Hindi + English.<br><em>Light + Dark.</em>','Test series for every goal, your way')}${pair(S.home(true),S.store(false),-1)}</div>`
 ];
-
-const fg=()=>`<div class="fg t-ink"><div class="glow" style="width:520px;height:520px;right:-120px;top:-100px;background:radial-gradient(circle,rgba(230,207,154,.32),transparent 68%)"></div><div class="glow" style="width:420px;height:420px;left:-140px;bottom:-200px;background:radial-gradient(circle,rgba(143,109,44,.4),transparent 68%)"></div><div class="dots"></div>
+const fg=()=>`<div class="fg bg-dk" style="position:relative"><div class="streak" style="top:300px;left:-300px;transform:rotate(-22deg)"></div>
  <div style="position:absolute;left:64px;top:92px;width:520px">
   <div class="row" style="gap:16px"><img src="logo.png" style="width:78px;height:78px;border-radius:22px"><div><div style="font-family:'Inter Display';font-weight:800;font-size:40px;letter-spacing:-.03em;line-height:1">Aspiron</div><div style="font-size:15px;font-weight:700;letter-spacing:.34em;opacity:.6;margin-top:6px">EDUCATION</div></div></div>
   <div style="font-family:'Inter Display';font-weight:800;font-size:54px;line-height:1.04;letter-spacing:-.035em;margin-top:34px">NEET &amp; JEE<br><span style="background:linear-gradient(100deg,#f0dca4,#c9a259 55%,#8f6d2c);-webkit-background-clip:text;background-clip:text;color:transparent">mock tests</span><br>with live rank</div>
-  <div style="font-size:20px;font-weight:500;opacity:.7;margin-top:18px;line-height:1.4">CBT tests · PYQs · Analysis · Hindi + English</div></div>
- <div class="phone" style="left:715px;top:300px;transform:translate(-50%,-50%) scale(.82) rotate(8deg)"><div class="isl"></div>${S.result()}</div>
- <div class="phone" style="left:960px;top:400px;transform:translate(-50%,-50%) scale(.68) rotate(12deg);z-index:0;opacity:.95"><div class="isl"></div>${S.home(true)}</div></div>`;
-
+  <div style="font-size:20px;font-weight:500;opacity:.7;margin-top:18px">CBT tests · PYQs · Analysis · Hindi + English</div></div>
+ <div class="phone" style="left:930px;top:400px;transform:translate(-50%,-50%) scale(.7) rotate(12deg);z-index:0"><div class="isl"></div>${S.home(true)}</div>
+ <div class="phone" style="left:715px;top:300px;transform:translate(-50%,-50%) scale(.82) rotate(8deg);z-index:2"><div class="isl"></div>${S.result(true)}</div></div>`;
 const q=new URLSearchParams(location.search);const n=q.get('s');
 document.getElementById('root').innerHTML = n==='fg'?fg():slides[+n-1]();
 </script></body></html>
