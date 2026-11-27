@@ -81,6 +81,34 @@ h1 em{font-style:normal;background:linear-gradient(100deg,var(--gold1),var(--gol
 .bg-iv h1 em{background:linear-gradient(100deg,#b08945,#85672c 60%,#5e4414);-webkit-background-clip:text;background-clip:text;color:transparent}
 .streak{position:absolute;height:150px;width:1700px;left:-300px;transform-origin:center;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(240,210,130,.0) 15%,rgba(240,210,130,.34) 50%,rgba(240,210,130,0) 85%,transparent);filter:blur(6px)}
 .spk{position:absolute;pointer-events:none}
+
+/* ===== v3 premium: titanium phone + new themes ===== */
+.phone{border-radius:74px!important;padding:9px!important;
+ background:
+  linear-gradient(100deg,rgba(255,255,255,.0) 0 40%,rgba(255,255,255,.55) 47%,rgba(255,255,255,0) 54%),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,rgba(0,0,0,.05) 1px 3px),
+  linear-gradient(135deg,#f3f5f8 0%,#9aa1ac 16%,#eef0f4 30%,#5f6670 48%,#c8cdd5 64%,#868d98 80%,#e9ecf0 100%)!important;
+ box-shadow:0 0 0 1.5px #3a3f47,inset 0 0 0 1.5px rgba(255,255,255,.85),inset 0 0 10px 3px rgba(0,0,0,.35),
+  0 90px 120px -30px rgba(0,0,0,.55),0 40px 60px -30px rgba(0,0,0,.45)!important}
+.phone:before,.phone:after{background:linear-gradient(90deg,#6c727c,#d9dde3 50%,#7d848e)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)!important}
+.phone:after{box-shadow:0 80px 0 #9aa1ac,inset 0 0 0 1px rgba(255,255,255,.5)!important}
+.scr{border:8px solid #040405!important;border-radius:64px!important;box-shadow:0 0 0 1.5px #1a1b1e}
+.scr:after{content:"";position:absolute;inset:0;z-index:40;pointer-events:none;border-radius:56px;background:linear-gradient(118deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.05) 22%,transparent 38%)}
+.isl{top:18px!important;width:112px!important;height:32px!important;background:#020203!important;box-shadow:inset -34px 0 0 -26px #14161c}
+.isl:after{content:"";position:absolute;right:14px;top:9px;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#2b3550,#07080c 60%)}
+.copy h1{font-weight:800;letter-spacing:-.04em}
+.bg-navy{background:radial-gradient(900px 800px at 78% 62%,rgba(76,118,255,.45),transparent 70%),radial-gradient(700px 600px at 0% 100%,rgba(120,70,255,.35),transparent 70%),linear-gradient(170deg,#0e1b3d 0%,#0a1330 55%,#060b1d 100%);color:#fff}
+.bg-indigo{background:radial-gradient(900px 800px at 25% 66%,rgba(168,120,255,.5),transparent 70%),radial-gradient(700px 600px at 100% 100%,rgba(70,100,255,.4),transparent 70%),linear-gradient(170deg,#241553 0%,#170e3a 55%,#0b0724 100%);color:#fff}
+.bg-teal{background:radial-gradient(900px 800px at 75% 66%,rgba(40,200,190,.42),transparent 70%),radial-gradient(700px 600px at 0% 100%,rgba(40,110,255,.35),transparent 70%),linear-gradient(170deg,#0a2a36 0%,#071d29 55%,#04111a 100%);color:#fff}
+.bg-pearl{background:radial-gradient(900px 750px at 80% 68%,rgba(150,170,255,.40),transparent 70%),radial-gradient(700px 600px at 5% 95%,rgba(240,205,140,.50),transparent 70%),linear-gradient(170deg,#ffffff 0%,#eef1f8 60%,#e4e8f3 100%);color:#10162b}
+.bg-navy .sub,.bg-indigo .sub,.bg-teal .sub{color:rgba(255,255,255,.75)}
+.bg-pearl .sub{color:#4c5470}
+.bg-pearl h1{color:#10162b}
+.bg-pearl h1 em{background:linear-gradient(100deg,#c08a2e,#8a5d14);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bg-navy h1 em,.bg-indigo h1 em,.bg-teal h1 em{background:linear-gradient(100deg,#fff1c4,#f0c869 55%,#d49a35);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ring{position:absolute;left:50%;border-radius:50%;transform:translateX(-50%);border:2px solid rgba(255,255,255,.10);pointer-events:none}
+.bg-pearl .ring{border-color:rgba(60,80,160,.10)}
+.floor{position:absolute;left:50%;transform:translateX(-50%);width:900px;height:160px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),transparent);pointer-events:none}
 </style></head><body>
 <div id="root"></div>
 <script>
@@ -195,21 +223,22 @@ const ph=(scr,x,y,s,r,z=1)=>`<div class="phone" style="left:${x}px;top:${y}px;tr
 const copy=(h,s)=>`<div class="copy"><h1>${h}</h1><div class="sub">${s}</div></div>`;
 const dkBg=()=>`<div class="streak" style="top:1200px;transform:rotate(-24deg)"></div><div class="streak" style="top:1500px;transform:rotate(-24deg);opacity:.6"></div>${sparkles(70)}`;
 // pair: front phone right (side=1) or left (side=-1)
-const pair=(front,back,side)=>ph(front,540+side*20,1430,1.95,side*6,2);
+const rings=()=>`<div class="ring" style="top:520px;width:1000px;height:1000px"></div><div class="ring" style="top:380px;width:1300px;height:1300px"></div><div class="ring" style="top:240px;width:1600px;height:1600px;opacity:.6"></div>`;
+const one=(scr,side)=>ph(scr,540+side*10,1440,1.95,side*7,2);
 const slides=[
- ()=>`<div class="slide bg-dk">${dkBg()}${copy('Your complete<br><em>exam prep</em> app','NEET · JEE · CBSE mock tests with live rank')}${pair(S.home(true),S.store(true),1)}</div>`,
- ()=>`<div class="slide bg-iv">${copy('Practice on the<br><em>real exam</em> interface','Timer, palette and marking — just like exam day')}${pair(S.exam(true),S.pyq(true),-1)}</div>`,
- ()=>`<div class="slide bg-dk">${dkBg()}${copy('Instant score,<br><em>live rank</em>','Result and percentile the moment you submit')}${pair(S.result(true),S.analysis(true),1)}</div>`,
- ()=>`<div class="slide bg-iv">${copy('Find weak chapters.<br><em>Fix them fast.</em>','Chapter-wise analysis and a mistakes notebook')}${pair(S.analysis(true),S.result(true),-1)}</div>`,
- ()=>`<div class="slide bg-dk">${dkBg()}${copy('PYQ &amp; Question Bank<br><em>year by year</em>','Chapter-wise practice for NEET &amp; JEE')}${pair(S.pyq(true),S.exam(true),1)}</div>`,
- ()=>`<div class="slide bg-iv">${copy('Hindi + English.<br><em>Light + Dark.</em>','Test series for every goal, your way')}${pair(S.home(true),S.store(false),-1)}</div>`
+ ()=>`<div class="slide bg-navy">${rings()}${copy('Your complete<br><em>exam prep</em> app','NEET · JEE · CBSE mock tests with live rank')}${one(S.home(false),1)}</div>`,
+ ()=>`<div class="slide bg-pearl">${rings()}${copy('Practice on the<br><em>real exam</em> interface','Timer, palette and marking — just like exam day')}${one(S.exam(true),-1)}</div>`,
+ ()=>`<div class="slide bg-indigo">${rings()}${copy('Instant score,<br><em>live rank</em>','Result and percentile the moment you submit')}${one(S.result(false),1)}</div>`,
+ ()=>`<div class="slide bg-pearl">${rings()}${copy('Find weak chapters.<br><em>Fix them fast.</em>','Chapter-wise analysis and a mistakes notebook')}${one(S.analysis(true),-1)}</div>`,
+ ()=>`<div class="slide bg-teal">${rings()}${copy('PYQ &amp; Question Bank<br><em>year by year</em>','Chapter-wise practice for NEET &amp; JEE')}${one(S.pyq(false),1)}</div>`,
+ ()=>`<div class="slide bg-pearl">${rings()}${copy('Hindi + English.<br><em>Light + Dark.</em>','Test series for every goal, your way')}${one(S.store(true),-1)}</div>`
 ];
-const fg=()=>`<div class="fg bg-dk" style="position:relative"><div class="streak" style="top:300px;left:-300px;transform:rotate(-22deg)"></div>
+const fg=()=>`<div class="fg bg-navy" style="position:relative">
  <div style="position:absolute;left:64px;top:92px;width:520px">
   <div class="row" style="gap:16px"><img src="logo.png" style="width:78px;height:78px;border-radius:22px"><div><div style="font-family:'Inter Display';font-weight:800;font-size:40px;letter-spacing:-.03em;line-height:1">Aspiron</div><div style="font-size:15px;font-weight:700;letter-spacing:.34em;opacity:.6;margin-top:6px">EDUCATION</div></div></div>
   <div style="font-family:'Inter Display';font-weight:800;font-size:54px;line-height:1.04;letter-spacing:-.035em;margin-top:34px">NEET &amp; JEE<br><span style="background:linear-gradient(100deg,#f0dca4,#c9a259 55%,#8f6d2c);-webkit-background-clip:text;background-clip:text;color:transparent">mock tests</span><br>with live rank</div>
   <div style="font-size:20px;font-weight:500;opacity:.7;margin-top:18px">CBT tests · PYQs · Analysis · Hindi + English</div></div>
- <div class="phone" style="left:780px;top:330px;transform:translate(-50%,-50%) scale(.95) rotate(8deg);z-index:2"><div class="isl"></div>${S.result(true)}</div></div>`;
+ <div class="phone" style="left:790px;top:330px;transform:translate(-50%,-50%) scale(.95) rotate(8deg);z-index:2"><div class="isl"></div>${S.result(false)}</div></div>`;
 const q=new URLSearchParams(location.search);const n=q.get('s');
 document.getElementById('root').innerHTML = n==='fg'?fg():slides[+n-1]();
 </script></body></html>
