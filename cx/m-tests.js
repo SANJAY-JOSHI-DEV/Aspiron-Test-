@@ -13,6 +13,16 @@ const ms = v => { const x = AX.fmt.ms(v); return x ? Number(x) : null; };
 const siteUrl = () => location.origin + location.pathname.replace(/[^/]*$/, '');
 const COV = new Map();      // series id → cover data URL ('' = none)
 let CUR = null, C = null, offT = null;
+/* Drive links kept inside a test folder: they are series files (Google Drive link) whose Resources folder has the same name as the test folder.
+   LK[seriesId] = { ok, lay } (lay = file id → {folder, sort, free, link}); loaded when a series opens, needs supabase_v89_file_access.sql */
+const LK = {};
+const linksOf = (sid, f) => { const d = LK[sid]; if (!d || !d.ok) return []; const nm = (f.title || '').trim().toLowerCase();
+  return ((S_(sid) || {}).files || []).filter(x => d.lay[x.id] && d.lay[x.id].link && (d.lay[x.id].folder || '').trim().toLowerCase() === nm)
+    .sort((a, b) => (d.lay[a.id].sort || 0) - (d.lay[b.id].sort || 0)); };
+async function loadLinks(sid, redraw) {
+  try { const r = await AX.api.call('cbt_admin_files', 'get', { series_id: sid }); LK[sid] = { ok: !!(r && r.ok && r.v89), lay: (r && r.layout) || {} }; } catch (e) { LK[sid] = { ok: false, lay: {} }; }
+  if (redraw && CUR && CUR.ctx.alive()) redraw();
+}
 const canM = () => AX.can('content', 'manage');
 const bySort = (a, b) => (+a.sort_order || 0) - (+b.sort_order || 0);
 
@@ -241,6 +251,7 @@ function vSeries(ctx) {
   const s = C.series.find(x => x.id === CUR.sid), m = canM();
   if (!s) { ctx.head({ title: 'Series not found', crumb: 'Not found' }); return AX.set(ctx.el, h`<div class="card">${UI.empty({ icon: 'layers', title: 'This series is not here any more', text: 'It may have been deleted.', action: h`<a class="btn" href="#/tests">${icon('arrowL', 15)} Back to the library</a>` })}</div>`); }
   const F = C.folders.filter(f => f.series_id === s.id).sort(bySort), T = testsOf(s.id), root = T.filter(t => !t.folder_id || !F.some(f => f.id === t.folder_id));
+  if (!LK[s.id] && canM()) { LK[s.id] = { ok: false, lay: {}, loading: true }; loadLinks(s.id, () => vSeries(ctx)); }
   const A = sActs(s), base = '#/tests/s/' + s.id;
   const TABS = [{ id: 'tests', title: 'Tests', icon: 'fileText', href: base },
     A.some(x => x.g === 'settings') && { id: 'settings', title: 'Settings', icon: 'settings', href: base + '/settings' },
@@ -260,7 +271,8 @@ function vSeries(ctx) {
       ${m ? h`<button class="btn sm" data-act="newFolder" data-sid="${s.id}">${icon('folder', 15)} New folder</button>${F.length > 1 ? h`<button class="btn sm ghost" data-act="reorderF" data-sid="${s.id}">${icon('sort', 15)} Reorder folders</button>` : ''}` : ''}</div>
     ${!T.length && !F.length ? h`<div class="card">${UI.empty({ icon: 'fileText', title: 'Nothing here yet', text: 'Add a folder (for example “Phase 1” or “Day 1”) or create the first test.', action: m ? h`<div class="row wrap" style="justify-content:center"><button class="btn pri" data-act="newTestIn" data-sid="${s.id}">${icon('plus', 16)} New test</button><button class="btn" data-act="newFolder" data-sid="${s.id}">${icon('folder', 16)} New folder</button></div>` : '' })}</div>` : ''}
     ${join(F, f => { const all = testsOf(s.id, f.id), ft = fT(all); if (q && !ft.length) return ''; return h`<section class="card pad0 ts-fold ${all.length ? '' : 'empty'}"><div class="ts-fh"><span class="fi">${icon('folder', 17)}</span><div class="grow"><div class="row gap6 wrap"><b class="ell">${f.title}</b>${f.active === false ? UI.pill('Hidden', 'warn') : ''}</div><div class="xs mut">${all.length ? fmt.plural(all.length, 'test') : 'No tests yet'}</div></div>
-        ${m ? h`<button class="btn xs soft" data-act="newTestIn" data-sid="${s.id}" data-fid="${f.id}">${icon('plus', 13)} Test</button>` : ''}<button class="ibtn sm" data-act="fMenu" data-id="${f.id}" aria-label="More for folder ${f.title}">${icon('moreV', 16)}</button></div>
+        ${m ? h`<button class="btn xs soft" data-act="newTestIn" data-sid="${s.id}" data-fid="${f.id}">${icon('plus', 13)} Test</button><button class="btn xs soft" data-act="fLink" data-id="${f.id}">${icon('link', 13)} Link</button>` : ''}<button class="ibtn sm" data-act="fMenu" data-id="${f.id}" aria-label="More for folder ${f.title}">${icon('moreV', 16)}</button></div>
+      ${linkRows(s.id, f, m)}
       ${ft.length ? h`<div class="list">${join(ft, t => testRow(t))}</div>` : ''}</section>`; })}
     ${root.length && fT(root).length ? h`<section class="card pad0 ts-fold"><div class="ts-fh"><span class="fi" style="background:var(--pri-soft);color:var(--pri)">${icon('fileText', 17)}</span><div class="grow"><b>${F.length ? 'Not in a folder' : 'Tests'}</b><div class="xs mut">${fmt.plural(root.length, 'test')}</div></div>${m && root.length > 1 ? h`<button class="btn xs ghost" data-act="reorderT" data-sid="${s.id}" data-fid="">${icon('sort', 13)} Reorder</button>` : ''}</div>
       <div class="list">${join(fT(root), t => testRow(t))}</div></section>` : ''}`);
@@ -328,6 +340,8 @@ const ACTS = {
   delS: el => delSeries(S_(el.dataset.id)),
   arrangeRes: el => arrangeRes(el.dataset.id),
   newFolder: el => folderModal(el.dataset.sid, null),
+  fLink: el => { const f = F_(el.dataset.id); if (f) linkModal(f); },
+  delLink: el => delLink(el.dataset.sid, el.dataset.id),
   reorderS: () => reorder('Reorder series', C.series.slice().sort(bySort).map(s => ({ id: s.id, t: s.title, s: s.sort_order })), (x, n) => AX.api.admin('series_save', { id: x.id, sort_order: n })),
   reorderF: el => reorder('Reorder folders', C.folders.filter(f => f.series_id === el.dataset.sid).sort(bySort).map(f => ({ id: f.id, t: f.title, s: f.sort_order })), (x, n) => AX.api.admin('folder_save', { id: x.id, sort_order: n })),
   reorderT: el => reorderTests(el.dataset.sid, el.dataset.fid || null),
@@ -353,10 +367,64 @@ function sMenu(el, s) {
     A.some(x => x.g === 'danger') && { sep: true }, ...A.filter(x => x.g === 'danger').map(go)
   ]);
 }
+function linkRows(sid, f, m) {
+  const L = linksOf(sid, f); if (!L.length) return '';
+  return h`<div class="list ts-links">${join(L, x => h`<div class="row gap8" style="padding:8px 14px;align-items:center;border-top:1px solid var(--line)"><span class="ts-ic gold">${icon('link', 16)}</span><div class="grow"><b class="ell" style="display:block">${x.title}</b><div class="xs mut">Google Drive link · ${(LK[sid].lay[x.id] || {}).free ? 'free for everyone' : 'students with the series'}</div></div>${m ? h`<button class="btn xs danger" data-act="delLink" data-id="${x.id}" data-sid="${sid}" aria-label="Delete link ${x.title}">${icon('trash', 13)}</button>` : ''}</div>`)}</div>`;
+}
+function linkModal(f) {
+  const sid = f.series_id;
+  if (LK[sid] && LK[sid].loading) return UI.toast('Please wait a moment and try again.', { tone: 'warn' });
+  if (LK[sid] && !LK[sid].ok) return UI.toast('Run supabase_v89_file_access.sql in Supabase first, then supabase_v35_admin_team.sql again.', { tone: 'warn' });
+  let free = false;
+  const body = () => h`<form class="col gap12" id="lk-f" autocomplete="off" novalidate>
+      <div class="fld"><label for="lk-t">Name students will see</label><input class="inp" id="lk-t" maxlength="80" placeholder="e.g. Full syllabus, Notice 12 May"></div>
+      <div class="fld"><label for="lk-u">Google Drive link</label><input class="inp" id="lk-u" maxlength="500" inputmode="url" placeholder="https://drive.google.com/file/d/…/view"><div class="xs mut mt4">Share the file as "Anyone with the link". Only the link is saved here, not the file.</div></div>
+      <div class="fld"><label>Who can open it</label><div class="seg" id="lk-a">${join([[false, 'Students with the series'], [true, 'Everyone (free)']], ([v, l]) => h`<button type="button" class="${free === v ? 'on' : ''}" data-v="${v ? 1 : 0}">${l}</button>`)}</div></div>
+      <div class="err sm" id="lk-e"></div>
+      <div class="xs mut">You can add as many links as you want to this folder. Students find them in the Resources of this series, in a folder named “${f.title}”.</div></form>`;
+  UI.modal({
+    title: 'Add a link to “' + f.title + '”', sub: (S_(sid) || {}).title || '', size: 'narrow', body: body(),
+    foot: h`<span class="sp"></span><button class="btn ghost" data-close>Close</button><button class="btn pri" data-act="lkSave">${icon('plus', 16)} Add link</button>`,
+    onOpen(el) {
+      el.addEventListener('click', e => { const b = e.target.closest('#lk-a button'); if (!b) return; free = b.dataset.v === '1';
+        el.querySelectorAll('#lk-a button').forEach(x => x.classList.toggle('on', x === b)); });
+      let busy = false;
+      AX.act(el, {
+        async lkSave(b) {
+          if (busy) return;
+          const er = el.querySelector('#lk-e'), t = el.querySelector('#lk-t'), u = el.querySelector('#lk-u'), title = t.value.trim(), url = u.value.trim();
+          er.textContent = '';
+          if (!title) { er.textContent = 'Please type the name students will see.'; t.focus(); return; }
+          if (!/^https:\/\/(drive|docs)\.google\.com\/[A-Za-z0-9/_?=&%.#~+-]+$/.test(url) || url.length > 500) { er.textContent = 'Please paste a Google Drive link (it starts with https://drive.google.com/).'; u.focus(); return; }
+          busy = true;
+          await UI.busy(b, async () => {
+            try {
+              const r = await AX.api.call('cbt_admin_files', 'link', { series_id: sid, title, kind: 'notes', url, free });
+              if (!r.ok) { er.textContent = r.error === 'url' ? 'This link is not accepted. Use a drive.google.com or docs.google.com link.' : r.error === 'many' ? 'This series already has 200 files.' : AX.errText(r); return; }
+              const n = linksOf(sid, f).length;
+              const a = await AX.api.call('cbt_admin_files', 'arrange', { series_id: sid, items: [{ id: r.id, folder: f.title, sort: n + 1 }] });
+              if (!a.ok) { er.textContent = 'The link was saved, but it could not be put in this folder: ' + AX.errText(a); }
+              AX.cache.drop('catalog'); const c = await AX.data.catalog(true); if (c && c.ok) C = c;
+              await loadLinks(sid, null); AX.emit('data:changed'); AX.emit('tests:changed');
+              if (a.ok) { t.value = ''; u.value = ''; UI.toast('Link added. Add another one if you like.'); t.focus(); }
+            } finally { busy = false; }
+          });
+        }
+      });
+    }
+  });
+}
+async function delLink(sid, id) {
+  if (!(await UI.confirm({ title: 'Delete this link?', text: 'Students will no longer see it.', yes: 'Delete', tone: 'danger' }))) return;
+  const r = await AX.api.admin('file_delete', { id }); if (!r.ok) return UI.err(r);
+  AX.cache.drop('catalog'); const c = await AX.data.catalog(true); if (c && c.ok) C = c;
+  await loadLinks(sid, null); changed('Link deleted');
+}
 function fMenu(el, f) {
   if (!canM()) return UI.menu(el, [{ head: f.title }, { label: 'Share link', icon: 'link', fn: () => share(f.title, siteUrl() + '#/f/' + f.id, f.title + '\n' + ((S_(f.series_id) || {}).title || '') + '\n\nOpen: ' + siteUrl() + '#/f/' + f.id, '#/f/' + f.id) }]);
   UI.menu(el, [{ head: f.title },
     { label: 'New test in this folder', icon: 'plus', fn: () => AX.openTest(null, { seriesId: f.series_id, folderId: f.id }) },
+    { label: 'Add Google Drive link', icon: 'link', fn: () => linkModal(f) },
     { label: 'Edit folder', icon: 'edit', fn: () => folderModal(f.series_id, f) },
     testsOf(f.series_id, f.id).length > 1 && { label: 'Reorder tests', icon: 'sort', fn: () => reorderTests(f.series_id, f.id) },
     { label: f.active === false ? 'Show to students' : 'Hide from students', icon: f.active === false ? 'eye' : 'eyeOff', fn: async () => { const r = await AX.api.admin('folder_save', { id: f.id, series_id: f.series_id, active: f.active === false }); if (!r.ok) return UI.err(r); changed(f.active === false ? 'Folder is visible' : 'Folder hidden'); } },
