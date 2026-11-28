@@ -291,8 +291,9 @@ viewFolder=function(id){
    <div class="xprog"><div class="xkk"><div><b>${ts.length}</b><span>Tests</span></div><div><b>${d}</b><span>Attempted</span></div><div><b>${up}</b><span>Upcoming</span></div><div><b>${lv}</b><span>Live</span></div></div>
     <div class="xpg"><div class="xbar"><i style="width:${p}%"></i></div><span>${p}% complete</span></div></div>
    ${open?'':xBuy(s,it,serInfo(s))}
-   <div class="xsh2"><h3>Tests</h3><span>${ts.length}</span></div>
-   ${ts.length?xTl(ts,()=>CAT.tests.filter(t=>t.folder_id===FVID)):xEmpty('file','No tests in this folder yet','')}
+   ${(()=>{const fl=(s.files||[]).filter(x=>x.link&&String(x.folder||'').trim().toLowerCase()===String(f.title||'').trim().toLowerCase());
+     return fl.length?`<div class="xsh2"><h3>Links &amp; files</h3><span>${fl.length}</span></div><div class="xfiles">${fl.map(x=>{const op=open||!x.locked;return `<button class="xfile${op?'':' lk'}" onclick="${op?`openFile('${esc(x.id)}','${esc(x.kind||'')}',1)`:`tsExplore('${s.id}','rs')`}"><span class="xfi">${ic(op?'file':'lock',18)}</span><span class="grow"><b>${esc(x.title)}</b><small>${op?'Google Drive link':'Opens after you buy'}</small></span><span class="xfa">${ic(op?'download':'lock',16)}</span></button>`}).join('')}</div>`:''})()}
+   ${ts.length?`<div class="xsh2"><h3>Tests</h3><span>${ts.length}</span></div>`+xTl(ts,()=>CAT.tests.filter(t=>t.folder_id===FVID)):((s.files||[]).some(x=>x.link&&String(x.folder||'').trim().toLowerCase()===String(f.title||'').trim().toLowerCase())?'':`<div class="xsh2"><h3>Tests</h3><span>0</span></div>`+xEmpty('file','No tests in this folder yet',''))}
    ${pv||nx?`<div class="xfnav">${pv?`<a href="#/f/${pv.id}">${ic('back',15)}<span><small>Previous</small>${esc(pv.title)}</span></a>`:'<i></i>'}${nx?`<a class="nx" href="#/f/${nx.id}"><span><small>Next</small>${esc(nx.title)}</span>${ic('right',15)}</a>`:''}</div>`:''}</div>`);
   xCovers();
 };
